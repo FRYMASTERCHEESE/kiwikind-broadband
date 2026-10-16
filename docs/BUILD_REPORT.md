@@ -29,3 +29,6 @@ Private static design preview deployment succeeded: https://kiwikind-broadband.s
 Android compilation, lint, unit test, debug APK and unsigned release AAB generation succeeded for Android source commit 89257026ee9b89c277497a6669c1598f1d671a2f: https://github.com/FRYMASTERCHEESE/kiwikind-broadband/actions/runs/38836429096 . These are disconnected pre-launch review artifacts; there is no configured API host or release signing key. Device/emulator tests have not run. No Play upload or release was submitted. Console's separate app creation form was prepared but not submitted: it includes owner policy/export certifications requiring review. No signing key was generated or reused.
 
 See the chat handoff for verified remote repository/deployment/build outcomes; this report intentionally distinguishes implemented source from successful external publication.
+
+Final Android verification: source commit `d2877c0e97140e81765052684bf449f9076aab5e` passed compilation, unit test, lint and APK/AAB generation after backup/transfer policy and string-resource changes. Build: https://github.com/FRYMASTERCHEESE/kiwikind-broadband/actions/runs/38836780088 . The final artifact is still unsigned and disconnected; no device test or Play submission is implied. The separate handoff includes the final artifact hashes.
+
