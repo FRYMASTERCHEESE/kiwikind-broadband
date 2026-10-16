@@ -210,12 +210,12 @@ def google_signin(request):
     from google.auth.transport import requests as google_requests
     from google.oauth2 import id_token
     client_id = os.getenv('GOOGLE_WEB_CLIENT_ID', '').strip()
-    if not client_id:
-        return JsonResponse({'error': 'Google sign-in is not configured yet'}, status=503)
+    if not client_id or not settings.INTAKE_ENABLED:
+        return JsonResponse({'error': 'Google registration is not open yet'}, status=503)
     token = text(request.data, 'id_token', 8192, 20)
     try:
         claims = id_token.verify_oauth2_token(token, google_requests.Request(), client_id)
-    except (ValueError, Exception):
+    except Exception:
         return JsonResponse({'error': 'Google identity could not be verified'}, status=401)
     if claims.get('iss') not in ('accounts.google.com', 'https://accounts.google.com') or claims.get('email_verified') is not True:
         return JsonResponse({'error': 'A verified Google email is required'}, status=401)
