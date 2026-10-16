@@ -7,10 +7,13 @@ let resetToken = '';
 let lastAccountSync = 0;
 let accountSyncInFlight = false;
 let accountGeneration = 0;
+let restoringSession = true, initInFlight = false, authPending = false;
 function notice(message, error = false) { $('notice').textContent = message; $('notice').classList.toggle('error', error); }
 async function api(path, data, generation = accountGeneration) {
-  const response = await fetch('/api/' + path, {method: data === undefined ? 'GET' : 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json', 'X-CSRFToken':csrfToken}, ...(data === undefined ? {} : {body:JSON.stringify(data)})});
-  let result; try { result = await response.json(); } catch { throw new Error('The customer backend is unavailable. Nothing has been submitted.'); }
+  let response;
+  try { response = await fetch('/api/' + path, {method: data === undefined ? 'GET' : 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json', 'X-CSRFToken':csrfToken}, ...(typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? {signal:AbortSignal.timeout(75000)} : {}), ...(data === undefined ? {} : {body:JSON.stringify(data)})}); }
+  catch { throw new Error(data === undefined ? 'Could not reach KiwiKind. Check your connection and retry shortly; the free server may be waking up.' : 'The response was interrupted. Your request may have reached KiwiKind. Refresh your account before trying again.'); }
+  let result; try { result = await response.json(); } catch { throw new Error('The customer backend returned an unavailable response. Refresh before trying again.'); }
   if (!response.ok) {
     if (generation === accountGeneration && response.status === 401 && path !== 'login' && path !== 'google-login' && !$('dashboard').classList.contains('hidden')) showSignedOut();
     const error = new Error(result.error || 'The request could not be completed.');
@@ -56,17 +59,17 @@ async function refresh() {
   if(results.some(r=>r.status==='rejected')) notice('You are still signed in, but some account details could not load. Use Refresh account to retry.',true);
   empty('orders',orders?'No requests yet.':'Requests temporarily unavailable.'); if(orders?.orders?.length) $('orders').replaceChildren();
   for(const order of orders?.orders || []) {
-    const el=record($('orders'),order.address, `${order.status} Â· ${date(order.created_at)} Â· ${order.id}`);
+    const el=record($('orders'),order.address, `${order.status} · ${date(order.created_at)} · ${order.id}`);
     if(order.status!=='cancelled') el.append(button('Cancel request',async()=>{await api(`orders/${order.id}/cancel`,{}); await refresh(); notice('Request cancelled.');}));
   }
   empty('tickets',tickets?'No conversations yet.':'Conversations temporarily unavailable.'); if(tickets?.tickets?.length) $('tickets').replaceChildren();
   for(const ticket of tickets?.tickets || []) {
-    const el=record($('tickets'),ticket.subject,`${ticket.category} Â· ${ticket.status}`);
+    const el=record($('tickets'),ticket.subject,`${ticket.category} · ${ticket.status}`);
     el.append(button('Read & reply',async()=>{
       const data=await api(`tickets/${ticket.id}/messages`, undefined, generation);
       if (generation !== accountGeneration) return;
       const conversation=node('div','');
-      for(const m of data.messages) conversation.append(node('small',`${m.from_support?'Support':'You'} Â· ${date(m.created_at)}`),node('p',m.body));
+      for(const m of data.messages) conversation.append(node('small',`${m.from_support?'Support':'You'} · ${date(m.created_at)}`),node('p',m.body));
       const form=node('form',''), label=node('label','Your reply'), input=document.createElement('textarea'); input.required=true; input.maxLength=4000; label.append(input);form.append(label);
       const submit=node('button','Send reply');submit.className='button';submit.type='submit';form.append(submit);
       form.addEventListener('submit',safeAction(async()=>{await api(`tickets/${ticket.id}/messages`,{body:input.value});await refresh();notice('Reply recorded.');}));
@@ -74,12 +77,20 @@ async function refresh() {
     }));
   }
   empty('invoices',invoices?'No invoices.':'Billing information temporarily unavailable.');
-  for(const i of invoices?.invoices || []) record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.status} Â· Due ${i.due_date}`);
+  for(const i of invoices?.invoices || []) record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.status} · Due ${i.due_date}`);
   $('order-submit').disabled=!intake;
   $('refresh-account')?.classList.remove('hidden');
 }
-$('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account â†—':'Sign in â†—';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
-$('auth-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);if(registration){if(!d.consent)throw new Error('Please accept the pre-launch terms.');const r=await api('register',{...d,consent_version:consentVersion});notice(r.message);location.hash='#signin';}else{await api('login',d);await refresh();notice('Youâ€™re signed in.');}}));
+$('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account ↗':'Sign in ↗';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
+$('auth-form').addEventListener('submit',safeAction(async e=>{
+  if(authPending||!backend)return;
+  authPending=true;$('auth-submit').disabled=true;
+  try{
+    const d=formData(e.target);
+    if(registration){if(!d.consent)throw new Error('Please accept the pre-launch terms.');const r=await api('register',{...d,consent_version:consentVersion});notice(r.message);location.hash='#signin';}
+    else{notice('Signing in. Please wait for your account to load.');await api('login',d);await refresh();notice('You’re signed in.');}
+  }finally{authPending=false;$('auth-submit').disabled=!backend||(registration&&!intake);}
+}));
 $('forgot').addEventListener('click',safeAction(async()=>{if(!backend)throw new Error('Password reset is available when the customer backend is connected.');const email=$('auth-form').elements.email.value;if(!$('auth-form').elements.email.reportValidity())return;notice((await api('password-reset',{email})).message);}));
 $('reset-form').addEventListener('submit',safeAction(async e=>{
   const result=await api('password-reset/confirm',{token:resetToken,password:formData(e.target).password});
@@ -97,24 +108,42 @@ $('top-logout').addEventListener('click',()=> $('logout').click());
 $('top-refresh').addEventListener('click',()=> $('refresh-account').click());
 $('export').addEventListener('click',safeAction(async()=>{const data=await api('privacy/export');const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='kiwikind-data.json';a.click();URL.revokeObjectURL(url);notice('Your data export is ready.');}));
 async function init(){
+  if(initInFlight)return;
+  initInFlight=true;restoringSession=true;$('retry-connection').disabled=true;
+  backend=false;
+  $('auth-submit').disabled=true;$('forgot').disabled=true;
+  $('google-signin').parentElement.classList.add('hidden');
+  const startupMessage='Checking your saved session. The free server may take about a minute to wake up.';
+  notice(startupMessage);
   try{
-    const s=await api('status');backend=true;intake=s.intake_enabled;
-    $('connection-status').textContent=intake?'Pre-launch portal connected Â· no active broadband sales':'Portal connected Â· customer intake is closed';
+    const s=await api('status');intake=s.intake_enabled;
+    $('connection-status').textContent=intake?'Pre-launch portal connected · no active broadband sales':'Portal connected · customer intake is closed';
     if(s.legal_entity && s.business_contact && s.privacy_contact)$('legal-identity').textContent=`Operator: ${s.legal_entity}. Business contact: ${s.business_contact}. Privacy contact: ${s.privacy_contact}. Pre-launch only.`;
-    await api('csrf');$('auth-submit').disabled=registration&&!intake;
-    $('toggle-auth').disabled=false;$('forgot').disabled=false;
+    await api('csrf');
+    $('toggle-auth').disabled=false;
     $('retry-connection').classList.add('hidden');
-    setupGoogleSignIn();
     const hash=location.hash;
     if(hash.startsWith('#verify=')){const token=decodeURIComponent(hash.slice(8));history.replaceState(null,'','#portal');notice((await api('verify',{token})).message);}
     if(hash.startsWith('#reset=')){
       const token=decodeURIComponent(hash.slice(7));
       history.replaceState(null,'','#signin');routeAccount();resetToken=token;
       $('auth-form').classList.add('hidden');$('reset-form').classList.remove('hidden');
+      backend=true;$('auth-submit').disabled=registration&&!intake;
+      $('forgot').disabled=false;
+      $('google-signin').parentElement.classList.remove('hidden');setupGoogleSignIn();
+      notice('Choose a new password using your reset link.');
       return;
     }
-    try{await refresh();if(location.hash==='#portal'){history.replaceState(null,'',location.pathname+location.search);} if(!location.hash){window.scrollTo(0,0);}}catch{/* Anonymous visitors see sign-in. */updateAccountNavigation(false);$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');$('signed-in-bar').classList.add('hidden');}
+    try{await refresh();if(location.hash==='#portal')$('portal').scrollIntoView({block:'start'}); if(!location.hash){window.scrollTo(0,0);}}catch(error){
+      if(error.status!==401)throw error;
+      updateAccountNavigation(false);$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');$('signed-in-bar').classList.add('hidden');
+    }
+    backend=true;$('auth-submit').disabled=registration&&!intake;
+    $('forgot').disabled=false;
+    $('google-signin').parentElement.classList.remove('hidden');setupGoogleSignIn();
+    if($('notice').textContent===startupMessage)notice($('dashboard').classList.contains('hidden')?(registration&&!intake?'Email registration is closed during pre-launch. Existing users can return to sign in.':'Ready to sign in.'): 'Your saved account is signed in.');
   }catch{ backend=false;$('retry-connection').classList.remove('hidden'); notice('KiwiKind could not connect. The server may be waking up. Retry the connection shortly.',true);$('connection-status').textContent='Customer backend temporarily unavailable';$('auth-submit').disabled=true;$('toggle-auth').disabled=true;$('forgot').disabled=true; }
+  finally{initInFlight=false;restoringSession=false;$('retry-connection').disabled=false;if(backend&&!resetToken)routeAccount();}
 }
 $('retry-connection').addEventListener('click',safeAction(init));
 init();
@@ -150,7 +179,7 @@ function selectAccountForm(signUp){
 function routeAccount(){
   const hash=location.hash;
   if(resetToken){resetToken='';$('reset-form').reset();$('reset-form').classList.add('hidden');$('auth-form').classList.remove('hidden');}
-  if(hash==='#portal' && $('dashboard').classList.contains('hidden')){location.hash='#signin';return;}
+  if(hash==='#portal' && $('dashboard').classList.contains('hidden')){if(!restoringSession)location.hash='#signin';return;}
   if(!$('dashboard').classList.contains('hidden') && (hash==='#signin'||hash==='#signup')){
     history.replaceState(null,'',location.pathname+location.search);
     document.body.classList.remove('account-open','signup-view');
