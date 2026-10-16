@@ -37,3 +37,10 @@ h1,h2,h3,.eyebrow,.intro,.status,.account-line{overflow-wrap:anywhere}
  .form-links{flex-wrap:wrap;gap:10px}.dashboard-grid>*{min-width:0}
  footer{padding:35px 5%}
 }
+
+/* Account controls sit directly below the site header on mobile and desktop. */
+.top-account{max-width:720px;margin:0 auto 28px;padding:0 5%;scroll-margin-top:12px}
+.top-account:has(#auth-area.hidden){display:none}
+.top-account .auth-intro{margin-bottom:16px}
+.top-account .form-card{width:100%;max-width:100%}
+@media(max-width:600px){.top-account{padding:0 16px;margin-bottom:20px}.top-account .form-card{padding:22px 18px}}
