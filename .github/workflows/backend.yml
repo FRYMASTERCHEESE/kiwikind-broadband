@@ -34,7 +34,7 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.13'
+          gradle-version: '9.6.0'
       - name: Compile Android prelaunch app without signing or publishing
         working-directory: android
         run: gradle --no-daemon :app:assembleDebug :app:testDebugUnitTest -PKIWIKIND_API_ORIGIN=https://kiwikind-backend.onrender.com
