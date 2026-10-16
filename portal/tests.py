@@ -127,8 +127,10 @@ class GoogleAuthenticationTests(TestCase):
     @override_settings(INTAKE_ENABLED=False)
     def test_closed_intake_rejects_google_registration(self):
         from unittest.mock import patch
+        claims={'iss':'https://accounts.google.com','email_verified':True,'email':'new@example.invalid','sub':'new-google-subject'}
         with patch.dict('os.environ', {'GOOGLE_WEB_CLIENT_ID':'test-client'}):
-            self.assertEqual(self.post_google().status_code, 503)
+            with patch('google.oauth2.id_token.verify_oauth2_token', return_value=claims):
+                self.assertEqual(self.post_google().status_code, 503)
         self.assertEqual(User.objects.count(), 0)
 
     @override_settings(INTAKE_ENABLED=True)
