@@ -9,11 +9,13 @@ jobs:
     environment: android-release
     timeout-minutes: 30
     env:
-      KIWIKIND_KEYSTORE: ${{ runner.temp }}/kiwikind-upload.jks
       KIWIKIND_STORE_PASSWORD: ${{ secrets.KIWIKIND_STORE_PASSWORD }}
       KIWIKIND_KEY_ALIAS: ${{ secrets.KIWIKIND_KEY_ALIAS }}
       KIWIKIND_KEY_PASSWORD: ${{ secrets.KIWIKIND_KEY_PASSWORD }}
     steps:
+      - name: Set temporary keystore path
+        shell: bash
+        run: echo "KIWIKIND_KEYSTORE=$RUNNER_TEMP/kiwikind-upload.jks" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
