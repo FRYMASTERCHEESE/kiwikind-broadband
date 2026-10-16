@@ -187,6 +187,37 @@ class GoogleAuthenticationTests(TestCase):
         self.assertEqual(User.objects.count(),1)
 
 
+class GoogleLinkSecurityTests(TestCase):
+    def setUp(self):
+        self.user=User.objects.create_user('linked@example.invalid',email='linked@example.invalid',password='Safe-Example-Password-123!')
+        self.claims={'iss':'https://accounts.google.com','email_verified':True,'email':'linked@example.invalid','sub':'google-link-subject'}
+
+    def link(self):
+        return self.client.post('/api/google-link',json.dumps({'id_token':'synthetic-google-id-token-for-tests'}),content_type='application/json')
+
+    def test_anonymous_cannot_link(self):
+        self.assertEqual(self.link().status_code,401)
+
+    def test_signed_in_user_can_link_matching_verified_google(self):
+        from unittest.mock import patch
+        from .models import GoogleIdentity
+        self.client.force_login(self.user)
+        with patch.dict('os.environ',{'GOOGLE_WEB_CLIENT_ID':'test-client'}):
+            with patch('google.oauth2.id_token.verify_oauth2_token',return_value=self.claims):
+                self.assertEqual(self.link().status_code,200)
+                self.assertEqual(self.link().status_code,200)
+        self.assertEqual(GoogleIdentity.objects.filter(user=self.user).count(),1)
+
+    def test_mismatched_email_cannot_link(self):
+        from unittest.mock import patch
+        from .models import GoogleIdentity
+        self.client.force_login(self.user)
+        with patch.dict('os.environ',{'GOOGLE_WEB_CLIENT_ID':'test-client'}):
+            with patch('google.oauth2.id_token.verify_oauth2_token',return_value={**self.claims,'email':'attacker@example.invalid'}):
+                self.assertEqual(self.link().status_code,403)
+        self.assertFalse(GoogleIdentity.objects.exists())
+
+
 class WebsiteAndroidSharedDataTests(TestCase):
     """Two separate authenticated clients simulate website and Android devices."""
     def setUp(self):
