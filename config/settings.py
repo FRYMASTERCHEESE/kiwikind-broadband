@@ -80,7 +80,9 @@ X_FRAME_OPTIONS = 'DENY'
 # Enable ONLY behind a trusted proxy that strips incoming X-Forwarded-Proto.
 if os.getenv('TRUST_PROXY_HTTPS') == '1':
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'portal.email_backend.BrevoEmailBackend')
+BREVO_API_KEY = os.getenv('BREVO_API_KEY', '')
+EMAIL_REPLY_TO = os.getenv('EMAIL_REPLY_TO', 'kiwikindbroadband@gmail.com')
 EMAIL_HOST = os.getenv('EMAIL_HOST', '')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
@@ -90,15 +92,16 @@ EMAIL_TIMEOUT = 10
 # Optional operator switch for a known transport outage (e.g. SMTP on Render Free).
 # Runtime connection failures also return the same safe error before account lookup.
 RESET_EMAIL_UNAVAILABLE = os.getenv('RESET_EMAIL_UNAVAILABLE') == '1'
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'KiwiKind Broadband <kiwikindbroadband@gmail.com>')
 PUBLIC_ORIGIN = os.getenv('PUBLIC_ORIGIN', 'http://127.0.0.1:8000').rstrip('/')
 LEGAL_ENTITY = os.getenv('LEGAL_ENTITY', '')
 BUSINESS_CONTACT = os.getenv('BUSINESS_CONTACT', '')
 PRIVACY_CONTACT = os.getenv('PRIVACY_CONTACT', '')
 INTAKE_ENABLED = os.getenv('INTAKE_ENABLED') == '1'
 ADMIN_ENABLED = os.getenv('ADMIN_ENABLED') == '1'
-if not DEBUG and INTAKE_ENABLED and not all([LEGAL_ENTITY, BUSINESS_CONTACT, PRIVACY_CONTACT, EMAIL_HOST, DEFAULT_FROM_EMAIL]):
-    raise ImproperlyConfigured('Public intake requires legal identity, contacts and SMTP configuration.')
+mail_configured = bool(BREVO_API_KEY) if EMAIL_BACKEND == 'portal.email_backend.BrevoEmailBackend' else bool(EMAIL_HOST)
+if not DEBUG and INTAKE_ENABLED and not all([LEGAL_ENTITY, BUSINESS_CONTACT, PRIVACY_CONTACT, mail_configured, DEFAULT_FROM_EMAIL]):
+    raise ImproperlyConfigured('Public intake requires legal identity, contacts and email configuration.')
 if not DEBUG and ADMIN_ENABLED and os.getenv('ADMIN_MFA_PERIMETER_CONFIRMED') != '1':
     raise ImproperlyConfigured('Admin requires an independently configured MFA access perimeter.')
 if not DEBUG and not PUBLIC_ORIGIN.startswith('https://'):
