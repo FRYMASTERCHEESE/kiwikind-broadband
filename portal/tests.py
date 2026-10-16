@@ -118,3 +118,34 @@ class PlatformTests(TestCase):
         self.assertEqual(r.status_code,302)
         reply=t.messages.exclude(pk=original.pk).get();self.assertEqual(reply.author,operator)
         self.assertTrue(AuditEvent.objects.filter(action='support_reply',reference=str(t.pk)).exists())
+
+
+class GoogleAuthenticationTests(TestCase):
+    def post_google(self, token='synthetic-token'):
+        return self.client.post('/api/google-login', json.dumps({'id_token': token}), content_type='application/json')
+
+    @override_settings(INTAKE_ENABLED=False)
+    def test_closed_intake_rejects_google_registration(self):
+        from unittest.mock import patch
+        with patch.dict('os.environ', {'GOOGLE_WEB_CLIENT_ID':'test-client'}):
+            self.assertEqual(self.post_google().status_code, 503)
+        self.assertEqual(User.objects.count(), 0)
+
+    @override_settings(INTAKE_ENABLED=True)
+    def test_invalid_google_token_does_not_create_user(self):
+        from unittest.mock import patch
+        with patch.dict('os.environ', {'GOOGLE_WEB_CLIENT_ID':'test-client'}):
+            with patch('google.oauth2.id_token.verify_oauth2_token', side_effect=ValueError('bad token')):
+                self.assertEqual(self.post_google().status_code, 401)
+        self.assertEqual(User.objects.count(), 0)
+
+    @override_settings(INTAKE_ENABLED=True)
+    def test_google_email_collision_cannot_take_over_password_account(self):
+        from unittest.mock import patch
+        User.objects.create_user('same@example.invalid', email='same@example.invalid', password='Secure-Passphrase-1203!')
+        claims={'iss':'https://accounts.google.com','email_verified':True,'email':'same@example.invalid','sub':'unique-google-subject'}
+        with patch.dict('os.environ', {'GOOGLE_WEB_CLIENT_ID':'test-client'}):
+            with patch('google.oauth2.id_token.verify_oauth2_token', return_value=claims):
+                self.assertEqual(self.post_google().status_code, 409)
+        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(self.client.get('/api/me').status_code, 401)
