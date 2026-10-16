@@ -210,8 +210,8 @@ def google_signin(request):
     from google.auth.transport import requests as google_requests
     from google.oauth2 import id_token
     client_id = os.getenv('GOOGLE_WEB_CLIENT_ID', '').strip()
-    if not client_id or not settings.INTAKE_ENABLED:
-        return JsonResponse({'error': 'Google registration is not open yet'}, status=503)
+    if not client_id:
+        return JsonResponse({'error': 'Google sign-in is not configured yet'}, status=503)
     token = text(request.data, 'id_token', 8192, 20)
     try:
         claims = id_token.verify_oauth2_token(token, google_requests.Request(), client_id)
@@ -231,6 +231,8 @@ def google_signin(request):
         if identity:
             user = identity.user
         else:
+            if not settings.INTAKE_ENABLED:
+                return JsonResponse({'error': 'New Google account registration is not open yet'}, status=503)
             if User.objects.filter(username=email).exists():
                 return JsonResponse({'error': 'This email already has an account. Sign in with your password first to link Google.'}, status=409)
             user = User.objects.create_user(username=email, email=email, password=None, is_active=True)
