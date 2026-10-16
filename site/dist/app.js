@@ -57,6 +57,7 @@ $('ticket-form').addEventListener('submit',safeAction(async e=>{const r=await ap
 $('deletion-form').addEventListener('submit',safeAction(async e=>{notice((await api('privacy/deletion',formData(e.target))).message);e.target.reset();}));
 $('refresh-account')?.addEventListener('click',safeAction(async()=>{await refresh();notice('Account details refreshed.');}));
 $('top-logout').addEventListener('click',()=> $('logout').click());
+$('top-refresh').addEventListener('click',()=> $('refresh-account').click());
 $('export').addEventListener('click',safeAction(async()=>{const data=await api('privacy/export');const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='kiwikind-data.json';a.click();URL.revokeObjectURL(url);notice('Your data export is ready.');}));
 async function init(){
   try{
