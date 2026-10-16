@@ -55,3 +55,8 @@ class PrivacyRequest(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     status = models.CharField(max_length=20, default='received', choices=[('received','Received'),('reviewing','Reviewing'),('completed','Completed')])
     created_at = models.DateTimeField(auto_now_add=True)
+
+class GoogleIdentity(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='google_identity')
+    subject = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
