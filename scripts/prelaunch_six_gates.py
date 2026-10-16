@@ -16,7 +16,7 @@ def main():
         ("2. Password reset token expiry and replay guard",
          has("portal/views.py", "salt='reset',max_age=3600", "default_token_generator.check_token")),
         ("3. Password reset does not disclose unknown addresses",
-         has("portal/views.py", "If the account exists, a reset email has been sent.")),
+         has("portal/views.py", "If the account is eligible, a reset email has been requested.")),
         ("4. Customer intake stays closed by default",
          has("config/settings.py", "INTAKE_ENABLED = os.getenv('INTAKE_ENABLED') == '1'")),
         ("5. Admin access requires MFA perimeter",

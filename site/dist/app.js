@@ -3,6 +3,7 @@ const $ = id => document.getElementById(id);
 const consentVersion = 'prelaunch-2026-10-16';
 let csrfToken = '', registration = false, backend = false, intake = false;
 let orderKey = null;
+let resetToken = '';
 let lastAccountSync = 0;
 let accountSyncInFlight = false;
 let accountGeneration = 0;
@@ -79,7 +80,13 @@ async function refresh() {
 }
 $('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account â†—':'Sign in â†—';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
 $('auth-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);if(registration){if(!d.consent)throw new Error('Please accept the pre-launch terms.');const r=await api('register',{...d,consent_version:consentVersion});notice(r.message);location.hash='#signin';}else{await api('login',d);await refresh();notice('Youâ€™re signed in.');}}));
-$('forgot').addEventListener('click',safeAction(async()=>{if(!backend)throw new Error('Password reset is available when the customer backend is connected.');const email=$('auth-form').elements.email.value;if(!email)throw new Error('Enter your email above first.');notice((await api('password-reset',{email})).message);}));
+$('forgot').addEventListener('click',safeAction(async()=>{if(!backend)throw new Error('Password reset is available when the customer backend is connected.');const email=$('auth-form').elements.email.value;if(!$('auth-form').elements.email.reportValidity())return;notice((await api('password-reset',{email})).message);}));
+$('reset-form').addEventListener('submit',safeAction(async e=>{
+  const result=await api('password-reset/confirm',{token:resetToken,password:formData(e.target).password});
+  resetToken='';e.target.reset();$('reset-form').classList.add('hidden');$('auth-form').classList.remove('hidden');
+  showSignedOut();csrfToken=(await api('csrf')).csrfToken;notice(result.message);
+}));
+$('reset-back').addEventListener('click',()=>{resetToken='';$('reset-form').reset();$('reset-form').classList.add('hidden');$('auth-form').classList.remove('hidden');});
 $('logout').addEventListener('click',safeAction(async()=>{accountGeneration++;await api('logout',{});showSignedOut();$('auth-form').reset();notice('Signed out.');csrfToken=(await api('csrf')).csrfToken;}));
 $('order-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);orderKey ||= crypto.randomUUID();const r=await api('orders',{...d,idempotency_key:orderKey,consent_version:consentVersion});orderKey=null;e.target.reset();await refresh();notice(r.message);}));
 $('order-form').addEventListener('input',()=>{orderKey=null;});
@@ -101,12 +108,10 @@ async function init(){
     const hash=location.hash;
     if(hash.startsWith('#verify=')){const token=decodeURIComponent(hash.slice(8));history.replaceState(null,'','#portal');notice((await api('verify',{token})).message);}
     if(hash.startsWith('#reset=')){
-      const token=decodeURIComponent(hash.slice(7));history.replaceState(null,'','#portal');
-      const form=$('auth-form');form.replaceChildren(node('h3','Set a new password'));
-      const label=node('label','New password (at least 12 characters)'),input=document.createElement('input');input.type='password';input.autocomplete='new-password';input.required=true;input.minLength=12;input.maxLength=128;label.append(input);form.append(label);
-      const submit=node('button','Update password');submit.type='submit';submit.className='button';form.append(submit);
-      const copy=form.cloneNode(true);form.replaceWith(copy);
-      copy.addEventListener('submit',safeAction(async()=>{notice((await api('password-reset/confirm',{token,password:copy.querySelector('input').value})).message);location.reload();}));return;
+      const token=decodeURIComponent(hash.slice(7));
+      history.replaceState(null,'','#signin');routeAccount();resetToken=token;
+      $('auth-form').classList.add('hidden');$('reset-form').classList.remove('hidden');
+      return;
     }
     try{await refresh();if(location.hash==='#portal'){history.replaceState(null,'',location.pathname+location.search);} if(!location.hash){window.scrollTo(0,0);}}catch{/* Anonymous visitors see sign-in. */updateAccountNavigation(false);$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');$('signed-in-bar').classList.add('hidden');}
   }catch{ backend=false;$('retry-connection').classList.remove('hidden'); notice('KiwiKind could not connect. The server may be waking up. Retry the connection shortly.',true);$('connection-status').textContent='Customer backend temporarily unavailable';$('auth-submit').disabled=true;$('toggle-auth').disabled=true;$('forgot').disabled=true; }
@@ -144,6 +149,7 @@ function selectAccountForm(signUp){
 }
 function routeAccount(){
   const hash=location.hash;
+  if(resetToken){resetToken='';$('reset-form').reset();$('reset-form').classList.add('hidden');$('auth-form').classList.remove('hidden');}
   if(hash==='#portal' && $('dashboard').classList.contains('hidden')){location.hash='#signin';return;}
   if(!$('dashboard').classList.contains('hidden') && (hash==='#signin'||hash==='#signup')){
     history.replaceState(null,'',location.pathname+location.search);

@@ -118,7 +118,11 @@ public class MainActivity extends Activity {
         googleButton.setMinHeight((int)(52*getResources().getDisplayMetrics().density));
         button(register?"Back to sign in":"Create an account",()->auth(!register)).setEnabled(register||intake);
         button("Open My KiwiKind website",()->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#portal")))).setEnabled(api.configured());
-        button("Reset password",()->run(()->api.call("password-reset",data("email",email.getText().toString())),r->message(r.optString("message")))).setEnabled(api.configured());
+        button("Reset password",()->{
+            String address=email.getText().toString().trim();
+            if(!android.util.Patterns.EMAIL_ADDRESS.matcher(address).matches()){email.setError("Enter a valid email address");email.requestFocus();return;}
+            run(()->api.call("password-reset",data("email",address)),r->message(r.optString("message")+" Open the email link in your browser, then return here to sign in."));
+        }).setEnabled(api.configured());
         button("Privacy notice",()->legal("privacy"));button("Pre-launch terms",()->legal("terms"));
     }
     private void googleSignIn(){
