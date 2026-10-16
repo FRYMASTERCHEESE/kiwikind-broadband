@@ -9,7 +9,7 @@ function boot(hash='',fail=false){
  const listeners={}; const e={textContent:'',disabled:false,classList:{add:x=>classes.add(x),remove:x=>classes.delete(x),contains:x=>classes.has(x),toggle(x,v){v??=!classes.has(x);v?classes.add(x):classes.delete(x);}},addEventListener(name,fn){listeners[name]=fn;},click(){listeners.click?.({preventDefault(){}});},replaceChildren(){},scrollIntoView(){},append(){},elements:{password:{},email:{value:''}}};elements.set(id,e);return e;}
  const state={fail,authenticated:false,expiredDetails:false};
  const ctx={document:{getElementById:el,body:el('body'),head:el('head'),hidden:false,addEventListener(){},querySelector(){return null;},createElement(){return el('new');}},location:{hash,pathname:'/',search:'',origin:'https://example.invalid'},history:{replaceState(){}},window:{addEventListener(){},scrollTo(){}},console,URL,Blob,Date,FormData,
- fetch:async url=>{if(state.fail)throw Error('offline');const path=url.slice(5);const unauthorized=(path==='me'&&!state.authenticated)||(state.expiredDetails&&path==='tickets');return {ok:!unauthorized,status:unauthorized?401:200,json:async()=>unauthorized?{error:'Sign in first'}:path==='status'?{intake_enabled:false}:path==='csrf'?{csrfToken:'token'}:path==='me'?{email:'synthetic@example.invalid'}:{}};}};
+ fetch:async url=>{if(state.fail)throw Error('offline');const path=url.slice(5);if(state.respond)return state.respond(path);const unauthorized=(path==='me'&&!state.authenticated)||(state.expiredDetails&&path==='tickets');return {ok:!unauthorized,status:unauthorized?401:200,json:async()=>unauthorized?{error:'Sign in first'}:path==='status'?{intake_enabled:false}:path==='csrf'?{csrfToken:'token'}:path==='me'?{email:'synthetic@example.invalid'}:{}};}};
  vm.createContext(ctx);vm.runInContext(source,ctx);
  return {ctx,el,state,run:s=>vm.runInContext(s,ctx)};
 }
@@ -39,4 +39,39 @@ test('Google button fits a narrow viewport even when account form starts hidden'
  assert.equal(widths[0],238);
  a.ctx.document.documentElement.clientWidth=640;onResize();assert.equal(widths[1],280);
  a.ctx.document.documentElement.clientWidth=320;onResize();assert.equal(widths[2],236);
+});
+
+function deferred(){let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};}
+function reply(data,status=200){return {ok:status===200,status,json:async()=>data};}
+test('identity response arriving after sign-out cannot reopen dashboard',async()=>{
+ const a=boot();await settle();const pending=deferred();
+ a.state.respond=()=>pending.promise;
+ const refresh=a.run('refresh()');a.run('showSignedOut()');
+ pending.resolve(reply({email:'old@example.invalid'}));await refresh;
+ assert.equal(a.el('dashboard').classList.contains('hidden'),true);
+ assert.equal(a.el('account-email').textContent,'');
+});
+test('older refresh cannot replace a newer signed-in identity',async()=>{
+ const a=boot();await settle();const pending=deferred();let identities=0;
+ a.state.respond=path=>path==='me'?(++identities===1?pending.promise:reply({email:'new@example.invalid'})):reply({});
+ const old=a.run('refresh()');await a.run('refresh()');
+ pending.resolve(reply({email:'old@example.invalid'}));await old;
+ assert.equal(a.el('account-email').textContent,'new@example.invalid');
+ assert.equal(a.el('dashboard').classList.contains('hidden'),false);
+});
+test('stale unauthorized response cannot sign out a newer account',async()=>{
+ const a=boot();await settle();const pending=deferred();
+ a.state.respond=()=>pending.promise;const old=a.run("api('orders')");
+ a.state.respond=path=>reply(path==='me'?{email:'new@example.invalid'}:{});
+ await a.run('refresh()');pending.resolve(reply({error:'Sign in first'},401));
+ await assert.rejects(old);assert.equal(a.el('account-email').textContent,'new@example.invalid');
+ assert.equal(a.el('dashboard').classList.contains('hidden'),false);
+});
+test('detail response arriving after sign-out cannot restore private records',async()=>{
+ const a=boot();await settle();const pending=deferred();
+ a.state.respond=path=>path==='me'?reply({email:'old@example.invalid'}):pending.promise;
+ const refresh=a.run('refresh()');await settle();a.run('showSignedOut()');
+ pending.resolve(reply({orders:[{address:'Private old address',created_at:'2026-10-16'}]}));await refresh;
+ assert.equal(a.el('dashboard').classList.contains('hidden'),true);
+ assert.equal(a.el('account-email').textContent,'');
 });

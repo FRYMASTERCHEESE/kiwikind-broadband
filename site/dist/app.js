@@ -5,20 +5,23 @@ let csrfToken = '', registration = false, backend = false, intake = false;
 let orderKey = null;
 let lastAccountSync = 0;
 let accountSyncInFlight = false;
+let accountGeneration = 0;
 function notice(message, error = false) { $('notice').textContent = message; $('notice').classList.toggle('error', error); }
-async function api(path, data) {
+async function api(path, data, generation = accountGeneration) {
   const response = await fetch('/api/' + path, {method: data === undefined ? 'GET' : 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json', 'X-CSRFToken':csrfToken}, ...(data === undefined ? {} : {body:JSON.stringify(data)})});
   let result; try { result = await response.json(); } catch { throw new Error('The customer backend is unavailable. Nothing has been submitted.'); }
   if (!response.ok) {
-    if (response.status === 401 && path !== 'login' && path !== 'google-login' && !$('dashboard').classList.contains('hidden')) showSignedOut();
+    if (generation === accountGeneration && response.status === 401 && path !== 'login' && path !== 'google-login' && !$('dashboard').classList.contains('hidden')) showSignedOut();
     const error = new Error(result.error || 'The request could not be completed.');
     error.status = response.status;
     throw error;
   }
-  if (result.csrfToken) csrfToken = result.csrfToken;
+  if (generation === accountGeneration && result.csrfToken) csrfToken = result.csrfToken;
   return result;
 }
 function showSignedOut() {
+  accountGeneration++;
+  lastAccountSync = 0;
   updateAccountNavigation(false);
   $('dashboard').classList.add('hidden');
   $('auth-area').classList.remove('hidden');
@@ -36,26 +39,33 @@ function record(parent, title, subtitle) { const el=node('div',''); el.className
 function button(label, action) { const b=node('button',label); b.className='textbutton'; b.type='button'; b.addEventListener('click',safeAction(action)); return b; }
 function date(value) { return new Date(value).toLocaleDateString('en-NZ'); }
 async function refresh() {
-  const me=await api('me');
+  const generation = ++accountGeneration;
+  const me=await api('me', undefined, generation);
+  if (generation !== accountGeneration) return;
   lastAccountSync = Date.now();
   updateAccountNavigation(true); document.body.classList.remove('account-open','signup-view'); if(location.hash==='#signin'||location.hash==='#signup'){history.replaceState(null,'',location.pathname+location.search);} $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email; $('signed-in-email').textContent=me.email; $('signed-in-bar').classList.remove('hidden');
-  const results=await Promise.allSettled([api('orders'),api('tickets'),api('invoices')]);
+  const results=await Promise.allSettled([api('orders', undefined, generation),api('tickets', undefined, generation),api('invoices', undefined, generation)]);
+  if (generation !== accountGeneration) {
+    if (results.some(r=>r.status==='rejected' && r.reason?.status===401)) throw new Error('Please sign in again.');
+    return;
+  }
   // A session can expire between /me and parallel detail requests. Do not repopulate cleared private data.
   if(results.some(r=>r.status==='rejected' && r.reason?.status===401)) { showSignedOut(); throw new Error('Please sign in again.'); }
   const [orders,tickets,invoices]=results.map(r=>r.status==='fulfilled'?r.value:null);
   if(results.some(r=>r.status==='rejected')) notice('You are still signed in, but some account details could not load. Use Refresh account to retry.',true);
   empty('orders',orders?'No requests yet.':'Requests temporarily unavailable.'); if(orders?.orders?.length) $('orders').replaceChildren();
   for(const order of orders?.orders || []) {
-    const el=record($('orders'),order.address, `${order.status} · ${date(order.created_at)} · ${order.id}`);
+    const el=record($('orders'),order.address, `${order.status} Â· ${date(order.created_at)} Â· ${order.id}`);
     if(order.status!=='cancelled') el.append(button('Cancel request',async()=>{await api(`orders/${order.id}/cancel`,{}); await refresh(); notice('Request cancelled.');}));
   }
   empty('tickets',tickets?'No conversations yet.':'Conversations temporarily unavailable.'); if(tickets?.tickets?.length) $('tickets').replaceChildren();
   for(const ticket of tickets?.tickets || []) {
-    const el=record($('tickets'),ticket.subject,`${ticket.category} · ${ticket.status}`);
+    const el=record($('tickets'),ticket.subject,`${ticket.category} Â· ${ticket.status}`);
     el.append(button('Read & reply',async()=>{
-      const data=await api(`tickets/${ticket.id}/messages`);
+      const data=await api(`tickets/${ticket.id}/messages`, undefined, generation);
+      if (generation !== accountGeneration) return;
       const conversation=node('div','');
-      for(const m of data.messages) conversation.append(node('small',`${m.from_support?'Support':'You'} · ${date(m.created_at)}`),node('p',m.body));
+      for(const m of data.messages) conversation.append(node('small',`${m.from_support?'Support':'You'} Â· ${date(m.created_at)}`),node('p',m.body));
       const form=node('form',''), label=node('label','Your reply'), input=document.createElement('textarea'); input.required=true; input.maxLength=4000; label.append(input);form.append(label);
       const submit=node('button','Send reply');submit.className='button';submit.type='submit';form.append(submit);
       form.addEventListener('submit',safeAction(async()=>{await api(`tickets/${ticket.id}/messages`,{body:input.value});await refresh();notice('Reply recorded.');}));
@@ -63,14 +73,14 @@ async function refresh() {
     }));
   }
   empty('invoices',invoices?'No invoices.':'Billing information temporarily unavailable.');
-  for(const i of invoices?.invoices || []) record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.status} · Due ${i.due_date}`);
+  for(const i of invoices?.invoices || []) record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.status} Â· Due ${i.due_date}`);
   $('order-submit').disabled=!intake;
   $('refresh-account')?.classList.remove('hidden');
 }
-$('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account ↗':'Sign in ↗';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
-$('auth-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);if(registration){if(!d.consent)throw new Error('Please accept the pre-launch terms.');const r=await api('register',{...d,consent_version:consentVersion});notice(r.message);location.hash='#signin';}else{await api('login',d);await refresh();notice('You’re signed in.');}}));
+$('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account â†—':'Sign in â†—';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
+$('auth-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);if(registration){if(!d.consent)throw new Error('Please accept the pre-launch terms.');const r=await api('register',{...d,consent_version:consentVersion});notice(r.message);location.hash='#signin';}else{await api('login',d);await refresh();notice('Youâ€™re signed in.');}}));
 $('forgot').addEventListener('click',safeAction(async()=>{if(!backend)throw new Error('Password reset is available when the customer backend is connected.');const email=$('auth-form').elements.email.value;if(!email)throw new Error('Enter your email above first.');notice((await api('password-reset',{email})).message);}));
-$('logout').addEventListener('click',safeAction(async()=>{await api('logout',{});updateAccountNavigation(false);$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');$('signed-in-bar').classList.add('hidden');$('signed-in-email').textContent='';for(const id of ['orders','tickets','invoices'])$(id).replaceChildren();$('auth-form').reset();notice('Signed out.');csrfToken=(await api('csrf')).csrfToken;}));
+$('logout').addEventListener('click',safeAction(async()=>{accountGeneration++;await api('logout',{});showSignedOut();$('auth-form').reset();notice('Signed out.');csrfToken=(await api('csrf')).csrfToken;}));
 $('order-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);orderKey ||= crypto.randomUUID();const r=await api('orders',{...d,idempotency_key:orderKey,consent_version:consentVersion});orderKey=null;e.target.reset();await refresh();notice(r.message);}));
 $('order-form').addEventListener('input',()=>{orderKey=null;});
 $('ticket-form').addEventListener('submit',safeAction(async e=>{const r=await api('tickets',formData(e.target));e.target.reset();await refresh();notice(r.message);}));
@@ -82,7 +92,7 @@ $('export').addEventListener('click',safeAction(async()=>{const data=await api('
 async function init(){
   try{
     const s=await api('status');backend=true;intake=s.intake_enabled;
-    $('connection-status').textContent=intake?'Pre-launch portal connected · no active broadband sales':'Portal connected · customer intake is closed';
+    $('connection-status').textContent=intake?'Pre-launch portal connected Â· no active broadband sales':'Portal connected Â· customer intake is closed';
     if(s.legal_entity && s.business_contact && s.privacy_contact)$('legal-identity').textContent=`Operator: ${s.legal_entity}. Business contact: ${s.business_contact}. Privacy contact: ${s.privacy_contact}. Pre-launch only.`;
     await api('csrf');$('auth-submit').disabled=registration&&!intake;
     $('toggle-auth').disabled=false;$('forgot').disabled=false;
