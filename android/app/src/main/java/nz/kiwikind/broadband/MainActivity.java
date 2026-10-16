@@ -129,7 +129,7 @@ public class MainActivity extends Activity {
             .setFilterByAuthorizedAccounts(false)
             .build();
         GetCredentialRequest request=new GetCredentialRequest.Builder().addCredentialOption(option).build();
-        CredentialManager.create(this).getCredentialAsync(this,request,null,getMainExecutor(),new CredentialManagerCallback<GetCredentialResponse,GetCredentialException>(){
+        CredentialManager.create(this).getCredentialAsync(this,request,null,this::runOnUiThread,new CredentialManagerCallback<GetCredentialResponse,GetCredentialException>(){
             @Override public void onResult(GetCredentialResponse response){
                 if(!(response.getCredential() instanceof CustomCredential)){message("Google did not return a supported account.");return;}
                 CustomCredential credential=(CustomCredential)response.getCredential();
@@ -153,7 +153,7 @@ public class MainActivity extends Activity {
         message("Trying the Google sign-in button instead…");
         GetSignInWithGoogleOption option=new GetSignInWithGoogleOption.Builder(BuildConfig.GOOGLE_WEB_CLIENT_ID).build();
         GetCredentialRequest request=new GetCredentialRequest.Builder().addCredentialOption(option).build();
-        CredentialManager.create(this).getCredentialAsync(this,request,null,getMainExecutor(),new CredentialManagerCallback<GetCredentialResponse,GetCredentialException>(){
+        CredentialManager.create(this).getCredentialAsync(this,request,null,this::runOnUiThread,new CredentialManagerCallback<GetCredentialResponse,GetCredentialException>(){
             @Override public void onResult(GetCredentialResponse response){
                 if(!(response.getCredential() instanceof CustomCredential)){
                     message("Google did not return an account. Your saved session has not been deleted.");return;
