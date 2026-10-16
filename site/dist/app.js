@@ -19,7 +19,8 @@ function record(parent, title, subtitle) { const el=node('div',''); el.className
 function button(label, action) { const b=node('button',label); b.className='textbutton'; b.type='button'; b.addEventListener('click',safeAction(action)); return b; }
 function date(value) { return new Date(value).toLocaleDateString('en-NZ'); }
 async function refresh() {
-  const me=await api('me'); $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email;
+  const me=await api('me');
+  updateAccountNavigation(true); $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email;
   const [orders,tickets,invoices]=await Promise.all([api('orders'),api('tickets'),api('invoices')]);
   empty('orders','No requests yet.'); if(orders.orders.length) $('orders').replaceChildren();
   for(const order of orders.orders) {
@@ -44,9 +45,9 @@ async function refresh() {
   $('order-submit').disabled=!intake;
 }
 $('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account ↗':'Sign in ↗';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
-$('auth-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);if(registration){if(!d.consent)throw new Error('Please accept the pre-launch terms.');const r=await api('register',{...d,consent_version:consentVersion});notice(r.message);}else{await api('login',d);await refresh();notice('You’re signed in.');}}));
+$('auth-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);if(registration){if(!d.consent)throw new Error('Please accept the pre-launch terms.');const r=await api('register',{...d,consent_version:consentVersion});notice(r.message);location.hash='#signin';}else{await api('login',d);await refresh();notice('You’re signed in.');}}));
 $('forgot').addEventListener('click',safeAction(async()=>{if(!backend)throw new Error('Password reset is available when the customer backend is connected.');const email=$('auth-form').elements.email.value;if(!email)throw new Error('Enter your email above first.');notice((await api('password-reset',{email})).message);}));
-$('logout').addEventListener('click',safeAction(async()=>{await api('logout',{});$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');for(const id of ['orders','tickets','invoices'])$(id).replaceChildren();$('auth-form').reset();notice('Signed out.');csrfToken=(await api('csrf')).csrfToken;}));
+$('logout').addEventListener('click',safeAction(async()=>{updateAccountNavigation(false);await api('logout',{});$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');for(const id of ['orders','tickets','invoices'])$(id).replaceChildren();$('auth-form').reset();notice('Signed out.');csrfToken=(await api('csrf')).csrfToken;}));
 $('order-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);orderKey ||= crypto.randomUUID();const r=await api('orders',{...d,idempotency_key:orderKey,consent_version:consentVersion});orderKey=null;e.target.reset();await refresh();notice(r.message);}));
 $('order-form').addEventListener('input',()=>{orderKey=null;});
 $('ticket-form').addEventListener('submit',safeAction(async e=>{const r=await api('tickets',formData(e.target));e.target.reset();await refresh();notice(r.message);}));
@@ -58,6 +59,7 @@ async function init(){
     $('connection-status').textContent=intake?'Pre-launch portal connected · no active broadband sales':'Portal connected · customer intake is closed';
     if(s.legal_entity && s.business_contact && s.privacy_contact)$('legal-identity').textContent=`Operator: ${s.legal_entity}. Business contact: ${s.business_contact}. Privacy contact: ${s.privacy_contact}. Pre-launch only.`;
     await api('csrf');$('auth-submit').disabled=false;
+    setupGoogleSignIn();
     const hash=location.hash;
     if(hash.startsWith('#verify=')){const token=decodeURIComponent(hash.slice(8));history.replaceState(null,'','#portal');notice((await api('verify',{token})).message);}
     if(hash.startsWith('#reset=')){
@@ -68,7 +70,38 @@ async function init(){
       const copy=form.cloneNode(true);form.replaceWith(copy);
       copy.addEventListener('submit',safeAction(async()=>{notice((await api('password-reset/confirm',{token,password:copy.querySelector('input').value})).message);location.reload();}));return;
     }
-    try{await refresh();}catch{/* Anonymous visitors see sign-in. */}
+    try{await refresh();}catch{/* Anonymous visitors see sign-in. */updateAccountNavigation(false);$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');}
   }catch{ $('connection-status').textContent='Design preview · customer backend is not connected';$('auth-submit').disabled=true;$('toggle-auth').disabled=true;$('forgot').disabled=true; }
 }
 init();
+
+function setupGoogleSignIn(){
+  const clientId='956119315558-mgaqlpnfr9r0ic9n4jtb284gaa4n7i61.apps.googleusercontent.com';
+  const script=document.createElement('script');
+  script.src='https://accounts.google.com/gsi/client';script.async=true;
+  script.onload=()=>{
+    if(!window.google?.accounts?.id)return;
+    google.accounts.id.initialize({client_id:clientId,ux_mode:'redirect',login_uri:location.origin+'/api/google-callback'});
+    google.accounts.id.renderButton($('google-signin'),{theme:'filled_black',shape:'pill',size:'large',text:'signin_with',logo_alignment:'left',width:280});
+  };
+  script.onerror=()=>notice('Google sign-in is unavailable. You can still use email sign-in.',true);
+  document.head.append(script);
+}
+
+// Top navigation switches directly to the requested account form.
+function updateAccountNavigation(signedIn){$('nav-signin').classList.toggle('hidden',signedIn);$('nav-signup').classList.toggle('hidden',signedIn);$('nav-account').classList.toggle('hidden',!signedIn);}
+function selectAccountForm(signUp){
+  if(registration!==signUp)$('toggle-auth').click();
+  document.body.classList.toggle('signup-view',signUp);
+  $('back-to-login').classList.toggle('hidden',!signUp);
+}
+function routeAccount(){
+  const hash=location.hash;
+  document.body.classList.toggle('account-open',hash==='#signup'||hash==='#signin');
+  if(hash==='#signup'||hash==='#signin'){
+    selectAccountForm(hash==='#signup');
+    $('auth-area').scrollIntoView({block:'start'});
+  }else if(!registration){document.body.classList.remove('signup-view');$('back-to-login').classList.add('hidden');}
+}
+window.addEventListener('hashchange',routeAccount);
+routeAccount();

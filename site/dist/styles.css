@@ -1,7 +1,63 @@
 :root{--ink:#123f32;--paper:#f4f2e9;--green:#dce9b5;--orange:#e98c54;--line:#d2d7c8}*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:35px}body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,Helvetica,sans-serif;line-height:1.6}a{color:inherit}button,input,textarea,select{font:inherit}button,a,summary{touch-action:manipulation}button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #b45c26;outline-offset:5px}.skip{position:absolute;top:-100px}.skip:focus{top:0;background:white;z-index:3}header{max-width:1440px;margin:auto;padding:30px 6%;display:flex;justify-content:space-between;align-items:center}.brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:25px;line-height:1.05;text-decoration:none;letter-spacing:-1px}.brand small{display:block;font-size:9px;letter-spacing:3.2px;margin-top:8px}.brandmark{width:48px;height:48px;border-radius:50%;background:var(--ink);color:var(--paper);font-size:43px;line-height:45px;text-align:center;font-family:Georgia,serif;font-weight:400}nav{display:flex;gap:32px;align-items:center;font-size:13px}nav a{text-decoration:none}.navbutton{border:1px solid var(--ink);padding:10px 21px;border-radius:25px}.hero{max-width:1440px;margin:20px auto 48px;padding:0 6%;display:grid;grid-template-columns:1.05fr 1fr;gap:5%;align-items:center}.eyebrow{font-size:10px;font-weight:700;letter-spacing:2px}.dot{display:inline-block;width:7px;height:7px;background:var(--orange);border-radius:50%;margin-right:7px}h1{font-size:clamp(56px,6.8vw,104px);font-weight:500;line-height:.99;letter-spacing:-6px;margin:35px 0 28px}h1 .orange{color:var(--orange);font-family:Georgia,serif;vertical-align:top;font-size:.75em}.intro{font-size:16px;line-height:1.7;margin-bottom:30px}.button{background:var(--ink);color:var(--paper);border:0;display:inline-flex;align-items:center;justify-content:space-between;gap:40px;border-radius:30px;padding:14px 24px;font-size:13px;text-decoration:none}.note{font-size:10px;margin:18px 0}.hero-art{position:relative;min-height:510px;border-radius:220px 220px 16px 16px;background:var(--green);overflow:hidden}.sun{position:absolute;top:65px;left:50%;width:102px;height:102px;border-radius:50%;background:var(--orange);transform:translateX(-50%)}.ring{position:absolute;left:50%;top:52%;border:1px solid #54785970;border-radius:50%;transform:translate(-50%,-50%)}.r1{width:170px;height:170px}.r2{width:280px;height:280px}.r3{width:390px;height:390px}.hill{position:absolute;border-radius:50% 50% 0 0;bottom:-170px;width:145%;height:430px}.h1{background:#60815e;left:-60%;transform:rotate(25deg)}.h2{background:#214e3b;right:-62%;bottom:-210px;transform:rotate(-30deg)}.art-caption{position:absolute;bottom:36px;left:32px;color:#fff}.art-caption span{display:block;font-size:9px;letter-spacing:2px}.art-caption strong{font-family:Georgia,serif;font-weight:400;font-size:30px}.art-star{position:absolute;right:30px;bottom:26px;font-size:55px;color:var(--green)}.launch-strip{padding:23px 6%;background:#e4e8da;display:flex;gap:30px;align-items:center;font-size:12px}.launch-strip strong{font-size:14px;white-space:nowrap}.launch-strip p{margin:0;max-width:650px}.pill{font-size:9px;letter-spacing:1.4px;border:1px solid #849b80;border-radius:18px;padding:5px 10px;white-space:nowrap}.section{max-width:1440px;margin:auto;padding:90px 6%;border-bottom:1px solid var(--line)}h2{font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:45px;line-height:1.08;letter-spacing:-1.8px;margin:18px 0 25px}h3{font-size:20px;font-weight:500;line-height:1.3}.section-heading{display:flex;justify-content:space-between;gap:30px}.section-heading h2{width:50%;margin-top:0}.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:42px;margin-top:35px}.steps article{border-top:1px solid #8eaa88;padding-top:20px}.steps span{font-size:10px;letter-spacing:1.3px}.steps p{font-size:14px;color:#426353}.portal{background:#e8ecdf}.portal-heading{display:flex;align-items:center;justify-content:space-between;gap:30px}.status{font-size:12px;max-width:360px;border-left:2px solid var(--orange);padding-left:15px}.notice:empty{display:none}.notice{border:1px solid #81987c;background:#f4f2e9;padding:15px;margin:15px 0;font-size:14px}.notice.error{border-color:#ac4a27;color:#84351b}#auth-area{display:grid;grid-template-columns:1fr 1fr;gap:80px;margin-top:30px}.auth-intro{max-width:330px;font-size:15px;padding-top:20px}.form-card{background:var(--paper);border:1px solid #d4d9ca;padding:30px;border-radius:10px}.form-card h3{margin-top:0}label{font-size:12px;display:block;margin:17px 0}input:not([type=checkbox]),textarea,select{display:block;width:100%;margin-top:7px;border:1px solid #a2b19a;background:#fafbf5;padding:11px 12px;border-radius:5px;color:var(--ink);font-size:15px}input:focus,textarea:focus,select:focus{outline:2px solid #558766;outline-offset:2px}textarea{min-height:110px;resize:vertical}.check{display:flex;align-items:flex-start;gap:8px}.check input{margin-top:5px}.check a{display:contents}.form-links{display:flex;justify-content:space-between;margin-top:18px}.textbutton{border:0;background:transparent;text-decoration:underline;color:var(--ink);font-size:12px;padding:3px}.dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.account-line{display:flex;justify-content:space-between;align-items:center}.record{border-top:1px solid var(--line);padding:16px 0;font-size:13px;overflow-wrap:anywhere}.record p{white-space:pre-wrap}.record small{display:block;color:#52735a}.faq{display:grid;grid-template-columns:1fr 1.1fr;gap:70px}details{border-bottom:1px solid #bbc7b3;padding:18px 0}summary{cursor:pointer;font-size:15px;font-weight:500}details p{font-size:14px}.legal{padding-top:60px;padding-bottom:60px}.legal h2{font-size:35px}.legal p{max-width:850px;font-size:14px}.hidden{display:none!important}footer{padding:50px 6%;background:var(--ink);color:var(--paper);display:grid;grid-template-columns:1fr 1fr;gap:35px}footer .brandmark{background:var(--green);color:var(--ink)}footer p{font-family:Georgia,serif;font-size:25px;margin:0}footer div{display:flex;gap:30px;font-size:12px}footer>small{font-size:10px;opacity:.75}@media(min-width:1600px){.launch-strip{justify-content:center}}@media(max-width:800px){header{padding:24px 6%}nav{gap:12px}nav>a:not(.navbutton){display:none}.brand{font-size:20px}.hero{grid-template-columns:1fr;gap:30px}.hero-art{min-height:380px;max-width:500px;width:100%;justify-self:center}h1{letter-spacing:-3px;font-size:70px}.hero-copy{padding:15px 0}.launch-strip{flex-wrap:wrap;gap:12px}.launch-strip p{order:3}.section{padding:55px 6%}.section-heading,.portal-heading{display:block}.section-heading h2{width:100%}.steps{grid-template-columns:1fr;gap:25px}.steps article{padding-top:12px}#auth-area,.dashboard-grid,.faq{grid-template-columns:1fr;gap:25px}h2{font-size:39px}.form-card{padding:23px}footer{grid-template-columns:1fr;gap:22px}}
 
-/* Small-screen account status and navigation improvements */
-html,body{max-width:100%;overflow-x:hidden}
+/* Match the requested compact black Google sign-in button. The official Google
+   Identity Services control remains the clickable surface. */
+.google-button-shell{position:relative;width:280px;max-width:100%;height:48px;margin:18px 0 10px;border-radius:28px;background:#191919;overflow:hidden;isolation:isolate}
+.google-button-face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:19px;color:#fff;font:600 15px/1.2 Arial,Helvetica,sans-serif;pointer-events:none;z-index:2}
+.google-g{display:inline-block;font:bold 26px/1 Arial,sans-serif;background:conic-gradient(#4285f4 0 25%,#34a853 25% 50%,#fbbc05 50% 72%,#ea4335 72% 100%);background-clip:text;-webkit-background-clip:text;color:transparent}
+#google-signin{position:absolute;inset:0;width:280px;max-width:100%;height:48px;z-index:3;opacity:.01;overflow:hidden}
+#google-signin>div,#google-signin iframe{width:280px!important;max-width:100%!important;height:48px!important;max-height:48px!important;display:block!important;border:0!important}
+.google-button-shell:focus-within{outline:3px solid #b45c26;outline-offset:3px}
+
+/* Match the email/password sign-in button to the Google button. */
+#auth-submit{background:#191919;color:#fff;border:1px solid #191919;border-radius:999px;min-height:48px;padding:10px 26px;font-weight:600}
+#auth-submit:hover:not(:disabled),#auth-submit:focus-visible{background:#303030;color:#fff;border-color:#303030}
+#auth-submit:disabled{background:#191919;color:#fff;opacity:.55;cursor:not-allowed}
+
+/* Clear signed-in account identity, distinct from login buttons. */
+.account-line{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:20px 0}
+#account-email{display:inline-flex;align-items:center;max-width:100%;overflow-wrap:anywhere;margin:0;padding:12px 18px;border-radius:999px;background:#191919;color:#fff;font-weight:600;line-height:1.4}
+#account-email::before{content:'✓ Signed in  ·  ';white-space:pre;color:#bce7c5;font-weight:700}
+.account-line #logout{padding:10px 14px}
+
+/* Mobile viewport: prevent desktop-sized headings and horizontal scrolling. */
+html,body{max-width:100%;overflow-x:clip}
+.hero,.hero-copy,.section,.portal,.form-card,.dashboard-grid,.account-line{min-width:0}
+h1,h2,h3,.eyebrow,.intro,.status,.account-line{overflow-wrap:anywhere}
+@media(max-width:600px){
+ header{gap:10px;padding:16px 5%}.brand{min-width:0;font-size:clamp(16px,4.5vw,20px)}.brand small{letter-spacing:2px}.brandmark{flex:none;width:40px;height:40px;font-size:35px;line-height:39px}
+ nav{flex:none}.navbutton{padding:9px 12px;font-size:12px;white-space:nowrap}
+ .hero{padding:0 5%;margin:10px auto 28px;gap:18px}.hero-copy{padding:10px 0}
+ h1{font-size:clamp(39px,11.2vw,62px);letter-spacing:-.045em;line-height:1.06;margin:20px 0 18px}
+ h2{font-size:clamp(30px,8.5vw,39px);letter-spacing:-.035em}
+ .eyebrow{font-size:9px;letter-spacing:1.1px;line-height:1.6}
+ .intro{font-size:15px;line-height:1.65}.intro br{display:none}
+ .hero-art{min-height:290px}.button{max-width:100%;gap:18px}
+ .section{padding:40px 5%}.form-card{padding:18px}.account-line{flex-wrap:wrap;gap:12px}
+ .form-links{flex-wrap:wrap;gap:10px}.dashboard-grid>*{min-width:0}
+ footer{padding:35px 5%}
+}
+
+/* Account controls sit directly below the site header on mobile and desktop. */
+.top-account{max-width:720px;margin:0 auto 28px;padding:0 5%;scroll-margin-top:12px}
+.top-account:has(#auth-area.hidden){display:none}
+.top-account .auth-intro{margin-bottom:16px}
+.top-account .form-card{width:100%;max-width:100%}
+@media(max-width:600px){.top-account{padding:0 16px;margin-bottom:20px}.top-account .form-card{padding:22px 18px}}
+
+/* Dedicated account-creation screen reached from the top Sign up link. */
+.signup-view .hero,.signup-view .launch-strip,.signup-view #journey,.signup-view #portal,.signup-view #questions,.signup-view #privacy,.signup-view #terms,.signup-view footer{display:none}
+.signup-view .top-account{max-width:600px;margin:24px auto 50px}
+.signup-view .top-account .auth-intro{display:none}
+#back-to-login:not(.hidden){display:inline-block;margin:12px 0 18px}
+.signup-view #auth-title{margin-top:8px}
+
+/* Keep account form closed on the landing page; open only via header links. */
+.top-account{display:none}
+body.account-open .top-account{display:block}
+body.account-open .hero,body.account-open .launch-strip,body.account-open #journey,body.account-open #portal,body.account-open #questions,body.account-open #privacy,body.account-open #terms,body.account-open footer{display:none}
+
+/* Reconciled signed-in account visibility from Render branch. */
 #account-email{background:#191919;color:#fff;border-radius:24px;padding:12px 18px;font-weight:700;overflow-wrap:anywhere}
 #account-email:before{content:'✓ Signed in · ';color:#b8edc3}
-@media(max-width:600px){.account-line{flex-direction:column;align-items:stretch;gap:8px}.account-line #logout{align-self:flex-start}.hero h1{font-size:clamp(42px,12vw,65px);letter-spacing:-2px}.intro br{display:none}header{gap:10px}.navbutton{padding:9px 12px}.form-card{min-width:0}}
+@media(max-width:600px){.account-line{flex-direction:column;align-items:stretch;gap:8px}.account-line #logout{align-self:flex-start}}

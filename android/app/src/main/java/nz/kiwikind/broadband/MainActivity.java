@@ -1,6 +1,14 @@
 package nz.kiwikind.broadband;
 
 import android.app.Activity;
+import androidx.credentials.CredentialManager;
+import androidx.credentials.GetCredentialRequest;
+import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.CustomCredential;
+import androidx.credentials.exceptions.GetCredentialException;
+import androidx.credentials.CredentialManagerCallback;
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.content.Intent;
@@ -54,13 +62,40 @@ public class MainActivity extends Activity {
             String e=email.getText().toString(),p=password.getText().toString();password.setText("");
             run(()->api.call(register?"register":"login",data("email",e,"password",p,"consent_version",CONSENT)),r->{if(register){message(r.optString("message"));}else{signedIn=true;home();}});
         }).setEnabled(api.configured()&&(!register||intake));
+        Button googleButton=button("Sign in with Google",this::googleSignIn);
+        googleButton.setEnabled(api.configured());
+        googleButton.setTextColor(Color.WHITE);
+        googleButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(25,25,25)));
+        googleButton.setAllCaps(false);
+        googleButton.setMinHeight((int)(52*getResources().getDisplayMetrics().density));
         button(register?"Back to sign in":"Create an account",()->auth(!register));
+        button("Open My KiwiKind website",()->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#portal")))).setEnabled(api.configured());
         button("Reset password",()->run(()->api.call("password-reset",data("email",email.getText().toString())),r->message(r.optString("message")))).setEnabled(api.configured());
         button("Privacy notice",()->legal("privacy"));button("Pre-launch terms",()->legal("terms"));
+    }
+    private void googleSignIn(){
+        GetGoogleIdOption option=new GetGoogleIdOption.Builder()
+            .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
+            .setFilterByAuthorizedAccounts(false)
+            .build();
+        GetCredentialRequest request=new GetCredentialRequest.Builder().addCredentialOption(option).build();
+        CredentialManager.create(this).getCredentialAsync(this,request,null,getMainExecutor(),new CredentialManagerCallback<GetCredentialResponse,GetCredentialException>(){
+            @Override public void onResult(GetCredentialResponse response){
+                if(!(response.getCredential() instanceof CustomCredential)){message("Google did not return a supported account.");return;}
+                CustomCredential credential=(CustomCredential)response.getCredential();
+                if(!GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(credential.getType())){message("Google did not return an ID token.");return;}
+                try{
+                    String token=GoogleIdTokenCredential.createFrom(credential.getData()).getIdToken();
+                    run(()->api.call("google-login",data("id_token",token)),r->{signedIn=true;home();message("Signed in with Google.");});
+                }catch(Exception e){message("Could not verify the Google account. Try again.");}
+            }
+            @Override public void onError(GetCredentialException e){message("Google sign-in was cancelled or unavailable. Please try again.");}
+        });
     }
     private void nav(){button("Back to account",this::home);}
     private void home(){
         content.removeAllViews();title("My KiwiKind");paragraph("No active broadband service. Your website and app use the same customer backend.");
+        button("Refresh account from website",()->run(()->api.call("me",null),r->{signedIn=true;home();message("Account refreshed from KiwiKind server.");}));
         button("My broadband requests",this::orders);button("Support & complaints",this::tickets);button("Billing",()->run(()->api.call("invoices",null),r->{content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());nav();}));
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
         button("Request account deletion",()->{content.removeAllViews();title("Request deletion");paragraph("We will review lawful retention needs. This is not instant deletion. Request corrections using a privacy support ticket.");EditText p=field("Current password",129);button("Submit deletion request",()->{String password=p.getText().toString();p.setText("");run(()->api.call("privacy/deletion",data("password",password)),r->message(r.optString("message")));});nav();});
