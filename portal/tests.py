@@ -121,7 +121,7 @@ class PlatformTests(TestCase):
 
 
 class GoogleAuthenticationTests(TestCase):
-    def post_google(self, token='synthetic-token'):
+    def post_google(self, token='synthetic-google-id-token-for-tests'):
         return self.client.post('/api/google-login', json.dumps({'id_token': token}), content_type='application/json')
 
     @override_settings(INTAKE_ENABLED=False)
