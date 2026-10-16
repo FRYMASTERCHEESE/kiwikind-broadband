@@ -1,0 +1,17 @@
+name: Five focused prelaunch gates
+on:
+  push:
+    branches: [audit/prelaunch-email-restore-20261017]
+    paths:
+      - scripts/prelaunch_six_gates.py
+      - .github/workflows/prelaunch-five-gates.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  focused-prelaunch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check five outstanding security gates without re-running passed suites
+        run: python3 scripts/prelaunch_six_gates.py
