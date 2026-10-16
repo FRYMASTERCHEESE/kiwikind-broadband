@@ -149,3 +149,25 @@ class GoogleAuthenticationTests(TestCase):
                 self.assertEqual(self.post_google().status_code, 409)
         self.assertEqual(User.objects.count(), 1)
         self.assertEqual(self.client.get('/api/me').status_code, 401)
+
+    @override_settings(INTAKE_ENABLED=True)
+    def test_verified_google_account_can_sign_in_again_without_duplicate(self):
+        from unittest.mock import patch
+        from .models import GoogleIdentity
+        claims={'iss':'https://accounts.google.com','email_verified':True,'email':'new-google@example.invalid','sub':'stable-google-subject'}
+        with patch.dict('os.environ', {'GOOGLE_WEB_CLIENT_ID':'test-client'}):
+            with patch('google.oauth2.id_token.verify_oauth2_token', return_value=claims):
+                self.assertEqual(self.post_google().status_code, 200)
+                self.assertEqual(self.client.get('/api/me').status_code, 200)
+                self.assertEqual(self.post_google().status_code, 200)
+        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(GoogleIdentity.objects.count(), 1)
+
+    @override_settings(INTAKE_ENABLED=True)
+    def test_unverified_google_email_rejected(self):
+        from unittest.mock import patch
+        claims={'iss':'https://accounts.google.com','email_verified':False,'email':'bad@example.invalid','sub':'unverified-google-subject'}
+        with patch.dict('os.environ', {'GOOGLE_WEB_CLIENT_ID':'test-client'}):
+            with patch('google.oauth2.id_token.verify_oauth2_token', return_value=claims):
+                self.assertEqual(self.post_google().status_code, 401)
+        self.assertEqual(User.objects.count(), 0)
