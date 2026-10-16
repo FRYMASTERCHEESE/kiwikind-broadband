@@ -8,3 +8,8 @@
 #google-signin{position:absolute;inset:0;width:280px;max-width:100%;height:48px;z-index:3;opacity:.01;overflow:hidden}
 #google-signin>div,#google-signin iframe{width:280px!important;max-width:100%!important;height:48px!important;max-height:48px!important;display:block!important;border:0!important}
 .google-button-shell:focus-within{outline:3px solid #b45c26;outline-offset:3px}
+
+/* Match the email/password sign-in button to the Google button. */
+#auth-submit{background:#191919;color:#fff;border:1px solid #191919;border-radius:999px;min-height:48px;padding:10px 26px;font-weight:600}
+#auth-submit:hover:not(:disabled),#auth-submit:focus-visible{background:#303030;color:#fff;border-color:#303030}
+#auth-submit:disabled{background:#191919;color:#fff;opacity:.55;cursor:not-allowed}
