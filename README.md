@@ -46,4 +46,6 @@ The private GitHub repo, Sites project, database path and Android package are se
 
 ## Deploy
 
+Password-reset and verification email now use the backend-only Brevo HTTPS API. Complete the [Free email setup](docs/HTTPS_EMAIL_SETUP.md) before expecting delivery; Gmail SMTP is blocked on Render Free. Website and Android keep the same shared reset endpoint.
+
 See [deployment](docs/DEPLOYMENT.md), [Google Play](docs/GOOGLE_PLAY.md), [launch gates](docs/LAUNCH_GATES.md), [costs](docs/COSTS.md) and [verification report](docs/BUILD_REPORT.md). This is a tested foundation with explicit launch blockers, not production ISP software certification.

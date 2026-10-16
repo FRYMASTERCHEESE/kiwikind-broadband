@@ -21,14 +21,15 @@ def main():
          has("config/settings.py", "INTAKE_ENABLED = os.getenv('INTAKE_ENABLED') == '1'")),
         ("5. Admin access requires MFA perimeter",
          has("config/settings.py", "ADMIN_MFA_PERIMETER_CONFIRMED")),
-        ("6. SMTP settings available for a real delivery test",
-         bool(os.getenv("EMAIL_HOST") and os.getenv("DEFAULT_FROM_EMAIL")
-              and os.getenv("EMAIL_HOST_USER") and os.getenv("EMAIL_HOST_PASSWORD"))),
+        ("6. HTTPS email key configured (not proof of sender approval or delivery)",
+         bool(os.getenv("BREVO_API_KEY")
+              and os.getenv("EMAIL_BACKEND", "portal.email_backend.BrevoEmailBackend")
+                  == "portal.email_backend.BrevoEmailBackend")),
     ]
     for label, ok in gates:
         print(("PASS" if ok else "PENDING") + "  " + label)
     print("No network calls, email delivery, account changes or previously passing tests executed.")
-    # SMTP being pending is expected in offline CI; exit nonzero only for source regressions.
+    # Email setup being pending is expected offline; fail only for source regressions.
     return 0 if all(ok for _, ok in gates[:5]) else 1
 
 if __name__ == "__main__":
