@@ -61,3 +61,10 @@ body.account-open .hero,body.account-open .launch-strip,body.account-open #journ
 #account-email{background:#191919;color:#fff;border-radius:24px;padding:12px 18px;font-weight:700;overflow-wrap:anywhere}
 #account-email:before{content:'✓ Signed in · ';color:#b8edc3}
 @media(max-width:600px){.account-line{flex-direction:column;align-items:stretch;gap:8px}.account-line #logout{align-self:flex-start}}
+
+/* Compact account identity at the top of the site. */
+.signed-in-bar{max-width:1440px;margin:0 auto;padding:9px 6%;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;background:#e8ecdf;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.signed-in-label{color:#20583d;font-weight:700;white-space:nowrap}
+.signed-in-email{min-width:0;overflow-wrap:anywhere;font-weight:600;flex:1 1 160px}
+.signed-in-logout{background:transparent;border:1px solid #81987c;border-radius:20px;color:var(--ink);padding:5px 12px;font-size:12px;white-space:nowrap}
+.signed-in-logout:hover{background:#dce9b5}
