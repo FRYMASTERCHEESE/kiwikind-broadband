@@ -28,3 +28,15 @@ test('detail request expiry cannot repopulate private dashboard after successful
  assert.equal(a.el('account-email').textContent,'');
  assert.equal(a.ctx.location.hash,'#signin');
 });
+
+test('Google button fits a narrow viewport even when account form starts hidden',async()=>{
+ const a=boot();await settle();const widths=[];let onResize;
+ a.ctx.document.documentElement={clientWidth:322};
+ a.ctx.window.addEventListener=(event,callback)=>{if(event==='resize')onResize=callback;};
+ const google={accounts:{id:{initialize(){},renderButton(host,options){widths.push(options.width);}}}};
+ a.ctx.google=google;a.ctx.window.google=google;
+ a.el('new').onload();
+ assert.equal(widths[0],238);
+ a.ctx.document.documentElement.clientWidth=640;onResize();assert.equal(widths[1],280);
+ a.ctx.document.documentElement.clientWidth=320;onResize();assert.equal(widths[2],236);
+});
