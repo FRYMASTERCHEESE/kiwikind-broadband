@@ -3,6 +3,7 @@ const $ = id => document.getElementById(id);
 const consentVersion = 'prelaunch-2026-10-16';
 let csrfToken = '', registration = false, backend = false, intake = false;
 let orderKey = null;
+let googleLinkRequested = false;
 function notice(message, error = false) { $('notice').textContent = message; $('notice').classList.toggle('error', error); }
 async function api(path, data) {
   const response = await fetch('/api/' + path, {method: data === undefined ? 'GET' : 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json', 'X-CSRFToken':csrfToken}, ...(data === undefined ? {} : {body:JSON.stringify(data)})});
@@ -42,6 +43,7 @@ async function refresh() {
   empty('invoices','No invoices.');
   for(const i of invoices.invoices) record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.status} · Due ${i.due_date}`);
   $('order-submit').disabled=!intake;
+  const linkButton=$('google-link');if(linkButton)linkButton.classList.remove('hidden');
 }
 $('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account ↗':'Sign in ↗';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
 $('auth-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);if(registration){if(!d.consent)throw new Error('Please accept the pre-launch terms.');const r=await api('register',{...d,consent_version:consentVersion});notice(r.message);}else{await api('login',d);await refresh();notice('You’re signed in.');}}));
@@ -81,11 +83,12 @@ function setupGoogleSignIn(){
   script.onload=()=>{
     if(!window.google?.accounts?.id)return;
     google.accounts.id.initialize({client_id:clientId,callback:async credential=>{
-      try{await api('google-login',{id_token:credential.credential});await refresh();notice('Signed in with Google.');}
+      try{const linking=googleLinkRequested;googleLinkRequested=false;await api(linking?'google-link':'google-login',{id_token:credential.credential});await refresh();notice(linking?'Google account linked successfully.':'Signed in with Google.');}
       catch(error){notice(error.message,true);}
     }});
     google.accounts.id.renderButton($('google-signin'),{theme:'outline',size:'large',text:'continue_with',width:280});
   };
   script.onerror=()=>notice('Google sign-in is unavailable. You can still use email sign-in.',true);
   document.head.append(script);
+  const link=$('google-link');if(link)link.addEventListener('click',()=>{if(!window.google?.accounts?.id){notice('Google is still loading. Try again.',true);return;}googleLinkRequested=true;google.accounts.id.prompt();notice('Choose your Google account to link.');});
 }
