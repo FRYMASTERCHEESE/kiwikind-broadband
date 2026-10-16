@@ -29,8 +29,8 @@ public class MainActivity extends Activity {
         super.onCreate(state);getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE);
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.rgb(244,242,233));
         root.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(22,insets.getSystemWindowInsetTop()+12,22,insets.getSystemWindowInsetBottom()+12);return insets;});
-        TextView brand=new TextView(this);brand.setText("KiwiKind Broadband");brand.setTextSize(25);brand.setTextColor(Color.rgb(18,63,50));root.addView(brand);
-        TextView label=new TextView(this);label.setText("PRE-LAUNCH · No live service or payments");root.addView(label);
+        TextView brand=new TextView(this);brand.setText(R.string.app_name);brand.setTextSize(25);brand.setTextColor(Color.rgb(18,63,50));root.addView(brand);
+        TextView label=new TextView(this);label.setText(R.string.prelaunch);root.addView(label);
         feedback=new TextView(this);feedback.setTextSize(14);feedback.setPadding(0,16,0,16);feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
         ScrollView scroll=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
@@ -48,7 +48,7 @@ public class MainActivity extends Activity {
         content.removeAllViews();title(register?"Create your account":"A kinder connection.");paragraph("A request is not a broadband contract. Verify your email on the website before signing in here.");
         EditText email=field("Email",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         EditText password=field("Password (at least 12 characters)",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        CheckBox consent=new CheckBox(this);consent.setText("I accept the pre-launch terms and have read the privacy notice.");if(register)content.addView(consent);
+        CheckBox consent=new CheckBox(this);consent.setText(R.string.account_consent);if(register)content.addView(consent);
         button(register?"Create account":"Sign in",()->{
             if(register&&!consent.isChecked()){message("Please read and accept the pre-launch terms.");return;}
             String e=email.getText().toString(),p=password.getText().toString();password.setText("");
@@ -76,7 +76,7 @@ public class MainActivity extends Activity {
     private void newOrder(){
         content.removeAllViews();title("Request a connection");paragraph("No supplier order, price, installation date or payment is authorised. Do not cancel your current broadband.");
         EditText name=field("Contact name",1),address=field("Full NZ service address",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS),postcode=field("Four-digit postcode",2),phone=field("Phone (optional)",3);
-        CheckBox c=new CheckBox(this);c.setText("I accept the pre-launch request terms. Availability, pricing and installation are unconfirmed.");content.addView(c);
+        CheckBox c=new CheckBox(this);c.setText(R.string.request_consent);content.addView(c);
         orderKey=UUID.randomUUID().toString();
         button("Send request",()->{if(!c.isChecked()){message("Please accept the request terms.");return;}JSONObject d=data("contact_name",name.getText().toString(),"address",address.getText().toString(),"postcode",postcode.getText().toString(),"phone",phone.getText().toString(),"consent_version",CONSENT,"idempotency_key",orderKey);run(()->api.call("orders",d),r->{orderKey=null;orders();});});button("Read request terms",()->legal("terms"));nav();
     }
