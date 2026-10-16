@@ -34,7 +34,7 @@ public class MainActivity extends Activity {
         feedback=new TextView(this);feedback.setTextSize(14);feedback.setPadding(0,16,0,16);feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
         ScrollView scroll=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
-        else run(()->api.call("status",null),s->{intake=s.optBoolean("intake_enabled");run(()->api.call("me",null),account->{signedIn=true;home();message("Account restored from KiwiKind server.");});});
+        else run(()->api.call("status",null),s->{intake=s.optBoolean("intake_enabled");message(intake?"Pre-launch requests only. No charges.":"Customer intake is closed.");auth(false);});
     }
     private void message(String text){feedback.setText(text);}
     private void title(String text){TextView t=new TextView(this);t.setText(text);t.setTextSize(23);t.setPadding(0,22,0,14);content.addView(t);}
