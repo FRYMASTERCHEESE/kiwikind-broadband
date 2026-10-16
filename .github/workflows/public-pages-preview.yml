@@ -1,0 +1,22 @@
+name: Prepare public Pages files
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package only explicitly approved public files
+        run: |
+          test -s public-site/index.html
+          mkdir -p public-export
+          cp public-site/index.html public-export/index.html
+          printf '' > public-export/.nojekyll
+          if grep -Ei 'BREVO_API_KEY|SECRET_KEY|DATABASE_URL|EMAIL_HOST_PASSWORD' public-export/index.html; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kiwikind-public-pages-safe-preview
+          path: public-export/
+          retention-days: 7
