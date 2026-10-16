@@ -13,3 +13,9 @@
 #auth-submit{background:#191919;color:#fff;border:1px solid #191919;border-radius:999px;min-height:48px;padding:10px 26px;font-weight:600}
 #auth-submit:hover:not(:disabled),#auth-submit:focus-visible{background:#303030;color:#fff;border-color:#303030}
 #auth-submit:disabled{background:#191919;color:#fff;opacity:.55;cursor:not-allowed}
+
+/* Clear signed-in account identity, distinct from login buttons. */
+.account-line{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:20px 0}
+#account-email{display:inline-flex;align-items:center;max-width:100%;overflow-wrap:anywhere;margin:0;padding:12px 18px;border-radius:999px;background:#191919;color:#fff;font-weight:600;line-height:1.4}
+#account-email::before{content:'✓ Signed in  ·  ';white-space:pre;color:#bce7c5;font-weight:700}
+.account-line #logout{padding:10px 14px}
