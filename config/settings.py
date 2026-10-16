@@ -87,6 +87,9 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = True
 EMAIL_TIMEOUT = 10
+# Optional operator switch for a known transport outage (e.g. SMTP on Render Free).
+# Runtime connection failures also return the same safe error before account lookup.
+RESET_EMAIL_UNAVAILABLE = os.getenv('RESET_EMAIL_UNAVAILABLE') == '1'
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '')
 PUBLIC_ORIGIN = os.getenv('PUBLIC_ORIGIN', 'http://127.0.0.1:8000').rstrip('/')
 LEGAL_ENTITY = os.getenv('LEGAL_ENTITY', '')

@@ -1,14 +1,16 @@
 import json
 import re
 import uuid
+import logging
+from smtplib import SMTPException
 from functools import wraps
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core import signing
-from django.core.exceptions import ValidationError
-from django.core.mail import send_mail
+from django.core.exceptions import ValidationError, ImproperlyConfigured
+from django.core.mail import send_mail, get_connection
 from django.core.validators import validate_email
 from django.db import transaction, IntegrityError
 from django.http import JsonResponse, FileResponse, HttpResponseRedirect
@@ -109,12 +111,31 @@ def signout(request): audit(request,'logout'); logout(request); return JsonRespo
 @endpoint(['POST'],throttle='reset')
 def reset_start(request):
     email=text(request.data,'email',254).lower(); validate_email(email)
-    user=User.objects.filter(username=email,is_active=True).first()
-    if user:
-        token=default_token_generator.make_token(user)
-        payload=signing.dumps({'id':user.pk,'token':token},salt='reset')
-        send_mail('Reset your KiwiKind password',f'{settings.PUBLIC_ORIGIN}/#reset={payload}',settings.DEFAULT_FROM_EMAIL,[email])
-    return JsonResponse({'message':'If the account exists, a reset email has been sent.'},status=202)
+    unavailable = {'error':'Password reset email is temporarily unavailable. Try again later or use Google sign-in if already linked to your account.'}
+    # Check transport before account lookup: outages must not identify registered addresses.
+    if settings.RESET_EMAIL_UNAVAILABLE:
+        return JsonResponse(unavailable, status=503)
+    try:
+        connection = get_connection()
+        connection.open()
+    except (OSError, SMTPException, ImproperlyConfigured):
+        logging.getLogger(__name__).warning('Password reset mail transport unavailable')
+        return JsonResponse(unavailable, status=503)
+    try:
+        user=User.objects.filter(username=email,is_active=True).first()
+        if user:
+            token=default_token_generator.make_token(user)
+            payload=signing.dumps({'id':user.pk,'token':token},salt='reset')
+            try:
+                sent=send_mail('Reset your KiwiKind password',f'{settings.PUBLIC_ORIGIN}/#reset={payload}',settings.DEFAULT_FROM_EMAIL,[email],connection=connection)
+                if sent != 1: logging.getLogger(__name__).warning('Password reset email not accepted')
+            except (OSError, SMTPException, ImproperlyConfigured):
+                # Recipient-specific failures cannot produce a different public response.
+                logging.getLogger(__name__).warning('Password reset email not accepted')
+    finally:
+        try: connection.close()
+        except (OSError, SMTPException): pass
+    return JsonResponse({'message':'If the account is eligible, a reset email has been requested. Check your inbox and spam. If it does not arrive, try again later or use your linked Google sign-in.'},status=202)
 
 @endpoint(['POST'],throttle='reset-confirm')
 def reset_confirm(request):
