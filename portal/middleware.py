@@ -11,7 +11,10 @@ class SafetyMiddleware:
             if request.method == 'POST' and request.path == '/admin/login/' and limited(request,'admin'):
                 return JsonResponse({'error':'Try again later'},status=429)
         response = self.get_response(request)
-        response['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        response['Content-Security-Policy'] = ("default-src 'self'; script-src 'self' https://accounts.google.com; "
+            "style-src 'self' https://accounts.google.com; img-src 'self' data: https://*.googleusercontent.com https://accounts.google.com; "
+            "connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; "
+            "frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
         response['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
         if request.path.startswith('/api/'):
             response['Cache-Control'] = 'no-store'
