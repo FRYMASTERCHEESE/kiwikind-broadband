@@ -3,6 +3,8 @@ const $ = id => document.getElementById(id);
 const consentVersion = 'prelaunch-2026-10-16';
 let csrfToken = '', registration = false, backend = false, intake = false;
 let orderKey = null;
+let lastAccountSync = 0;
+let accountSyncInFlight = false;
 function notice(message, error = false) { $('notice').textContent = message; $('notice').classList.toggle('error', error); }
 async function api(path, data) {
   const response = await fetch('/api/' + path, {method: data === undefined ? 'GET' : 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json', 'X-CSRFToken':csrfToken}, ...(data === undefined ? {} : {body:JSON.stringify(data)})});
@@ -20,6 +22,7 @@ function button(label, action) { const b=node('button',label); b.className='text
 function date(value) { return new Date(value).toLocaleDateString('en-NZ'); }
 async function refresh() {
   const me=await api('me');
+  lastAccountSync = Date.now();
   updateAccountNavigation(true); document.body.classList.remove('account-open','signup-view'); if(location.hash==='#signin'||location.hash==='#signup'){history.replaceState(null,'',location.pathname+location.search);} $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email; $('signed-in-email').textContent=me.email; $('signed-in-bar').classList.remove('hidden');
   const results=await Promise.allSettled([api('orders'),api('tickets'),api('invoices')]);
   const [orders,tickets,invoices]=results.map(r=>r.status==='fulfilled'?r.value:null);
@@ -117,3 +120,17 @@ function routeAccount(){
 }
 window.addEventListener('hashchange',routeAccount);
 routeAccount();
+
+// Refresh shared account data after returning from Android, another tab, or a network interruption.
+// Keep the existing dashboard visible if a temporary request fails.
+async function syncAccountOnReturn() {
+  if (document.hidden || !backend || accountSyncInFlight || $('dashboard').classList.contains('hidden')) return;
+  if (Date.now() - lastAccountSync < 15000) return;
+  accountSyncInFlight = true;
+  try { await refresh(); }
+  catch (error) { notice('Account refresh is temporarily unavailable. Your existing account view is preserved.', true); }
+  finally { accountSyncInFlight = false; }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) void syncAccountOnReturn(); });
+window.addEventListener('focus', () => { void syncAccountOnReturn(); });
+window.addEventListener('online', () => { void syncAccountOnReturn(); });
