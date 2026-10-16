@@ -17,6 +17,7 @@ jobs:
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py test --settings=config.test_settings
       - run: node --check site/dist/app.js
+      - run: node --test site/tests/*.test.cjs
       - run: python manage.py check --deploy --fail-level WARNING
         env:
           DEBUG: '0'
@@ -38,6 +39,9 @@ jobs:
       - name: Run Android tests and build prelaunch debug APK
         working-directory: android
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug -PKIWIKIND_API_ORIGIN=https://kiwikind-backend.onrender.com
+      - name: Record build signing fingerprints for OAuth configuration
+        working-directory: android
+        run: gradle --no-daemon :app:signingReport > app/build/outputs/apk/debug/SIGNING-REPORT.txt
       - name: Verify APK exists and record checksum
         run: |
           test -s android/app/build/outputs/apk/debug/app-debug.apk
@@ -49,5 +53,6 @@ jobs:
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
             android/app/build/outputs/apk/debug/SHA256SUMS.txt
+            android/app/build/outputs/apk/debug/SIGNING-REPORT.txt
           if-no-files-found: error
           retention-days: 7

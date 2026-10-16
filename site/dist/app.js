@@ -9,9 +9,24 @@ function notice(message, error = false) { $('notice').textContent = message; $('
 async function api(path, data) {
   const response = await fetch('/api/' + path, {method: data === undefined ? 'GET' : 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json', 'X-CSRFToken':csrfToken}, ...(data === undefined ? {} : {body:JSON.stringify(data)})});
   let result; try { result = await response.json(); } catch { throw new Error('The customer backend is unavailable. Nothing has been submitted.'); }
-  if (!response.ok) throw new Error(result.error || 'The request could not be completed.');
+  if (!response.ok) {
+    if (response.status === 401 && path !== 'login' && path !== 'google-login' && !$('dashboard').classList.contains('hidden')) showSignedOut();
+    const error = new Error(result.error || 'The request could not be completed.');
+    error.status = response.status;
+    throw error;
+  }
   if (result.csrfToken) csrfToken = result.csrfToken;
   return result;
+}
+function showSignedOut() {
+  updateAccountNavigation(false);
+  $('dashboard').classList.add('hidden');
+  $('auth-area').classList.remove('hidden');
+  $('signed-in-bar').classList.add('hidden');
+  $('signed-in-email').textContent='';
+  $('account-email').textContent='';
+  for (const id of ['orders','tickets','invoices']) $(id).replaceChildren();
+  location.hash='#signin';
 }
 function formData(form) { return Object.fromEntries(new FormData(form)); }
 function safeAction(fn) { return async event => { event?.preventDefault(); try { await fn(event); } catch (error) { notice(error.message, true); } }; }
@@ -67,7 +82,9 @@ async function init(){
     const s=await api('status');backend=true;intake=s.intake_enabled;
     $('connection-status').textContent=intake?'Pre-launch portal connected · no active broadband sales':'Portal connected · customer intake is closed';
     if(s.legal_entity && s.business_contact && s.privacy_contact)$('legal-identity').textContent=`Operator: ${s.legal_entity}. Business contact: ${s.business_contact}. Privacy contact: ${s.privacy_contact}. Pre-launch only.`;
-    await api('csrf');$('auth-submit').disabled=false;
+    await api('csrf');$('auth-submit').disabled=registration&&!intake;
+    $('toggle-auth').disabled=false;$('forgot').disabled=false;
+    $('retry-connection').classList.add('hidden');
     setupGoogleSignIn();
     const hash=location.hash;
     if(hash.startsWith('#verify=')){const token=decodeURIComponent(hash.slice(8));history.replaceState(null,'','#portal');notice((await api('verify',{token})).message);}
@@ -80,11 +97,13 @@ async function init(){
       copy.addEventListener('submit',safeAction(async()=>{notice((await api('password-reset/confirm',{token,password:copy.querySelector('input').value})).message);location.reload();}));return;
     }
     try{await refresh();if(location.hash==='#portal'){history.replaceState(null,'',location.pathname+location.search);} if(!location.hash){window.scrollTo(0,0);}}catch{/* Anonymous visitors see sign-in. */updateAccountNavigation(false);$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');$('signed-in-bar').classList.add('hidden');}
-  }catch{ $('connection-status').textContent='Design preview · customer backend is not connected';$('auth-submit').disabled=true;$('toggle-auth').disabled=true;$('forgot').disabled=true; }
+  }catch{ backend=false;$('retry-connection').classList.remove('hidden'); notice('KiwiKind could not connect. The server may be waking up. Retry the connection shortly.',true);$('connection-status').textContent='Customer backend temporarily unavailable';$('auth-submit').disabled=true;$('toggle-auth').disabled=true;$('forgot').disabled=true; }
 }
+$('retry-connection').addEventListener('click',safeAction(init));
 init();
 
 function setupGoogleSignIn(){
+  if(document.querySelector('script[src="https://accounts.google.com/gsi/client"]'))return;
   const clientId='956119315558-mgaqlpnfr9r0ic9n4jtb284gaa4n7i61.apps.googleusercontent.com';
   const script=document.createElement('script');
   script.src='https://accounts.google.com/gsi/client';script.async=true;
@@ -106,6 +125,7 @@ function selectAccountForm(signUp){
 }
 function routeAccount(){
   const hash=location.hash;
+  if(hash==='#portal' && $('dashboard').classList.contains('hidden')){location.hash='#signin';return;}
   if(!$('dashboard').classList.contains('hidden') && (hash==='#signin'||hash==='#signup')){
     history.replaceState(null,'',location.pathname+location.search);
     document.body.classList.remove('account-open','signup-view');

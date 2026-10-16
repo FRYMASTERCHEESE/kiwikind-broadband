@@ -43,7 +43,7 @@ public class MainActivity extends Activity {
         feedback=new TextView(this);feedback.setTextSize(14);feedback.setPadding(0,16,0,16);feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
         ScrollView scroll=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
-        else {loadingAccount();run(()->api.call("status",null),s->{intake=s.optBoolean("intake_enabled");restoreSession();});}
+        else connectAccount();
     }
     @Override protected void onResume(){
         super.onResume();
@@ -57,6 +57,7 @@ public class MainActivity extends Activity {
             });
         }
     }
+    private void connectAccount(){loadingAccount();run(()->api.call("status",null),s->{intake=s.optBoolean("intake_enabled");restoreSession();});}
     private void loadingAccount(){
         content.removeAllViews();
         title("Restoring your account…");
@@ -64,6 +65,7 @@ public class MainActivity extends Activity {
         ProgressBar spinner=new ProgressBar(this);
         spinner.setIndeterminate(true);
         content.addView(spinner);
+        button("Retry connection",this::connectAccount);
         message("Checking your saved session…");
     }
     private void restoreSession(){
@@ -90,7 +92,10 @@ public class MainActivity extends Activity {
     private EditText field(String label,int type){TextView l=new TextView(this);l.setText(label);content.addView(l);EditText input=new EditText(this);input.setInputType(type);input.setContentDescription(label);input.setSingleLine();content.addView(input);return input;}
     private Button button(String text,Runnable action){Button b=new Button(this);b.setText(text);b.setAllCaps(false);content.addView(b);b.setOnClickListener(v->{if(!busy)action.run();});return b;}
     private JSONObject data(Object... pairs){JSONObject d=new JSONObject();try{for(int i=0;i<pairs.length;i+=2)d.put((String)pairs[i],pairs[i+1]);}catch(JSONException ignored){}return d;}
-    private void run(Task task,Done done){if(busy)return;busy=true;message("Working…");worker.submit(()->{try{JSONObject result=task.run();runOnUiThread(()->{busy=false;if(isFinishing()||isDestroyed())return;try{done.accept(result);}catch(Exception e){message("Could not display the result. Refresh and try again.");}});}catch(Exception e){runOnUiThread(()->{busy=false;if(!isFinishing()&&!isDestroyed())message(e.getMessage()==null?"Connection failed. Try again.":e.getMessage());});}});}
+    private void run(Task task,Done done){if(busy)return;busy=true;message("Working…");worker.submit(()->{try{JSONObject result=task.run();runOnUiThread(()->{busy=false;if(isFinishing()||isDestroyed())return;try{done.accept(result);}catch(Exception e){message("Could not display the result. Refresh and try again.");}});}catch(Exception e){runOnUiThread(()->{busy=false;if(!isFinishing()&&!isDestroyed()){
+            if(e instanceof Api.SessionExpiredException){api.clear();signedIn=false;auth(false);}
+            message(e.getMessage()==null?"Connection failed. Try again.":e.getMessage());
+        }});}});}
     private void legal(String hash){if(api.configured())startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#"+hash)));else message("Read the privacy notice and terms in the website preview. No data is collected by this unconfigured build.");}
     private void auth(boolean register){
         content.removeAllViews();title(register?"Create your account":"A kinder connection.");paragraph("A request is not a broadband contract. Verify your email on the website before signing in here.");
