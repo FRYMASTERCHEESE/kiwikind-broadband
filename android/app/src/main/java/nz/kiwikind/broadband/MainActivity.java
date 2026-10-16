@@ -42,7 +42,7 @@ public class MainActivity extends Activity {
         feedback=new TextView(this);feedback.setTextSize(14);feedback.setPadding(0,16,0,16);feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
         ScrollView scroll=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
-        else {auth(false);message("Connecting to KiwiKind. On the free server, the first connection can take a minute.");run(()->api.call("status",null),s->{intake=s.optBoolean("intake_enabled");restoreSession();});}
+        else {loadingAccount();run(()->api.call("status",null),s->{intake=s.optBoolean("intake_enabled");restoreSession();});}
     }
     @Override protected void onResume(){
         super.onResume();
@@ -55,6 +55,15 @@ public class MainActivity extends Activity {
                 message("Account connected to KiwiKind server.");
             });
         }
+    }
+    private void loadingAccount(){
+        content.removeAllViews();
+        title("Restoring your account…");
+        paragraph("Connecting securely to KiwiKind. The free server may take a minute to wake up.");
+        ProgressBar spinner=new ProgressBar(this);
+        spinner.setIndeterminate(true);
+        content.addView(spinner);
+        message("Checking your saved session…");
     }
     private void restoreSession(){
         // A server-verified session, not a local flag, determines whether to show the account.
