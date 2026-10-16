@@ -21,14 +21,16 @@ function date(value) { return new Date(value).toLocaleDateString('en-NZ'); }
 async function refresh() {
   const me=await api('me');
   updateAccountNavigation(true); $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email;
-  const [orders,tickets,invoices]=await Promise.all([api('orders'),api('tickets'),api('invoices')]);
-  empty('orders','No requests yet.'); if(orders.orders.length) $('orders').replaceChildren();
-  for(const order of orders.orders) {
+  const results=await Promise.allSettled([api('orders'),api('tickets'),api('invoices')]);
+  const [orders,tickets,invoices]=results.map(r=>r.status==='fulfilled'?r.value:null);
+  if(results.some(r=>r.status==='rejected')) notice('You are still signed in, but some account details could not load. Refresh to retry.',true);
+  empty('orders',orders?'No requests yet.':'Requests temporarily unavailable.'); if(orders?.orders?.length) $('orders').replaceChildren();
+  for(const order of orders?.orders || []) {
     const el=record($('orders'),order.address, `${order.status} · ${date(order.created_at)} · ${order.id}`);
     if(order.status!=='cancelled') el.append(button('Cancel request',async()=>{await api(`orders/${order.id}/cancel`,{}); await refresh(); notice('Request cancelled.');}));
   }
-  empty('tickets','No conversations yet.'); if(tickets.tickets.length) $('tickets').replaceChildren();
-  for(const ticket of tickets.tickets) {
+  empty('tickets',tickets?'No conversations yet.':'Conversations temporarily unavailable.'); if(tickets?.tickets?.length) $('tickets').replaceChildren();
+  for(const ticket of tickets?.tickets || []) {
     const el=record($('tickets'),ticket.subject,`${ticket.category} · ${ticket.status}`);
     el.append(button('Read & reply',async()=>{
       const data=await api(`tickets/${ticket.id}/messages`);
@@ -40,8 +42,8 @@ async function refresh() {
       conversation.append(form);el.replaceChildren(node('strong',ticket.subject),conversation);
     }));
   }
-  empty('invoices','No invoices.');
-  for(const i of invoices.invoices) record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.status} · Due ${i.due_date}`);
+  empty('invoices',invoices?'No invoices.':'Billing information temporarily unavailable.');
+  for(const i of invoices?.invoices || []) record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.status} · Due ${i.due_date}`);
   $('order-submit').disabled=!intake;
 }
 $('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account ↗':'Sign in ↗';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
