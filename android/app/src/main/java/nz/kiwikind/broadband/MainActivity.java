@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutorService;
 public class MainActivity extends Activity {
     private static final String CONSENT="prelaunch-2026-10-16";
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
-    private final Api api=new Api(BuildConfig.API_ORIGIN);
+    private Api api;
     private LinearLayout content;
     private TextView feedback;
     private boolean intake=false, signedIn=false, busy=false;
@@ -34,7 +34,7 @@ public class MainActivity extends Activity {
     interface Task { JSONObject run() throws Exception; }
     interface Done { void accept(JSONObject data) throws Exception; }
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE);
+        super.onCreate(state);api=new Api(BuildConfig.API_ORIGIN,this);getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE);
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.rgb(244,242,233));
         root.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(22,insets.getSystemWindowInsetTop()+12,22,insets.getSystemWindowInsetBottom()+12);return insets;});
         TextView brand=new TextView(this);brand.setText(R.string.app_name);brand.setTextSize(25);brand.setTextColor(Color.rgb(18,63,50));root.addView(brand);
@@ -48,9 +48,13 @@ public class MainActivity extends Activity {
         // A server-verified session, not a local flag, determines whether to show the account.
         run(()->{
             try { return api.call("me",null); }
-            catch(Exception ignored) { return new JSONObject().put("session_unavailable",true); }
+            catch(Api.SessionExpiredException e) { api.clear();return new JSONObject().put("session_unavailable",true); }
+            catch(Exception e) { return new JSONObject().put("connection_unavailable",true); }
         },r->{
-            if(r.optBoolean("session_unavailable")){
+            if(r.optBoolean("connection_unavailable")){
+                signedIn=false;auth(false);
+                message("Could not reach KiwiKind. Your saved login was kept; try reopening when connected.");
+            }else if(r.optBoolean("session_unavailable")){
                 signedIn=false;auth(false);
                 message("Sign in to My KiwiKind. Customer intake remains closed.");
             }else{
@@ -137,5 +141,5 @@ public class MainActivity extends Activity {
     private void newTicket(){content.removeAllViews();title("How can we help?");paragraph("Do not include payment card details, identity documents or health information.");EditText subject=field("Subject",1);Spinner category=new Spinner(this);category.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"support","complaint","privacy"}));category.setContentDescription("Topic");content.addView(category);EditText body=field("Message",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);body.setSingleLine(false);body.setMinLines(4);button("Send message",()->run(()->api.call("tickets",data("subject",subject.getText().toString(),"category",category.getSelectedItem().toString(),"body",body.getText().toString())),r->tickets()));nav();}
     private void conversation(String id){run(()->api.call("tickets/"+id+"/messages",null),r->{content.removeAllViews();title("Conversation");JSONArray a=r.getJSONArray("messages");for(int i=0;i<a.length();i++){JSONObject m=a.getJSONObject(i);paragraph((m.optBoolean("from_support")?"Support: ":"You: ")+m.getString("body"));}EditText reply=field("Your reply",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);reply.setSingleLine(false);button("Send reply",()->run(()->api.call("tickets/"+id+"/messages",data("body",reply.getText().toString())),x->conversation(id)));nav();message("Your conversation");});}
     @Override protected void onActivityResult(int request,int result,Intent intent){super.onActivityResult(request,result,intent);if(request==10){if(result==RESULT_OK&&intent!=null&&intent.getData()!=null&&exportData!=null){try(var out=getContentResolver().openOutputStream(intent.getData())){if(out!=null){out.write(exportData.getBytes(java.nio.charset.StandardCharsets.UTF_8));message("Export saved.");}}catch(Exception e){message("Could not save export.");}}exportData=null;}}
-    @Override protected void onDestroy(){api.clear();worker.shutdownNow();exportData=null;super.onDestroy();}
+    @Override protected void onDestroy(){worker.shutdownNow();exportData=null;super.onDestroy();}
 }
