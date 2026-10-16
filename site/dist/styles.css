@@ -44,3 +44,10 @@ h1,h2,h3,.eyebrow,.intro,.status,.account-line{overflow-wrap:anywhere}
 .top-account .auth-intro{margin-bottom:16px}
 .top-account .form-card{width:100%;max-width:100%}
 @media(max-width:600px){.top-account{padding:0 16px;margin-bottom:20px}.top-account .form-card{padding:22px 18px}}
+
+/* Dedicated account-creation screen reached from the top Sign up link. */
+.signup-view .hero,.signup-view .launch-strip,.signup-view #journey,.signup-view #portal,.signup-view #questions,.signup-view #privacy,.signup-view #terms,.signup-view footer{display:none}
+.signup-view .top-account{max-width:600px;margin:24px auto 50px}
+.signup-view .top-account .auth-intro{display:none}
+#back-to-login:not(.hidden){display:inline-block;margin:12px 0 18px}
+.signup-view #auth-title{margin-top:8px}
