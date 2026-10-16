@@ -62,7 +62,12 @@ public class MainActivity extends Activity {
             String e=email.getText().toString(),p=password.getText().toString();password.setText("");
             run(()->api.call(register?"register":"login",data("email",e,"password",p,"consent_version",CONSENT)),r->{if(register){message(r.optString("message"));}else{signedIn=true;home();}});
         }).setEnabled(api.configured()&&(!register||intake));
-        button("Continue with Google",this::googleSignIn).setEnabled(api.configured());
+        Button googleButton=button("Sign in with Google",this::googleSignIn);
+        googleButton.setEnabled(api.configured());
+        googleButton.setTextColor(Color.WHITE);
+        googleButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(25,25,25)));
+        googleButton.setAllCaps(false);
+        googleButton.setMinHeight((int)(52*getResources().getDisplayMetrics().density));
         button(register?"Back to sign in":"Create an account",()->auth(!register));
         button("Open My KiwiKind website",()->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#portal")))).setEnabled(api.configured());
         button("Reset password",()->run(()->api.call("password-reset",data("email",email.getText().toString())),r->message(r.optString("message")))).setEnabled(api.configured());
