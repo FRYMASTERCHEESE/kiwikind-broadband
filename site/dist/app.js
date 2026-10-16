@@ -58,7 +58,7 @@ async function init(){
     $('connection-status').textContent=intake?'Pre-launch portal connected · no active broadband sales':'Portal connected · customer intake is closed';
     if(s.legal_entity && s.business_contact && s.privacy_contact)$('legal-identity').textContent=`Operator: ${s.legal_entity}. Business contact: ${s.business_contact}. Privacy contact: ${s.privacy_contact}. Pre-launch only.`;
     await api('csrf');$('auth-submit').disabled=false;
-    if(intake) setupGoogleSignIn();
+    setupGoogleSignIn();
     const hash=location.hash;
     if(hash.startsWith('#verify=')){const token=decodeURIComponent(hash.slice(8));history.replaceState(null,'','#portal');notice((await api('verify',{token})).message);}
     if(hash.startsWith('#reset=')){
