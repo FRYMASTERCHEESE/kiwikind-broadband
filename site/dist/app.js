@@ -19,6 +19,7 @@ function record(parent, title, subtitle) { const el=node('div',''); el.className
 function button(label, action) { const b=node('button',label); b.className='textbutton'; b.type='button'; b.addEventListener('click',safeAction(action)); return b; }
 function date(value) { return new Date(value).toLocaleDateString('en-NZ'); }
 async function refresh() {
+  updateAccountNavigation(true);
   const me=await api('me'); $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email;
   const [orders,tickets,invoices]=await Promise.all([api('orders'),api('tickets'),api('invoices')]);
   empty('orders','No requests yet.'); if(orders.orders.length) $('orders').replaceChildren();
@@ -46,7 +47,7 @@ async function refresh() {
 $('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account ↗':'Sign in ↗';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
 $('auth-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);if(registration){if(!d.consent)throw new Error('Please accept the pre-launch terms.');const r=await api('register',{...d,consent_version:consentVersion});notice(r.message);}else{await api('login',d);await refresh();notice('You’re signed in.');}}));
 $('forgot').addEventListener('click',safeAction(async()=>{if(!backend)throw new Error('Password reset is available when the customer backend is connected.');const email=$('auth-form').elements.email.value;if(!email)throw new Error('Enter your email above first.');notice((await api('password-reset',{email})).message);}));
-$('logout').addEventListener('click',safeAction(async()=>{await api('logout',{});$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');for(const id of ['orders','tickets','invoices'])$(id).replaceChildren();$('auth-form').reset();notice('Signed out.');csrfToken=(await api('csrf')).csrfToken;}));
+$('logout').addEventListener('click',safeAction(async()=>{updateAccountNavigation(false);await api('logout',{});$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');for(const id of ['orders','tickets','invoices'])$(id).replaceChildren();$('auth-form').reset();notice('Signed out.');csrfToken=(await api('csrf')).csrfToken;}));
 $('order-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);orderKey ||= crypto.randomUUID();const r=await api('orders',{...d,idempotency_key:orderKey,consent_version:consentVersion});orderKey=null;e.target.reset();await refresh();notice(r.message);}));
 $('order-form').addEventListener('input',()=>{orderKey=null;});
 $('ticket-form').addEventListener('submit',safeAction(async e=>{const r=await api('tickets',formData(e.target));e.target.reset();await refresh();notice(r.message);}));
@@ -86,3 +87,9 @@ function setupGoogleSignIn(){
   script.onerror=()=>notice('Google sign-in is unavailable. You can still use email sign-in.',true);
   document.head.append(script);
 }
+
+// Top navigation switches directly to the requested account form.
+function updateAccountNavigation(signedIn){$('nav-signin').classList.toggle('hidden',signedIn);$('nav-signup').classList.toggle('hidden',signedIn);$('nav-account').classList.toggle('hidden',!signedIn);}
+function selectAccountForm(signUp){if(registration!==signUp)$('toggle-auth').click();}
+$('nav-signin').addEventListener('click',()=>selectAccountForm(false));
+$('nav-signup').addEventListener('click',()=>selectAccountForm(true));
