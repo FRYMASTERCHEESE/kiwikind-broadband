@@ -171,3 +171,44 @@ class GoogleAuthenticationTests(TestCase):
             with patch('google.oauth2.id_token.verify_oauth2_token', return_value=claims):
                 self.assertEqual(self.post_google().status_code, 401)
         self.assertEqual(User.objects.count(), 0)
+
+
+class WebsiteAndroidSharedDataTests(TestCase):
+    """Two separate authenticated clients simulate website and Android devices."""
+    def setUp(self):
+        self.user=User.objects.create_user('shared@example.invalid',email='shared@example.invalid',password='Test-Shared-Login-392!')
+        self.other=User.objects.create_user('other@example.invalid',email='other@example.invalid',password='Test-Shared-Login-392!')
+        self.website=Client();self.android=Client();self.stranger=Client()
+        self.website.force_login(self.user);self.android.force_login(self.user);self.stranger.force_login(self.other)
+
+    def post_from(self,client,path,data):
+        return client.post('/api/'+path,json.dumps(data),content_type='application/json')
+
+    def test_website_support_ticket_appears_on_android(self):
+        response=self.post_from(self.website,'tickets',{'subject':'Website support question','category':'support','body':'Hello from website'})
+        self.assertEqual(response.status_code,201)
+        android=self.android.get('/api/tickets')
+        self.assertEqual(android.status_code,200)
+        self.assertEqual(android.json()['tickets'][0]['subject'],'Website support question')
+        self.assertEqual(self.stranger.get('/api/tickets').json()['tickets'],[])
+
+    def test_android_reply_appears_on_website(self):
+        response=self.post_from(self.website,'tickets',{'subject':'Shared conversation','category':'support','body':'Original website message'})
+        self.assertEqual(response.status_code,201)
+        ticket=response.json()['id']
+        self.assertEqual(self.post_from(self.android,f'tickets/{ticket}/messages',{'body':'Reply from Android'}).status_code,200)
+        messages=self.website.get(f'/api/tickets/{ticket}/messages').json()['messages']
+        self.assertEqual([m['body'] for m in messages],['Original website message','Reply from Android'])
+        self.assertEqual(self.stranger.get(f'/api/tickets/{ticket}/messages').status_code,404)
+
+    def test_account_and_billing_are_consistent_across_clients(self):
+        self.assertEqual(self.website.get('/api/me').json()['email'],self.android.get('/api/me').json()['email'])
+        self.assertEqual(self.website.get('/api/invoices').json(),self.android.get('/api/invoices').json())
+        self.assertFalse(self.android.get('/api/invoices').json()['billing_enabled'])
+
+    @override_settings(INTAKE_ENABLED=False)
+    def test_closed_intake_is_consistent_on_both_platforms(self):
+        self.assertFalse(self.website.get('/api/status').json()['intake_enabled'])
+        self.assertFalse(self.android.get('/api/status').json()['intake_enabled'])
+        self.assertEqual(self.post_from(self.website,'orders',{}).status_code,503)
+        self.assertEqual(self.post_from(self.android,'orders',{}).status_code,503)
