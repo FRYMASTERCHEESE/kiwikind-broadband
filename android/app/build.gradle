@@ -13,6 +13,7 @@ android {
         versionCode 1
         versionName '0.1.0-prelaunch'
         buildConfigField 'String', 'API_ORIGIN', '"' + apiOrigin + '"'
+        buildConfigField 'String', 'GOOGLE_WEB_CLIENT_ID', '"956119315558-mgaqlpnfr9r0ic9n4jtb284gaa4n7i61.apps.googleusercontent.com"'
     }
     buildFeatures { buildConfig true }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
