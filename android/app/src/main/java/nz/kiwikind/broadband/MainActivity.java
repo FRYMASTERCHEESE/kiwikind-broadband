@@ -30,6 +30,7 @@ public class MainActivity extends Activity {
     private boolean intake=false, signedIn=false, busy=false;
     private String exportData=null;
     private String orderKey=null;
+    private long lastResumeCheck=0L;
     interface Task { JSONObject run() throws Exception; }
     interface Done { void accept(JSONObject data) throws Exception; }
     @Override public void onCreate(Bundle state){
@@ -42,6 +43,18 @@ public class MainActivity extends Activity {
         ScrollView scroll=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
         else {auth(false);message("Connecting to KiwiKind. On the free server, the first connection can take a minute.");run(()->api.call("status",null),s->{intake=s.optBoolean("intake_enabled");restoreSession();});}
+    }
+    @Override protected void onResume(){
+        super.onResume();
+        // On returning from the browser, verify the saved session without interrupting active screens.
+        long now=android.os.SystemClock.elapsedRealtime();
+        if(api!=null && api.configured() && signedIn && !busy && now-lastResumeCheck>30000L){
+            lastResumeCheck=now;
+            run(()->api.call("me",null),r->{
+                signedIn=true;
+                message("Account connected to KiwiKind server.");
+            });
+        }
     }
     private void restoreSession(){
         // A server-verified session, not a local flag, determines whether to show the account.
