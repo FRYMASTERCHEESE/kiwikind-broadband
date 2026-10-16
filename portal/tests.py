@@ -172,6 +172,18 @@ class GoogleAuthenticationTests(TestCase):
                 self.assertEqual(self.post_google().status_code, 401)
         self.assertEqual(User.objects.count(), 0)
 
+    @override_settings(INTAKE_ENABLED=False)
+    def test_existing_google_identity_can_login_when_registration_closed(self):
+        from unittest.mock import patch
+        from .models import GoogleIdentity
+        user=User.objects.create_user('returning@example.invalid',email='returning@example.invalid',password=None)
+        GoogleIdentity.objects.create(user=user,subject='known-google-subject')
+        claims={'iss':'https://accounts.google.com','email_verified':True,'email':'returning@example.invalid','sub':'known-google-subject'}
+        with patch.dict('os.environ', {'GOOGLE_WEB_CLIENT_ID':'test-client'}):
+            with patch('google.oauth2.id_token.verify_oauth2_token', return_value=claims):
+                self.assertEqual(self.post_google().status_code, 200)
+        self.assertEqual(User.objects.count(),1)
+
 
 class WebsiteAndroidSharedDataTests(TestCase):
     """Two separate authenticated clients simulate website and Android devices."""
