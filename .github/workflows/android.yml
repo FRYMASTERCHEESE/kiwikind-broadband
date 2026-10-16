@@ -20,16 +20,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
-      - name: Compile, lint, unit test and bundle (unsigned)
+      - name: Compile, lint and unit test debug review build
         working-directory: android
         env:
           API_ORIGIN: ${{ inputs.api_origin }}
-        run: gradle --no-daemon testDebugUnitTest lintDebug assembleDebug bundleRelease "-PKIWIKIND_API_ORIGIN=$API_ORIGIN"
+        run: gradle --no-daemon testDebugUnitTest lintDebug assembleDebug "-PKIWIKIND_API_ORIGIN=$API_ORIGIN"
       - uses: actions/upload-artifact@v4
         with:
-          name: kiwikind-prelaunch-unsigned-review
+          name: kiwikind-prelaunch-debug-review
           path: |
             android/app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/bundle/release/*.aab
             android/app/build/reports/
           retention-days: 7

@@ -38,7 +38,15 @@ jobs:
           gradle-version: '9.6.0'
       - name: Run Android tests and build prelaunch debug APK
         working-directory: android
-        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug -PKIWIKIND_API_ORIGIN=https://kiwikind-backend.onrender.com
+        run: gradle --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug -PKIWIKIND_API_ORIGIN=https://kiwikind-backend.onrender.com
+      - name: Reject unsigned release builds
+        working-directory: android
+        shell: bash
+        run: |
+          if gradle --no-daemon :app:bundleRelease --dry-run > signing-guard.log 2>&1; then
+            echo "::error::Unsigned release unexpectedly accepted"; exit 1
+          fi
+          grep -F 'Release builds require all four KIWIKIND signing environment variables' signing-guard.log
       - name: Record build signing fingerprints for OAuth configuration
         working-directory: android
         run: gradle --no-daemon :app:signingReport > app/build/outputs/apk/debug/SIGNING-REPORT.txt

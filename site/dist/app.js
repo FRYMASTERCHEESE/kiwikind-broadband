@@ -40,6 +40,8 @@ async function refresh() {
   lastAccountSync = Date.now();
   updateAccountNavigation(true); document.body.classList.remove('account-open','signup-view'); if(location.hash==='#signin'||location.hash==='#signup'){history.replaceState(null,'',location.pathname+location.search);} $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email; $('signed-in-email').textContent=me.email; $('signed-in-bar').classList.remove('hidden');
   const results=await Promise.allSettled([api('orders'),api('tickets'),api('invoices')]);
+  // A session can expire between /me and parallel detail requests. Do not repopulate cleared private data.
+  if(results.some(r=>r.status==='rejected' && r.reason?.status===401)) { showSignedOut(); throw new Error('Please sign in again.'); }
   const [orders,tickets,invoices]=results.map(r=>r.status==='fulfilled'?r.value:null);
   if(results.some(r=>r.status==='rejected')) notice('You are still signed in, but some account details could not load. Use Refresh account to retry.',true);
   empty('orders',orders?'No requests yet.':'Requests temporarily unavailable.'); if(orders?.orders?.length) $('orders').replaceChildren();
@@ -148,7 +150,7 @@ async function syncAccountOnReturn() {
   if (Date.now() - lastAccountSync < 15000) return;
   accountSyncInFlight = true;
   try { await refresh(); }
-  catch (error) { notice('Account refresh is temporarily unavailable. Your existing account view is preserved.', true); }
+  catch (error) { notice(error.status===401 || $('dashboard').classList.contains('hidden') ? 'Please sign in again.' : 'Account refresh is temporarily unavailable. Your existing account view is preserved.', true); }
   finally { accountSyncInFlight = false; }
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) void syncAccountOnReturn(); });

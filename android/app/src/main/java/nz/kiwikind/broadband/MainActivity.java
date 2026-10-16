@@ -93,7 +93,7 @@ public class MainActivity extends Activity {
     private Button button(String text,Runnable action){Button b=new Button(this);b.setText(text);b.setAllCaps(false);content.addView(b);b.setOnClickListener(v->{if(!busy)action.run();});return b;}
     private JSONObject data(Object... pairs){JSONObject d=new JSONObject();try{for(int i=0;i<pairs.length;i+=2)d.put((String)pairs[i],pairs[i+1]);}catch(JSONException ignored){}return d;}
     private void run(Task task,Done done){if(busy)return;busy=true;message("Working…");worker.submit(()->{try{JSONObject result=task.run();runOnUiThread(()->{busy=false;if(isFinishing()||isDestroyed())return;try{done.accept(result);}catch(Exception e){message("Could not display the result. Refresh and try again.");}});}catch(Exception e){runOnUiThread(()->{busy=false;if(!isFinishing()&&!isDestroyed()){
-            if(e instanceof Api.SessionExpiredException){api.clear();signedIn=false;auth(false);}
+            if(e instanceof Api.SessionExpiredException){api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);}
             message(e.getMessage()==null?"Connection failed. Try again.":e.getMessage());
         }});}});}
     private void legal(String hash){if(api.configured())startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#"+hash)));else message("Read the privacy notice and terms in the website preview. No data is collected by this unconfigured build.");}
@@ -104,7 +104,7 @@ public class MainActivity extends Activity {
         CheckBox consent=new CheckBox(this);consent.setText(R.string.account_consent);if(register)content.addView(consent);
         button(register?"Create account":"Sign in",()->{
             if(register&&!consent.isChecked()){message("Please read and accept the pre-launch terms.");return;}
-            String e=email.getText().toString(),p=password.getText().toString();password.setText("");
+            String e=email.getText().toString().trim(),p=password.getText().toString();password.setText("");
             run(()->api.call(register?"register":"login",data("email",e,"password",p,"consent_version",CONSENT)),r->{if(register){message(r.optString("message"));}else{signedIn=true;home();}});
         }).setEnabled(api.configured()&&(!register||intake));
         Button googleButton=button("Sign in with Google",this::googleSignIn);
@@ -113,7 +113,7 @@ public class MainActivity extends Activity {
         googleButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(25,25,25)));
         googleButton.setAllCaps(false);
         googleButton.setMinHeight((int)(52*getResources().getDisplayMetrics().density));
-        button(register?"Back to sign in":"Create an account",()->auth(!register));
+        button(register?"Back to sign in":"Create an account",()->auth(!register)).setEnabled(register||intake);
         button("Open My KiwiKind website",()->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#portal")))).setEnabled(api.configured());
         button("Reset password",()->run(()->api.call("password-reset",data("email",email.getText().toString())),r->message(r.optString("message")))).setEnabled(api.configured());
         button("Privacy notice",()->legal("privacy"));button("Pre-launch terms",()->legal("terms"));

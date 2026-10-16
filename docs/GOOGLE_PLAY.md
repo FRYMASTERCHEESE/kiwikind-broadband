@@ -4,23 +4,23 @@ Existing account verified in browser: **FryMasterCheese Studios**. MoneyMate NZ 
 
 ## Build
 
-Native Java Activity screens (no WebView), shared HTTPS API, in-memory session cookies, native requests/support/replies/billing views, privacy export to Android document picker and deletion-request flow. No ads, analytics SDK, camera, location, phone or storage permission. INTERNET only. Backups and screenshots are disabled for account privacy. Verification/reset emails open website flows. No offline data cache or push notifications. Refresh/reopen lists to see website changes.
+Native Java Activity screens (no WebView), shared HTTPS API, encrypted persistent session cookies, native requests/support/replies/billing views, privacy export to Android document picker and deletion-request flow. No ads, analytics SDK, camera, location, phone or storage permission. INTERNET only. Backups and screenshots are disabled for account privacy. Verification/reset emails open website flows. No offline data cache or push notifications. Refresh/reopen lists to see website changes.
 
 Use JDK 17, Gradle 9.6.0, Android Gradle plugin 9.4.0 and installed Android SDK 36. AGP compatibility source: https://developer.android.com/build/releases/gradle-plugin . No Gradle wrapper binary is bundled; use installed Gradle or the included GitHub Actions workflow. Installing SDKs may require you to accept their licence.
 
 ```text
 cd android
-gradle testDebugUnitTest lintDebug assembleDebug bundleRelease -PKIWIKIND_API_ORIGIN=https://YOUR-DEDICATED-HOST
+gradle testDebugUnitTest lintDebug assembleDebug -PKIWIKIND_API_ORIGIN=https://YOUR-DEDICATED-HOST
 ```
 
-Blank API origin builds a disconnected pre-launch shell for source review, unsuitable for a Play release. Output locations: `app/build/outputs/apk/debug/app-debug.apk` and `app/build/outputs/bundle/release/app-release.aab`. Release bundle is **unsigned** unless the four signing environment variables in `app/build.gradle` are supplied securely. Do not publish a debug-signed artifact. No upload key has been created or copied. AAB generation and validation are not established until a successful build is recorded.
+Blank API origin builds a disconnected debug shell for source review. Release tasks require a connected HTTPS origin and complete protected signing configuration. See [ANDROID_SIGNING.md](ANDROID_SIGNING.md) for secret setup, certificate register and the manual signed release pipeline. No upload key has been invented or copied. A signed artifact is not established until that workflow succeeds.
 
-GitHub workflow `Android pre-launch build` is manual to control cost. Supply only the dedicated backend HTTPS origin, not secrets. Download its bundle/APK and reports. Keep upload signing secrets outside source; use a separate upload key and Google Play App Signing. Record certificate fingerprints and encrypted recovery procedures. Do not paste private keys into chat.
+The manual **Android pre-launch build** workflow produces debug review artifacts only. **Android signed prelaunch release** produces verified signed APK/AAB artifacts after protected environment secrets are configured; it does not publish to Play.
 
 ## Before internal testing
 
 - Deploy the backend and approve synthetic staging tester access. Configure legal/privacy/support contacts before real users. Verify same account and requests from website and Android, after logout/login and across two devices.
-- Compile, lint and run unit tests; install on Android 8+ and API 36 physical/emulated devices. Test network failures, TLS errors, expiry, process death, rotation, large fonts, TalkBack, keyboard navigation and edge-to-edge layouts. No device testing has been claimed yet.
+- Compile, lint and run unit tests; install on Android 8+ and API 36 physical/emulated devices. Test network failures, TLS errors, expiry, process death, rotation, large fonts, TalkBack, keyboard navigation and edge-to-edge layouts. The user has confirmed Android Google sign-in, session restore/reopening and backend connectivity on their phone; retain that evidence without requiring repeats. Other device acceptance scenarios remain unverified.
 - Explicitly test registration/email verification/reset, request retry and cancellation, two-account isolation, support reply, export save/cancel and deletion review. This checklist is not evidence that those Android scenarios already passed.
 - Prepare a properly signed AAB and verify with `jarsigner -verify`. Run Play pre-launch reports, address crashes/ANRs and check all native library/16 KB compatibility obligations if native SDKs are ever introduced.
 - Create a separate Console app; free, app category, NZ English where available. Account owner must review Developer Program Policy and US export declarations. Do not certify an unfinished/unreviewed release on their behalf.
