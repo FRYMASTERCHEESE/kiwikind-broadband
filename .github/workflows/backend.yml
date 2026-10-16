@@ -67,3 +67,30 @@ jobs:
             android/app/build/outputs/apk/debug/SIGNING-REPORT.txt
           if-no-files-found: error
           retention-days: 7
+
+  postgres-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: kiwikind_ci
+          POSTGRES_USER: kiwikind_ci
+          POSTGRES_PASSWORD: synthetic-ci-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kiwikind_ci -d kiwikind_ci"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      SECRET_KEY: ci-test-only-key-never-deploy-012345678901234567890123456789
+      DEBUG: '1'
+      DATABASE_URL: postgresql://kiwikind_ci:synthetic-ci-only@localhost:5432/kiwikind_ci
+      DB_SSLMODE: disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - name: Test migrations and account isolation on disposable PostgreSQL
+        run: python manage.py test --settings=config.test_settings
