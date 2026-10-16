@@ -80,10 +80,7 @@ function setupGoogleSignIn(){
   script.src='https://accounts.google.com/gsi/client';script.async=true;
   script.onload=()=>{
     if(!window.google?.accounts?.id)return;
-    google.accounts.id.initialize({client_id:clientId,callback:async credential=>{
-      try{await api('google-login',{id_token:credential.credential});await refresh();notice('Signed in with Google.');}
-      catch(error){notice(error.message,true);}
-    }});
+    google.accounts.id.initialize({client_id:clientId,ux_mode:'redirect',login_uri:location.origin+'/api/google-callback'});
     google.accounts.id.renderButton($('google-signin'),{theme:'filled_black',shape:'pill',size:'large',text:'signin_with',logo_alignment:'left',width:280});
   };
   script.onerror=()=>notice('Google sign-in is unavailable. You can still use email sign-in.',true);
