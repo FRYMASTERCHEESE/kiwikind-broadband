@@ -1,6 +1,14 @@
 package nz.kiwikind.broadband;
 
 import android.app.Activity;
+import androidx.credentials.CredentialManager;
+import androidx.credentials.GetCredentialRequest;
+import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.CustomCredential;
+import androidx.credentials.exceptions.GetCredentialException;
+import androidx.credentials.CredentialManagerCallback;
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.content.Intent;
@@ -54,10 +62,30 @@ public class MainActivity extends Activity {
             String e=email.getText().toString(),p=password.getText().toString();password.setText("");
             run(()->api.call(register?"register":"login",data("email",e,"password",p,"consent_version",CONSENT)),r->{if(register){message(r.optString("message"));}else{signedIn=true;home();}});
         }).setEnabled(api.configured()&&(!register||intake));
+        button("Continue with Google",this::googleSignIn).setEnabled(api.configured());
         button(register?"Back to sign in":"Create an account",()->auth(!register));
         button("Open My KiwiKind website",()->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#portal")))).setEnabled(api.configured());
         button("Reset password",()->run(()->api.call("password-reset",data("email",email.getText().toString())),r->message(r.optString("message")))).setEnabled(api.configured());
         button("Privacy notice",()->legal("privacy"));button("Pre-launch terms",()->legal("terms"));
+    }
+    private void googleSignIn(){
+        GetGoogleIdOption option=new GetGoogleIdOption.Builder()
+            .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
+            .setFilterByAuthorizedAccounts(false)
+            .build();
+        GetCredentialRequest request=new GetCredentialRequest.Builder().addCredentialOption(option).build();
+        CredentialManager.create(this).getCredentialAsync(this,request,null,getMainExecutor(),new CredentialManagerCallback<GetCredentialResponse,GetCredentialException>(){
+            @Override public void onResult(GetCredentialResponse response){
+                if(!(response.getCredential() instanceof CustomCredential)){message("Google did not return a supported account.");return;}
+                CustomCredential credential=(CustomCredential)response.getCredential();
+                if(!GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(credential.getType())){message("Google did not return an ID token.");return;}
+                try{
+                    String token=GoogleIdTokenCredential.createFrom(credential.getData()).getIdToken();
+                    run(()->api.call("google-login",data("id_token",token)),r->{signedIn=true;home();message("Signed in with Google.");});
+                }catch(Exception e){message("Could not verify the Google account. Try again.");}
+            }
+            @Override public void onError(GetCredentialException e){message("Google sign-in was cancelled or unavailable. Please try again.");}
+        });
     }
     private void nav(){button("Back to account",this::home);}
     private void home(){
