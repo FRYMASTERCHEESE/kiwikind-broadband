@@ -84,3 +84,6 @@ body.account-open .hero,body.account-open .launch-strip,body.account-open #journ
 button,input,textarea,select{max-width:100%}
 button:focus-visible,a:focus-visible{outline:3px solid #20583d;outline-offset:3px}
 @media(max-width:600px){.signed-in-logout,.textbutton{min-height:44px}}
+
+/* Keep informational navigation available on phones. */
+@media(max-width:800px){header{flex-wrap:wrap;gap:12px}header nav{flex-wrap:wrap;gap:12px;width:100%}nav>a:not(.navbutton){display:inline-block}nav>a{min-height:44px;display:inline-flex;align-items:center}}
