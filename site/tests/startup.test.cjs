@@ -77,3 +77,10 @@ test('duplicate password submits only send one login request',async()=>{
  const first=submit(event);await submit(event);assert.equal(logins,1);assert.equal(a.el('auth-submit').disabled,true);
  pending.resolve(reply({csrfToken:'synthetic'}));await first;assert.equal(a.el('auth-submit').disabled,false);
 });
+
+test('account navigation explains closed registration and clears stale notice on return',async()=>{
+ const a=boot('#signin');await settle();a.run('selectAccountForm(true)');
+ assert.match(a.el('notice').textContent,/Email registration is closed/);
+ assert.equal(a.el('auth-submit').disabled,true);
+ a.run('selectAccountForm(false)');assert.equal(a.el('notice').textContent,'Ready to sign in.');
+});

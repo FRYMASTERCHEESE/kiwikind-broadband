@@ -175,6 +175,8 @@ function selectAccountForm(signUp){
   if(registration!==signUp)$('toggle-auth').click();
   document.body.classList.toggle('signup-view',signUp);
   $('back-to-login').classList.toggle('hidden',!signUp);
+  if(backend&&signUp&&!intake)notice('Email registration is closed during pre-launch. Existing users can return to sign in.');
+  else if(backend&&$('notice').textContent.startsWith('Email registration is closed'))notice('Ready to sign in.');
 }
 function routeAccount(){
   const hash=location.hash;
