@@ -3,6 +3,18 @@ from django.contrib.auth.models import User, Group
 from .models import Order, Ticket, Message, Invoice, AuditEvent, PrivacyRequest
 
 admin.site.site_header='KiwiKind Broadband operations · Pre-launch'
+
+# Additional server-side identity restriction; this does not replace MFA or staff permissions.
+ADMIN_OWNER_EMAIL = 'kiwikindbroadband@gmail.com'
+_original_has_permission = admin.site.has_permission
+
+def owner_only_admin_permission(request):
+    return (_original_has_permission(request)
+            and request.user.is_superuser
+            and request.user.email.strip().casefold() == ADMIN_OWNER_EMAIL)
+
+admin.site.has_permission = owner_only_admin_permission
+
 admin.site.unregister(User)
 admin.site.unregister(Group)
 
