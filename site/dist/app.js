@@ -20,7 +20,7 @@ function button(label, action) { const b=node('button',label); b.className='text
 function date(value) { return new Date(value).toLocaleDateString('en-NZ'); }
 async function refresh() {
   const me=await api('me');
-  updateAccountNavigation(true); $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email; $('signed-in-email').textContent=me.email; $('signed-in-bar').classList.remove('hidden');
+  updateAccountNavigation(true); document.body.classList.remove('account-open','signup-view'); if(location.hash==='#signin'||location.hash==='#signup'){history.replaceState(null,'',location.pathname+location.search);} $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email; $('signed-in-email').textContent=me.email; $('signed-in-bar').classList.remove('hidden');
   const results=await Promise.allSettled([api('orders'),api('tickets'),api('invoices')]);
   const [orders,tickets,invoices]=results.map(r=>r.status==='fulfilled'?r.value:null);
   if(results.some(r=>r.status==='rejected')) notice('You are still signed in, but some account details could not load. Use Refresh account to retry.',true);
@@ -75,7 +75,7 @@ async function init(){
       const copy=form.cloneNode(true);form.replaceWith(copy);
       copy.addEventListener('submit',safeAction(async()=>{notice((await api('password-reset/confirm',{token,password:copy.querySelector('input').value})).message);location.reload();}));return;
     }
-    try{await refresh();if(location.hash==='#portal'){history.replaceState(null,'',location.pathname+location.search);window.scrollTo({top:0,behavior:'instant'});}}catch{/* Anonymous visitors see sign-in. */updateAccountNavigation(false);$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');$('signed-in-bar').classList.add('hidden');}
+    try{await refresh();if(location.hash==='#portal'){history.replaceState(null,'',location.pathname+location.search);} if(!location.hash){window.scrollTo(0,0);}}catch{/* Anonymous visitors see sign-in. */updateAccountNavigation(false);$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');$('signed-in-bar').classList.add('hidden');}
   }catch{ $('connection-status').textContent='Design preview · customer backend is not connected';$('auth-submit').disabled=true;$('toggle-auth').disabled=true;$('forgot').disabled=true; }
 }
 init();
@@ -102,6 +102,12 @@ function selectAccountForm(signUp){
 }
 function routeAccount(){
   const hash=location.hash;
+  if(!$('dashboard').classList.contains('hidden') && (hash==='#signin'||hash==='#signup')){
+    history.replaceState(null,'',location.pathname+location.search);
+    document.body.classList.remove('account-open','signup-view');
+    window.scrollTo(0,0);
+    return;
+  }
   document.body.classList.toggle('account-open',hash==='#signup'||hash==='#signin');
   if(hash==='#signup'||hash==='#signin'){
     selectAccountForm(hash==='#signup');
