@@ -56,3 +56,8 @@ h1,h2,h3,.eyebrow,.intro,.status,.account-line{overflow-wrap:anywhere}
 .top-account{display:none}
 body.account-open .top-account{display:block}
 body.account-open .hero,body.account-open .launch-strip,body.account-open #journey,body.account-open #portal,body.account-open #questions,body.account-open #privacy,body.account-open #terms,body.account-open footer{display:none}
+
+/* Reconciled signed-in account visibility from Render branch. */
+#account-email{background:#191919;color:#fff;border-radius:24px;padding:12px 18px;font-weight:700;overflow-wrap:anywhere}
+#account-email:before{content:'✓ Signed in · ';color:#b8edc3}
+@media(max-width:600px){.account-line{flex-direction:column;align-items:stretch;gap:8px}.account-line #logout{align-self:flex-start}}
