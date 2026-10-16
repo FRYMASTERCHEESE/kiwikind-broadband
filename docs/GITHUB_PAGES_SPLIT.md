@@ -1,14 +1,15 @@
 # GitHub-first public website split
 
-This branch adds an **informational, public-safe landing page** in `public-site/index.html`. It is not a deployed GitHub Pages site and does not contain private backend/Android source.
+The owner made `kiwikind-broadband` public. GitHub remains the primary source platform for the website, backend and Android app. This change does not alter repository visibility, authentication, hosting or working features. Credentials, signing material and account data must stay outside Git, including its history.
 
-Why the existing `site/dist` cannot simply be copied to GitHub Pages: it currently assumes same-origin Django API, CSRF and session cookies. On a separate github.io origin, these flows require deliberate cookie, CSRF, CORS and Google OAuth security design. Until reviewed, public visitors are sent to the existing secure Render portal for test-account sign-in.
+The separate public repository already exists: [FRYMASTERCHEESE/kiwikind-broadband-website](https://github.com/FRYMASTERCHEESE/kiwikind-broadband-website). Reuse it; no additional repository is needed.
 
-## Owner action to finish GitHub Pages
+Its Pages address is [KiwiKind Broadband](https://frymastercheese.github.io/kiwikind-broadband-website/). GitHub records a successful deployment of commit `114b1d9637434b53cb3b7c3b45dd28c6be361a88` in [run 38875629416](https://github.com/FRYMASTERCHEESE/kiwikind-broadband-website/actions/runs/38875629416). Verify live rendering separately; deployment success alone is not a browser check.
 
-1. Create a separate **public** repository named `kiwikind-broadband-site` under FRYMASTERCHEESE. Never make the existing `kiwikind-broadband` repository public.
-2. Copy only the files inside `public-site/` to the new repository's root. Do not copy `.env`, Android signing files, `config/`, `portal/` or private CI files.
-3. In the public repository, Settings → Pages → Deploy from a branch → `main` / root. Its address should then be `https://frymastercheese.github.io/kiwikind-broadband-site/` after publication.
-4. Keep Render Free for authenticated API/portal, Neon for data and Brevo for mail. Do not enable customer intake or claim live ISP service.
+`public-site/index.html` in this private branch is a minimal informational preview. Do not overwrite the public repository's existing design with it. The optional manual packaging workflow exports that preview only and does not deploy it.
 
-The optional `Prepare public Pages files` workflow packages just the allowlisted landing page as a downloadable artifact. It does not deploy, require a paid account or rerun previous suites.
+The website repository should deploy an explicit allowlist of reviewed static assets. Its current page is self-contained, so only `index.html` and a generated `.nojekyll` are needed. Do not include `.env`, signing files, `config/`, `portal/`, databases, CI files or the application checkout/history in the Pages artifact. Backend and Android source belong in the main repository; they are not static website assets. Review any additional assets before publication.
+
+The Django-served `site/dist` client uses same-origin API, CSRF and session behavior. Moving that application onto github.io requires a separate authentication design review. Preserve the current backend, Android and Google sign-in integration. Public sign-up/login remain unavailable on the informational Pages site.
+
+Retain the existing Render/Neon/email setup without a hosting migration or paid upgrade. Current free-plan status and quotas require independent confirmation. Keep customer intake, administration, billing and provisioning disabled until their respective approvals and verification are complete.
