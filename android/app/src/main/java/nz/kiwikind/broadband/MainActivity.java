@@ -27,25 +27,25 @@ public class MainActivity extends Activity {
     interface Done { void accept(JSONObject data) throws Exception; }
     @Override public void onCreate(Bundle state){
         super.onCreate(state);getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE);
-        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.rgb(244,242,233));
+        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.rgb(246,248,243));
         root.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(22,insets.getSystemWindowInsetTop()+12,22,insets.getSystemWindowInsetBottom()+12);return insets;});
-        TextView brand=new TextView(this);brand.setText(R.string.app_name);brand.setTextSize(25);brand.setTextColor(Color.rgb(18,63,50));root.addView(brand);
-        TextView label=new TextView(this);label.setText(R.string.prelaunch);root.addView(label);
+        TextView brand=new TextView(this);brand.setText(R.string.app_name);brand.setTextSize(26);brand.setTypeface(null,android.graphics.Typeface.BOLD);brand.setTextColor(Color.rgb(16,62,52));brand.setPadding(0,12,0,8);root.addView(brand);
+        TextView label=new TextView(this);label.setText(R.string.prelaunch);label.setTextColor(Color.rgb(39,126,96));label.setTextSize(13);root.addView(label);
         feedback=new TextView(this);feedback.setTextSize(14);feedback.setPadding(0,16,0,16);feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
         ScrollView scroll=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
         else run(()->api.call("status",null),s->{intake=s.optBoolean("intake_enabled");message(intake?"Pre-launch requests only. No charges.":"Customer intake is closed.");auth(false);});
     }
     private void message(String text){feedback.setText(text);}
-    private void title(String text){TextView t=new TextView(this);t.setText(text);t.setTextSize(23);t.setPadding(0,22,0,14);content.addView(t);}
-    private void paragraph(String text){TextView t=new TextView(this);t.setText(text);t.setTextSize(15);t.setPadding(0,10,0,16);content.addView(t);}
+    private void title(String text){TextView t=new TextView(this);t.setText(text);t.setTextSize(26);t.setTypeface(null,android.graphics.Typeface.BOLD);t.setTextColor(Color.rgb(16,62,52));t.setPadding(0,24,0,14);content.addView(t);}
+    private void paragraph(String text){TextView t=new TextView(this);t.setText(text);t.setTextSize(16);t.setTextColor(Color.rgb(72,98,84));t.setPadding(0,10,0,16);content.addView(t);}
     private EditText field(String label,int type){TextView l=new TextView(this);l.setText(label);content.addView(l);EditText input=new EditText(this);input.setInputType(type);input.setContentDescription(label);input.setSingleLine();content.addView(input);return input;}
-    private Button button(String text,Runnable action){Button b=new Button(this);b.setText(text);b.setAllCaps(false);content.addView(b);b.setOnClickListener(v->{if(!busy)action.run();});return b;}
+    private Button button(String text,Runnable action){Button b=new Button(this);b.setText(text);b.setAllCaps(false);b.setTextColor(Color.rgb(16,62,52));b.setTextSize(16);b.setPadding(12,12,12,12);content.addView(b);b.setOnClickListener(v->{if(!busy)action.run();});return b;}
     private JSONObject data(Object... pairs){JSONObject d=new JSONObject();try{for(int i=0;i<pairs.length;i+=2)d.put((String)pairs[i],pairs[i+1]);}catch(JSONException ignored){}return d;}
     private void run(Task task,Done done){if(busy)return;busy=true;message("Working…");worker.submit(()->{try{JSONObject result=task.run();runOnUiThread(()->{busy=false;if(isFinishing()||isDestroyed())return;try{done.accept(result);}catch(Exception e){message("Could not display the result. Refresh and try again.");}});}catch(Exception e){runOnUiThread(()->{busy=false;if(!isFinishing()&&!isDestroyed())message(e.getMessage()==null?"Connection failed. Try again.":e.getMessage());});}});}
     private void legal(String hash){if(api.configured())startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#"+hash)));else message("Read the privacy notice and terms in the website preview. No data is collected by this unconfigured build.");}
     private void auth(boolean register){
-        content.removeAllViews();title(register?"Create your account":"A kinder connection.");paragraph("A request is not a broadband contract. Verify your email on the website before signing in here.");
+        content.removeAllViews();title(register?"Create your account":"A kinder connection.");paragraph("KiwiKind Broadband is being built for affordable, straightforward internet in Aotearoa. 💚");paragraph("PRE-LAUNCH · No active services, charges or orders. Verify your email on the website before signing in here.");
         EditText email=field("Email",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         EditText password=field("Password (at least 12 characters)",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
         CheckBox consent=new CheckBox(this);consent.setText(R.string.account_consent);if(register)content.addView(consent);
@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
     }
     private void nav(){button("Back to account",this::home);}
     private void home(){
-        content.removeAllViews();title("My KiwiKind");paragraph("No active broadband service. Your website and app use the same customer backend.");
+        content.removeAllViews();title("My KiwiKind");paragraph("Your connection, in one place. 💚");paragraph("PRE-LAUNCH · No active broadband service. Your website and app are designed to use the same customer backend.");
         button("My broadband requests",this::orders);button("Support & complaints",this::tickets);button("Billing",()->run(()->api.call("invoices",null),r->{content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());nav();}));
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
         button("Request account deletion",()->{content.removeAllViews();title("Request deletion");paragraph("We will review lawful retention needs. This is not instant deletion. Request corrections using a privacy support ticket.");EditText p=field("Current password",129);button("Submit deletion request",()->{String password=p.getText().toString();p.setText("");run(()->api.call("privacy/deletion",data("password",password)),r->message(r.optString("message")));});nav();});
