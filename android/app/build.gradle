@@ -1,7 +1,19 @@
 plugins { id 'com.android.application' }
+
+def signingNames = ['KIWIKIND_KEYSTORE', 'KIWIKIND_STORE_PASSWORD', 'KIWIKIND_KEY_ALIAS', 'KIWIKIND_KEY_PASSWORD']
+def releaseSigningReady = signingNames.every { System.getenv(it)?.trim() }
+
 def apiOrigin = providers.gradleProperty('KIWIKIND_API_ORIGIN').orElse('https://kiwikind-backend.onrender.com').get()
 if (apiOrigin && !(apiOrigin ==~ /https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?/)) {
     throw new GradleException('KIWIKIND_API_ORIGIN must be an HTTPS origin without a path.')
+}
+gradle.taskGraph.whenReady { graph ->
+    if (graph.allTasks.any { it.project == project && it.name.toLowerCase().contains('release') }) {
+        if (!releaseSigningReady || !file(System.getenv('KIWIKIND_KEYSTORE')).isFile()) {
+            throw new GradleException('Release builds require all four KIWIKIND signing environment variables and an existing protected keystore. See docs/ANDROID_SIGNING.md.')
+        }
+        if (!apiOrigin) throw new GradleException('Release builds require a connected HTTPS API origin.')
+    }
 }
 android {
     namespace 'nz.kiwikind.broadband'
@@ -10,8 +22,8 @@ android {
         applicationId 'nz.kiwikind.broadband'
         minSdk 26
         targetSdk 36
-        versionCode 2
-        versionName '0.2.0-prelaunch'
+        versionCode 3
+        versionName '0.2.1-prelaunch'
         buildConfigField 'String', 'API_ORIGIN', '"' + apiOrigin + '"'
         buildConfigField 'String', 'GOOGLE_WEB_CLIENT_ID', '"956119315558-mgaqlpnfr9r0ic9n4jtb284gaa4n7i61.apps.googleusercontent.com"'
     }
@@ -19,7 +31,7 @@ android {
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     signingConfigs {
         release {
-            if (System.getenv('KIWIKIND_KEYSTORE')) {
+            if (releaseSigningReady) {
                 storeFile file(System.getenv('KIWIKIND_KEYSTORE'))
                 storePassword System.getenv('KIWIKIND_STORE_PASSWORD')
                 keyAlias System.getenv('KIWIKIND_KEY_ALIAS')
@@ -29,7 +41,7 @@ android {
     }
     buildTypes {
         release {
-            if (System.getenv('KIWIKIND_KEYSTORE')) signingConfig signingConfigs.release
+            if (releaseSigningReady) signingConfig signingConfigs.release
             minifyEnabled false
         }
     }

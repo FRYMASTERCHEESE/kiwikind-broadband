@@ -78,3 +78,9 @@ body.account-open .hero,body.account-open .launch-strip,body.account-open #journ
 
 .portal-feedback{max-width:900px;margin:0 auto;padding:0 5%;overflow-wrap:anywhere}
 @media(max-width:380px){header{flex-wrap:wrap}header nav{width:100%;justify-content:flex-end;gap:8px}}
+
+/* Keep long customer messages and account controls within narrow screens. */
+.record{overflow-wrap:anywhere;min-width:0}
+button,input,textarea,select{max-width:100%}
+button:focus-visible,a:focus-visible{outline:3px solid #20583d;outline-offset:3px}
+@media(max-width:600px){.signed-in-logout,.textbutton{min-height:44px}}
