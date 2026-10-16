@@ -97,6 +97,7 @@ function selectAccountForm(signUp){
 }
 function routeAccount(){
   const hash=location.hash;
+  document.body.classList.toggle('account-open',hash==='#signup'||hash==='#signin');
   if(hash==='#signup'||hash==='#signin'){
     selectAccountForm(hash==='#signup');
     $('auth-area').scrollIntoView({block:'start'});
