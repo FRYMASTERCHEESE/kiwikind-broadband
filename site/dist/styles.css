@@ -19,3 +19,21 @@
 #account-email{display:inline-flex;align-items:center;max-width:100%;overflow-wrap:anywhere;margin:0;padding:12px 18px;border-radius:999px;background:#191919;color:#fff;font-weight:600;line-height:1.4}
 #account-email::before{content:'✓ Signed in  ·  ';white-space:pre;color:#bce7c5;font-weight:700}
 .account-line #logout{padding:10px 14px}
+
+/* Mobile viewport: prevent desktop-sized headings and horizontal scrolling. */
+html,body{max-width:100%;overflow-x:clip}
+.hero,.hero-copy,.section,.portal,.form-card,.dashboard-grid,.account-line{min-width:0}
+h1,h2,h3,.eyebrow,.intro,.status,.account-line{overflow-wrap:anywhere}
+@media(max-width:600px){
+ header{gap:10px;padding:16px 5%}.brand{min-width:0;font-size:clamp(16px,4.5vw,20px)}.brand small{letter-spacing:2px}.brandmark{flex:none;width:40px;height:40px;font-size:35px;line-height:39px}
+ nav{flex:none}.navbutton{padding:9px 12px;font-size:12px;white-space:nowrap}
+ .hero{padding:0 5%;margin:10px auto 28px;gap:18px}.hero-copy{padding:10px 0}
+ h1{font-size:clamp(39px,11.2vw,62px);letter-spacing:-.045em;line-height:1.06;margin:20px 0 18px}
+ h2{font-size:clamp(30px,8.5vw,39px);letter-spacing:-.035em}
+ .eyebrow{font-size:9px;letter-spacing:1.1px;line-height:1.6}
+ .intro{font-size:15px;line-height:1.65}.intro br{display:none}
+ .hero-art{min-height:290px}.button{max-width:100%;gap:18px}
+ .section{padding:40px 5%}.form-card{padding:18px}.account-line{flex-wrap:wrap;gap:12px}
+ .form-links{flex-wrap:wrap;gap:10px}.dashboard-grid>*{min-width:0}
+ footer{padding:35px 5%}
+}
