@@ -112,7 +112,14 @@ function setupGoogleSignIn(){
   script.onload=()=>{
     if(!window.google?.accounts?.id)return;
     google.accounts.id.initialize({client_id:clientId,ux_mode:'redirect',login_uri:location.origin+'/api/google-callback'});
-    google.accounts.id.renderButton($('google-signin'),{theme:'filled_black',shape:'pill',size:'large',text:'signin_with',logo_alignment:'left',width:Math.max(200,Math.min(280,$('google-signin').clientWidth||280))});
+    const renderGoogleButton=()=>{
+      const host=$('google-signin');
+      const available=host.clientWidth || document.documentElement.clientWidth-84;
+      host.replaceChildren();
+      google.accounts.id.renderButton(host,{theme:'filled_black',shape:'pill',size:'large',text:'signin_with',logo_alignment:'left',width:Math.max(200,Math.min(280,available))});
+    };
+    renderGoogleButton();
+    window.addEventListener('resize',renderGoogleButton);
   };
   script.onerror=()=>notice('Google sign-in is unavailable. You can still use email sign-in.',true);
   document.head.append(script);
