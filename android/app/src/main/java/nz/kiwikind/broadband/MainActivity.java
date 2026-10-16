@@ -8,6 +8,7 @@ import androidx.credentials.CustomCredential;
 import androidx.credentials.exceptions.GetCredentialException;
 import androidx.credentials.CredentialManagerCallback;
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import android.app.AlertDialog;
 import android.os.Bundle;
@@ -133,8 +134,35 @@ public class MainActivity extends Activity {
             @Override public void onError(GetCredentialException e){
                 String kind=e.getClass().getSimpleName();
                 if("GetCredentialCancellationException".equals(kind))message("Google account selection was cancelled. Tap Sign in with Google to try again.");
-                else if("NoCredentialException".equals(kind))message("Google could not find an available credential. Check Google Play services and the Android OAuth client configuration (package and signing SHA-1), or sign in on the website.");
+                else if("NoCredentialException".equals(kind))retryGoogleWithExplicitButton();
                 else message("Android Google sign-in could not start ("+kind+"). Check the Android OAuth client package and signing SHA-1 in Google Cloud. Website sign-in is available below.");
+            }
+        });
+    }
+    // Some devices return NoCredentialException for the general account chooser even when
+    // a Google account is installed. The explicit Google button is a separate supported flow.
+    private void retryGoogleWithExplicitButton(){
+        message("Trying the Google sign-in button instead…");
+        GetSignInWithGoogleOption option=new GetSignInWithGoogleOption.Builder(BuildConfig.GOOGLE_WEB_CLIENT_ID).build();
+        GetCredentialRequest request=new GetCredentialRequest.Builder().addCredentialOption(option).build();
+        CredentialManager.create(this).getCredentialAsync(this,request,null,getMainExecutor(),new CredentialManagerCallback<GetCredentialResponse,GetCredentialException>(){
+            @Override public void onResult(GetCredentialResponse response){
+                if(!(response.getCredential() instanceof CustomCredential)){
+                    message("Google did not return an account. Your saved session has not been deleted.");return;
+                }
+                CustomCredential credential=(CustomCredential)response.getCredential();
+                if(!GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(credential.getType())){
+                    message("Google did not return a supported ID token.");return;
+                }
+                try{
+                    String token=GoogleIdTokenCredential.createFrom(credential.getData()).getIdToken();
+                    run(()->api.call("google-login",data("id_token",token)),r->{signedIn=true;home();message("Signed in with Google.");});
+                }catch(Exception e){message("Google sign-in could not be completed. Your saved login was kept.");}
+            }
+            @Override public void onError(GetCredentialException e){
+                if("GetCredentialCancellationException".equals(e.getClass().getSimpleName()))
+                    message("Google sign-in cancelled. Your saved login was kept.");
+                else message("Google sign-in is unavailable ("+e.getClass().getSimpleName()+"). Check Google Play services and the app signing SHA-1; your saved login was kept.");
             }
         });
     }
