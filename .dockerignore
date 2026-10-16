@@ -1,0 +1,8 @@
+.git
+.env
+*.sqlite3*
+__pycache__
+staticfiles
+android
+site/.git
+site/.sites-local

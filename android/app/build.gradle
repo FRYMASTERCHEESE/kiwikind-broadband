@@ -1,0 +1,36 @@
+plugins { id 'com.android.application' }
+def apiOrigin = providers.gradleProperty('KIWIKIND_API_ORIGIN').orElse('').get()
+if (apiOrigin && !(apiOrigin ==~ /https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?/)) {
+    throw new GradleException('KIWIKIND_API_ORIGIN must be an HTTPS origin without a path.')
+}
+android {
+    namespace 'nz.kiwikind.broadband'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'nz.kiwikind.broadband'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '0.1.0-prelaunch'
+        buildConfigField 'String', 'API_ORIGIN', '"' + apiOrigin + '"'
+    }
+    buildFeatures { buildConfig true }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    signingConfigs {
+        release {
+            if (System.getenv('KIWIKIND_KEYSTORE')) {
+                storeFile file(System.getenv('KIWIKIND_KEYSTORE'))
+                storePassword System.getenv('KIWIKIND_STORE_PASSWORD')
+                keyAlias System.getenv('KIWIKIND_KEY_ALIAS')
+                keyPassword System.getenv('KIWIKIND_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (System.getenv('KIWIKIND_KEYSTORE')) signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
+}
+dependencies { testImplementation 'junit:junit:4.13.2' }

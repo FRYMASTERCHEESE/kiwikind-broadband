@@ -1,0 +1,25 @@
+name: Backend security and workflow checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ci-test-only-key-never-deploy-012345678901234567890123456789
+      DEBUG: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py test --settings=config.test_settings
+      - run: node --check site/dist/app.js
+      - run: python manage.py check --deploy --fail-level WARNING
+        env:
+          DEBUG: '0'
+          PUBLIC_ORIGIN: https://kiwikind.example.invalid
+          ALLOWED_HOSTS: kiwikind.example.invalid
+      - run: docker build -t kiwikind-ci .

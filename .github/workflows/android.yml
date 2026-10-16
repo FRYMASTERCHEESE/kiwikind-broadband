@@ -1,0 +1,35 @@
+name: Android pre-launch build
+on:
+  workflow_dispatch:
+    inputs:
+      api_origin:
+        description: Dedicated KiwiKind HTTPS backend origin (blank builds disconnected pre-launch shell)
+        required: false
+        type: string
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+      - name: Compile, lint, unit test and bundle (unsigned)
+        working-directory: android
+        env:
+          API_ORIGIN: ${{ inputs.api_origin }}
+        run: gradle --no-daemon testDebugUnitTest lintDebug assembleDebug bundleRelease "-PKIWIKIND_API_ORIGIN=$API_ORIGIN"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kiwikind-prelaunch-unsigned-review
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/reports/
+          retention-days: 7

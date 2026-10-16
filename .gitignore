@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.sqlite3*
+.env
+staticfiles/
+local.properties
+.gradle/
+build/
+*.jks
+*.keystore
+*.aab
+*.apk
+.sites-local/
+test-results/
