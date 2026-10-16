@@ -22,9 +22,30 @@ TEMPLATES = [{'BACKEND': 'django.template.backends.django.DjangoTemplates',
               'DIRS': [BASE_DIR / 'templates'], 'APP_DIRS': True,
               'OPTIONS': {'context_processors': ['django.template.context_processors.request',
                          'django.contrib.auth.context_processors.auth', 'django.contrib.messages.context_processors.messages']}}]
-DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3',
-                         'NAME': os.getenv('DATABASE_PATH', str(BASE_DIR / 'db.sqlite3')),
-                         'OPTIONS': {'timeout': 20}}}
+# A dedicated Neon/PostgreSQL database can be selected by the backend host.
+# Never expose these credentials to GitHub Pages or the Android client.
+DATABASE_URL = os.getenv('DATABASE_URL', '').strip()
+if DATABASE_URL:
+    from urllib.parse import urlsplit, unquote
+    parsed = urlsplit(DATABASE_URL)
+    if parsed.scheme not in ('postgres', 'postgresql') or not all([parsed.hostname, parsed.username, parsed.path.strip('/')]):
+        raise ImproperlyConfigured('DATABASE_URL must be a valid PostgreSQL connection URL.')
+    if not DEBUG and parsed.hostname not in ('localhost', '127.0.0.1') and os.getenv('DB_SSLMODE', 'require') != 'require':
+        raise ImproperlyConfigured('Production remote PostgreSQL connections require SSL.')
+    DATABASES = {'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': unquote(parsed.path.lstrip('/')),
+        'USER': unquote(parsed.username),
+        'PASSWORD': unquote(parsed.password or ''),
+        'HOST': parsed.hostname,
+        'PORT': parsed.port or 5432,
+        'CONN_MAX_AGE': 0,
+        'OPTIONS': {'sslmode': os.getenv('DB_SSLMODE', 'require'), 'connect_timeout': 10},
+    }}
+else:
+    DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3',
+                             'NAME': os.getenv('DATABASE_PATH', str(BASE_DIR / 'db.sqlite3')),
+                             'OPTIONS': {'timeout': 20}}}
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 12}},

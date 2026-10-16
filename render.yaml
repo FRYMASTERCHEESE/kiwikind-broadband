@@ -1,0 +1,34 @@
+# Render Blueprint for the separate KiwiKind Django API.
+# This is a pre-launch staging service. No customer intake or payments.
+# DATABASE_URL must be supplied in Render's secret settings from the dedicated
+# KiwiKind Neon project; never commit it or pass it to a browser/mobile client.
+services:
+  - type: web
+    name: kiwikind-backend
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    autoDeployTrigger: off
+    healthCheckPath: /healthz
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSLMODE
+        value: require
+      - key: DEBUG
+        value: '0'
+      - key: INTAKE_ENABLED
+        value: '0'
+      - key: ADMIN_ENABLED
+        value: '0'
+      - key: PUBLIC_ORIGIN
+        sync: false
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: TRUST_PROXY_HTTPS
+        value: '1'
