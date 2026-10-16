@@ -4,7 +4,7 @@ Existing account verified in browser: **FryMasterCheese Studios**. MoneyMate NZ 
 
 ## Build
 
-Native Java Activity screens (no WebView), shared HTTPS API, encrypted persistent session cookies, native requests/support/replies/billing views, privacy export to Android document picker and deletion-request flow. No ads, analytics SDK, camera, location, phone or storage permission. INTERNET only. Backups and screenshots are disabled for account privacy. Verification/reset emails open website flows. No offline data cache or push notifications. Refresh/reopen lists to see website changes.
+Native Java Activity screens (no WebView), shared HTTPS API, encrypted persistent session cookies, native requests/support/replies/billing views, privacy export to Android document picker and deletion-request flow. No ads, analytics SDK, camera, location, phone or storage permission. INTERNET only. Android backups are disabled; screenshot capture is not blocked, so avoid including private customer data in screenshots. Verification/reset emails open website flows. No offline data cache or push notifications. Refresh/reopen lists to see website changes.
 
 Use JDK 17, Gradle 9.6.0, Android Gradle plugin 9.4.0 and installed Android SDK 36. AGP compatibility source: https://developer.android.com/build/releases/gradle-plugin . No Gradle wrapper binary is bundled; use installed Gradle or the included GitHub Actions workflow. Installing SDKs may require you to accept their licence.
 
