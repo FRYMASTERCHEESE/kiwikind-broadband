@@ -23,7 +23,7 @@ async function refresh() {
   updateAccountNavigation(true); $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email;
   const results=await Promise.allSettled([api('orders'),api('tickets'),api('invoices')]);
   const [orders,tickets,invoices]=results.map(r=>r.status==='fulfilled'?r.value:null);
-  if(results.some(r=>r.status==='rejected')) notice('You are still signed in, but some account details could not load. Refresh to retry.',true);
+  if(results.some(r=>r.status==='rejected')) notice('You are still signed in, but some account details could not load. Use Refresh account to retry.',true);
   empty('orders',orders?'No requests yet.':'Requests temporarily unavailable.'); if(orders?.orders?.length) $('orders').replaceChildren();
   for(const order of orders?.orders || []) {
     const el=record($('orders'),order.address, `${order.status} · ${date(order.created_at)} · ${order.id}`);
@@ -45,15 +45,17 @@ async function refresh() {
   empty('invoices',invoices?'No invoices.':'Billing information temporarily unavailable.');
   for(const i of invoices?.invoices || []) record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.status} · Due ${i.due_date}`);
   $('order-submit').disabled=!intake;
+  $('refresh-account')?.classList.remove('hidden');
 }
 $('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account ↗':'Sign in ↗';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
 $('auth-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);if(registration){if(!d.consent)throw new Error('Please accept the pre-launch terms.');const r=await api('register',{...d,consent_version:consentVersion});notice(r.message);location.hash='#signin';}else{await api('login',d);await refresh();notice('You’re signed in.');}}));
 $('forgot').addEventListener('click',safeAction(async()=>{if(!backend)throw new Error('Password reset is available when the customer backend is connected.');const email=$('auth-form').elements.email.value;if(!email)throw new Error('Enter your email above first.');notice((await api('password-reset',{email})).message);}));
-$('logout').addEventListener('click',safeAction(async()=>{updateAccountNavigation(false);await api('logout',{});$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');for(const id of ['orders','tickets','invoices'])$(id).replaceChildren();$('auth-form').reset();notice('Signed out.');csrfToken=(await api('csrf')).csrfToken;}));
+$('logout').addEventListener('click',safeAction(async()=>{await api('logout',{});updateAccountNavigation(false);$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');for(const id of ['orders','tickets','invoices'])$(id).replaceChildren();$('auth-form').reset();notice('Signed out.');csrfToken=(await api('csrf')).csrfToken;}));
 $('order-form').addEventListener('submit',safeAction(async e=>{const d=formData(e.target);orderKey ||= crypto.randomUUID();const r=await api('orders',{...d,idempotency_key:orderKey,consent_version:consentVersion});orderKey=null;e.target.reset();await refresh();notice(r.message);}));
 $('order-form').addEventListener('input',()=>{orderKey=null;});
 $('ticket-form').addEventListener('submit',safeAction(async e=>{const r=await api('tickets',formData(e.target));e.target.reset();await refresh();notice(r.message);}));
 $('deletion-form').addEventListener('submit',safeAction(async e=>{notice((await api('privacy/deletion',formData(e.target))).message);e.target.reset();}));
+$('refresh-account')?.addEventListener('click',safeAction(async()=>{await refresh();notice('Account details refreshed.');}));
 $('export').addEventListener('click',safeAction(async()=>{const data=await api('privacy/export');const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='kiwikind-data.json';a.click();URL.revokeObjectURL(url);notice('Your data export is ready.');}));
 async function init(){
   try{
