@@ -15,7 +15,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.graphics.Color;
 import android.text.InputType;
-import android.view.WindowManager;
 import android.widget.*;
 import org.json.*;
 import java.util.UUID;
@@ -34,7 +33,7 @@ public class MainActivity extends Activity {
     interface Task { JSONObject run() throws Exception; }
     interface Done { void accept(JSONObject data) throws Exception; }
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);api=new Api(BuildConfig.API_ORIGIN,this);getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE);
+        super.onCreate(state);api=new Api(BuildConfig.API_ORIGIN,this);
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.rgb(244,242,233));
         root.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(22,insets.getSystemWindowInsetTop()+12,22,insets.getSystemWindowInsetBottom()+12);return insets;});
         TextView brand=new TextView(this);brand.setText(R.string.app_name);brand.setTextSize(25);brand.setTextColor(Color.rgb(18,63,50));root.addView(brand);
@@ -42,7 +41,7 @@ public class MainActivity extends Activity {
         feedback=new TextView(this);feedback.setTextSize(14);feedback.setPadding(0,16,0,16);feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
         ScrollView scroll=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
-        else run(()->api.call("status",null),s->{intake=s.optBoolean("intake_enabled");restoreSession();});
+        else {auth(false);message("Connecting to KiwiKind. On the free server, the first connection can take a minute.");run(()->api.call("status",null),s->{intake=s.optBoolean("intake_enabled");restoreSession();});}
     }
     private void restoreSession(){
         // A server-verified session, not a local flag, determines whether to show the account.
