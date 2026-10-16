@@ -84,7 +84,7 @@ final class Api {
         if(data!=null && csrf.isEmpty()) call("csrf",null);
         URI uri=URI.create(origin+"/api/"+path);
         HttpURLConnection c=(HttpURLConnection)uri.toURL().openConnection();
-        c.setInstanceFollowRedirects(false);c.setConnectTimeout(15000);c.setReadTimeout(15000);
+        c.setInstanceFollowRedirects(false);c.setConnectTimeout(65000);c.setReadTimeout(65000);
         c.setRequestProperty("Accept","application/json");
         for(Map.Entry<String,List<String>> h:cookies.get(uri,java.util.Collections.emptyMap()).entrySet()) c.setRequestProperty(h.getKey(),String.join("; ",h.getValue()));
         try {
