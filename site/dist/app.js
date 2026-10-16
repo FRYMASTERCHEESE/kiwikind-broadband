@@ -84,7 +84,7 @@ function setupGoogleSignIn(){
       try{await api('google-login',{id_token:credential.credential});await refresh();notice('Signed in with Google.');}
       catch(error){notice(error.message,true);}
     }});
-    google.accounts.id.renderButton($('google-signin'),{theme:'outline',size:'large',text:'continue_with',width:280});
+    google.accounts.id.renderButton($('google-signin'),{theme:'filled_black',shape:'pill',size:'large',text:'signin_with',logo_alignment:'left',width:280});
   };
   script.onerror=()=>notice('Google sign-in is unavailable. You can still use email sign-in.',true);
   document.head.append(script);
