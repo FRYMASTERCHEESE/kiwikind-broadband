@@ -55,6 +55,7 @@ public class MainActivity extends Activity {
             run(()->api.call(register?"register":"login",data("email",e,"password",p,"consent_version",CONSENT)),r->{if(register){message(r.optString("message"));}else{signedIn=true;home();}});
         }).setEnabled(api.configured()&&(!register||intake));
         button(register?"Back to sign in":"Create an account",()->auth(!register));
+        button("Open My KiwiKind website",()->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#portal")))).setEnabled(api.configured());
         button("Reset password",()->run(()->api.call("password-reset",data("email",email.getText().toString())),r->message(r.optString("message")))).setEnabled(api.configured());
         button("Privacy notice",()->legal("privacy"));button("Pre-launch terms",()->legal("terms"));
     }
