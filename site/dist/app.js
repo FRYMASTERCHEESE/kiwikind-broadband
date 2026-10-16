@@ -58,6 +58,7 @@ async function init(){
     $('connection-status').textContent=intake?'Pre-launch portal connected · no active broadband sales':'Portal connected · customer intake is closed';
     if(s.legal_entity && s.business_contact && s.privacy_contact)$('legal-identity').textContent=`Operator: ${s.legal_entity}. Business contact: ${s.business_contact}. Privacy contact: ${s.privacy_contact}. Pre-launch only.`;
     await api('csrf');$('auth-submit').disabled=false;
+    if(intake) setupGoogleSignIn();
     const hash=location.hash;
     if(hash.startsWith('#verify=')){const token=decodeURIComponent(hash.slice(8));history.replaceState(null,'','#portal');notice((await api('verify',{token})).message);}
     if(hash.startsWith('#reset=')){
@@ -72,3 +73,19 @@ async function init(){
   }catch{ $('connection-status').textContent='Design preview · customer backend is not connected';$('auth-submit').disabled=true;$('toggle-auth').disabled=true;$('forgot').disabled=true; }
 }
 init();
+
+function setupGoogleSignIn(){
+  const clientId='956119315558-mgaqlpnfr9r0ic9n4jtb284gaa4n7i61.apps.googleusercontent.com';
+  const script=document.createElement('script');
+  script.src='https://accounts.google.com/gsi/client';script.async=true;
+  script.onload=()=>{
+    if(!window.google?.accounts?.id)return;
+    google.accounts.id.initialize({client_id:clientId,callback:async credential=>{
+      try{await api('google-login',{id_token:credential.credential});await refresh();notice('Signed in with Google.');}
+      catch(error){notice(error.message,true);}
+    }});
+    google.accounts.id.renderButton($('google-signin'),{theme:'outline',size:'large',text:'continue_with',width:280});
+  };
+  script.onerror=()=>notice('Google sign-in is unavailable. You can still use email sign-in.',true);
+  document.head.append(script);
+}
