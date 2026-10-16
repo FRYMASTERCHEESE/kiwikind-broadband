@@ -242,3 +242,36 @@ def google_signin(request):
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
     audit(request, 'google_login')
     return JsonResponse({'email': user.email, 'csrfToken': get_token(request)})
+
+
+@endpoint(['POST'], True, throttle='google-link')
+def google_link(request):
+    """Link a Google identity only after an existing password/session login."""
+    import os
+    from google.auth.transport import requests as google_requests
+    from google.oauth2 import id_token
+    client_id = os.getenv('GOOGLE_WEB_CLIENT_ID', '').strip()
+    if not client_id:
+        return JsonResponse({'error': 'Google sign-in is not configured yet'}, status=503)
+    token = text(request.data, 'id_token', 8192, 20)
+    try:
+        claims = id_token.verify_oauth2_token(token, google_requests.Request(), client_id)
+    except Exception:
+        return JsonResponse({'error': 'Google identity could not be verified'}, status=401)
+    if claims.get('iss') not in ('accounts.google.com', 'https://accounts.google.com') or claims.get('email_verified') is not True:
+        return JsonResponse({'error': 'A verified Google email is required'}, status=401)
+    email = str(claims.get('email', '')).strip().lower()
+    subject = str(claims.get('sub', '')).strip()
+    if not subject or not email or email != request.user.email.strip().lower():
+        return JsonResponse({'error': 'Use the verified Google account matching your signed-in email'}, status=403)
+    from .models import GoogleIdentity
+    with transaction.atomic():
+        existing = GoogleIdentity.objects.select_for_update().filter(subject=subject).first()
+        if existing and existing.user_id != request.user.pk:
+            return JsonResponse({'error': 'Google account is already linked to another user'}, status=409)
+        if not existing:
+            if GoogleIdentity.objects.filter(user=request.user).exists():
+                return JsonResponse({'error': 'This account already has a different Google identity linked'}, status=409)
+            GoogleIdentity.objects.create(user=request.user, subject=subject)
+    audit(request, 'google_link')
+    return JsonResponse({'message': 'Google account linked. You can now sign in with Google.'})
