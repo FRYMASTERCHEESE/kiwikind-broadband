@@ -48,9 +48,13 @@ public class MainActivity extends Activity {
         // A server-verified session, not a local flag, determines whether to show the account.
         run(()->{
             try { return api.call("me",null); }
-            catch(Exception e) { return new JSONObject().put("session_unavailable",true); }
+            catch(Api.SessionExpiredException e) { api.clear();return new JSONObject().put("session_unavailable",true); }
+            catch(Exception e) { return new JSONObject().put("connection_unavailable",true); }
         },r->{
-            if(r.optBoolean("session_unavailable")){
+            if(r.optBoolean("connection_unavailable")){
+                signedIn=false;auth(false);
+                message("Could not reach KiwiKind. Your saved login was kept; try reopening when connected.");
+            }else if(r.optBoolean("session_unavailable")){
                 signedIn=false;auth(false);
                 message("Sign in to My KiwiKind. Customer intake remains closed.");
             }else{
