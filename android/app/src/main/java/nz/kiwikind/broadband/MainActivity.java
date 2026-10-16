@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutorService;
 public class MainActivity extends Activity {
     private static final String CONSENT="prelaunch-2026-10-16";
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
-    private final Api api=new Api(BuildConfig.API_ORIGIN,this);
+    private Api api;
     private LinearLayout content;
     private TextView feedback;
     private boolean intake=false, signedIn=false, busy=false;
@@ -34,7 +34,7 @@ public class MainActivity extends Activity {
     interface Task { JSONObject run() throws Exception; }
     interface Done { void accept(JSONObject data) throws Exception; }
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE);
+        super.onCreate(state);api=new Api(BuildConfig.API_ORIGIN,this);getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,WindowManager.LayoutParams.FLAG_SECURE);
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.rgb(244,242,233));
         root.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(22,insets.getSystemWindowInsetTop()+12,22,insets.getSystemWindowInsetBottom()+12);return insets;});
         TextView brand=new TextView(this);brand.setText(R.string.app_name);brand.setTextSize(25);brand.setTextColor(Color.rgb(18,63,50));root.addView(brand);
