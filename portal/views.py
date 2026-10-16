@@ -201,3 +201,42 @@ def deletion(request):
         if not existing: existing=PrivacyRequest.objects.create(user=request.user)
         audit(request,'deletion_requested',existing.pk)
     return JsonResponse({'message':'Deletion request received for review, including any lawful retention requirements.'},status=202)
+
+
+@endpoint(['POST'], throttle='google-login')
+def google_signin(request):
+    """Verify Google ID token server-side; never trust an unverified email."""
+    import os
+    from google.auth.transport import requests as google_requests
+    from google.oauth2 import id_token
+    client_id = os.getenv('GOOGLE_WEB_CLIENT_ID', '').strip()
+    if not client_id:
+        return JsonResponse({'error': 'Google sign-in is not configured yet'}, status=503)
+    token = text(request.data, 'id_token', 8192, 20)
+    try:
+        claims = id_token.verify_oauth2_token(token, google_requests.Request(), client_id)
+    except (ValueError, Exception):
+        return JsonResponse({'error': 'Google identity could not be verified'}, status=401)
+    if claims.get('iss') not in ('accounts.google.com', 'https://accounts.google.com') or claims.get('email_verified') is not True:
+        return JsonResponse({'error': 'A verified Google email is required'}, status=401)
+    email = str(claims.get('email', '')).strip().lower()
+    subject = str(claims.get('sub', '')).strip()
+    if not email or not subject:
+        return JsonResponse({'error': 'Invalid Google account'}, status=401)
+    # Existing password accounts must be linked after authenticating to that account.
+    # Do not automatically merge identities based solely on a Google email claim.
+    from .models import GoogleIdentity
+    with transaction.atomic():
+        identity = GoogleIdentity.objects.select_related('user').filter(subject=subject).first()
+        if identity:
+            user = identity.user
+        else:
+            if User.objects.filter(username=email).exists():
+                return JsonResponse({'error': 'This email already has an account. Sign in with your password first to link Google.'}, status=409)
+            user = User.objects.create_user(username=email, email=email, password=None, is_active=True)
+            GoogleIdentity.objects.create(user=user, subject=subject)
+    if not user.is_active:
+        return JsonResponse({'error': 'Account unavailable'}, status=403)
+    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    audit(request, 'google_login')
+    return JsonResponse({'email': user.email, 'csrfToken': get_token(request)})
