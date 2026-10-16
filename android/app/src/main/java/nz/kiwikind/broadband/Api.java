@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 final class Api {
+    static final class SessionExpiredException extends Exception { SessionExpiredException(){super("Please sign in again.");} }
     private final String origin;
     private final CookieManager cookies = new CookieManager(null, CookiePolicy.ACCEPT_ORIGINAL_SERVER);
     private String csrf="";
@@ -99,6 +100,7 @@ final class Api {
             try(stream){byte[] buf=new byte[4096];int n;while((n=stream.read(buf))!=-1){out.write(buf,0,n);if(out.size()>2000000)throw new Exception("Server response too large.");}}
             JSONObject result;
             try{result=new JSONObject(out.toString(StandardCharsets.UTF_8.name()));}catch(Exception e){throw new Exception("The customer backend is unavailable. Please try again.");}
+            if(code==401)throw new SessionExpiredException();
             if(code>=300)throw new Exception(result.optString("error","Request failed ("+code+")"));
             if(result.has("csrfToken"))csrf=result.getString("csrfToken");
             return result;
