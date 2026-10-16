@@ -57,7 +57,7 @@ final class Api {
             byte[] encrypted=cipher.doFinal(entries.toString().getBytes(StandardCharsets.UTF_8));
             prefs.edit().putString("iv",Base64.getEncoder().encodeToString(cipher.getIV()))
                 .putString("cookies",Base64.getEncoder().encodeToString(encrypted)).apply();
-        }catch(Exception ignored){prefs.edit().clear().apply();}
+        }catch(Exception ignored){/* Preserve the last readable encrypted session; retry persistence later. */}
     }
     private void restoreCookies() {
         try {

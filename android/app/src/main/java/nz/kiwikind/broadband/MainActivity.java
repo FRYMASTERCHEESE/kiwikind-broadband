@@ -91,6 +91,8 @@ public class MainActivity extends Activity {
         button("Privacy notice",()->legal("privacy"));button("Pre-launch terms",()->legal("terms"));
     }
     private void googleSignIn(){
+        if(BuildConfig.GOOGLE_WEB_CLIENT_ID.trim().isEmpty()){message("Google sign-in is not configured in this Android build. Use the website while setup is completed.");return;}
+        message("Opening Google account chooser…");
         GetGoogleIdOption option=new GetGoogleIdOption.Builder()
             .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
             .setFilterByAuthorizedAccounts(false)
@@ -106,7 +108,12 @@ public class MainActivity extends Activity {
                     run(()->api.call("google-login",data("id_token",token)),r->{signedIn=true;home();message("Signed in with Google.");});
                 }catch(Exception e){message("Could not verify the Google account. Try again.");}
             }
-            @Override public void onError(GetCredentialException e){message("Google sign-in was cancelled or unavailable. Please try again.");}
+            @Override public void onError(GetCredentialException e){
+                String kind=e.getClass().getSimpleName();
+                if("GetCredentialCancellationException".equals(kind))message("Google account selection was cancelled. Tap Sign in with Google to try again.");
+                else if("NoCredentialException".equals(kind))message("Google could not find an available credential. Check Google Play services and the Android OAuth client configuration (package and signing SHA-1), or sign in on the website.");
+                else message("Android Google sign-in could not start ("+kind+"). Check the Android OAuth client package and signing SHA-1 in Google Cloud. Website sign-in is available below.");
+            }
         });
     }
     private void nav(){button("Back to account",this::home);}
