@@ -19,8 +19,8 @@ function record(parent, title, subtitle) { const el=node('div',''); el.className
 function button(label, action) { const b=node('button',label); b.className='textbutton'; b.type='button'; b.addEventListener('click',safeAction(action)); return b; }
 function date(value) { return new Date(value).toLocaleDateString('en-NZ'); }
 async function refresh() {
-  updateAccountNavigation(true);
-  const me=await api('me'); $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email;
+  const me=await api('me');
+  updateAccountNavigation(true); $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email;
   const [orders,tickets,invoices]=await Promise.all([api('orders'),api('tickets'),api('invoices')]);
   empty('orders','No requests yet.'); if(orders.orders.length) $('orders').replaceChildren();
   for(const order of orders.orders) {
@@ -70,7 +70,7 @@ async function init(){
       const copy=form.cloneNode(true);form.replaceWith(copy);
       copy.addEventListener('submit',safeAction(async()=>{notice((await api('password-reset/confirm',{token,password:copy.querySelector('input').value})).message);location.reload();}));return;
     }
-    try{await refresh();}catch{/* Anonymous visitors see sign-in. */}
+    try{await refresh();}catch{/* Anonymous visitors see sign-in. */updateAccountNavigation(false);$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');}
   }catch{ $('connection-status').textContent='Design preview · customer backend is not connected';$('auth-submit').disabled=true;$('toggle-auth').disabled=true;$('forgot').disabled=true; }
 }
 init();
