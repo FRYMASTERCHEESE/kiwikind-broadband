@@ -101,14 +101,14 @@ class PlatformTests(TestCase):
         staff=User.objects.create_user('support@example.invalid',password='Staff-Kowhai-Planet-123!',is_staff=True)
         self.client.force_login(staff)
         self.assertEqual(self.client.get('/admin/portal/order/').status_code,403)
-        superuser=User.objects.create_superuser('operator@example.invalid','operator@example.invalid','Staff-Kowhai-Planet-123!')
+        superuser=User.objects.create_superuser('operator@example.invalid','kiwikindbroadband@gmail.com','Staff-Kowhai-Planet-123!')
         self.client.force_login(superuser)
         self.assertEqual(self.client.get('/admin/portal/invoice/add/').status_code,403)
         self.assertEqual(self.client.get('/admin/portal/auditevent/add/').status_code,403)
     def test_admin_support_reply_and_audit(self):
         t=Ticket.objects.create(user=self.alice,subject='Synthetic complaint',category='complaint')
         original=Message.objects.create(ticket=t,author=self.alice,body='Please help')
-        operator=User.objects.create_superuser('operator@example.invalid','operator@example.invalid','Staff-Kowhai-Planet-123!')
+        operator=User.objects.create_superuser('operator@example.invalid','kiwikindbroadband@gmail.com','Staff-Kowhai-Planet-123!')
         self.client.force_login(operator)
         r=self.client.post(f'/admin/portal/ticket/{t.pk}/change/',{
             'status':'open','messages-TOTAL_FORMS':'2','messages-INITIAL_FORMS':'1',
