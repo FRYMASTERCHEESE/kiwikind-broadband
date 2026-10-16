@@ -24,7 +24,7 @@ final class Api {
         HttpURLConnection c=(HttpURLConnection)uri.toURL().openConnection();
         c.setInstanceFollowRedirects(false);c.setConnectTimeout(15000);c.setReadTimeout(15000);
         c.setRequestProperty("Accept","application/json");
-        for(Map.Entry<String,List<String>> h:cookies.get(uri,Map.of()).entrySet()) c.setRequestProperty(h.getKey(),String.join("; ",h.getValue()));
+        for(Map.Entry<String,List<String>> h:cookies.get(uri,java.util.Collections.emptyMap()).entrySet()) c.setRequestProperty(h.getKey(),String.join("; ",h.getValue()));
         try {
             if(data!=null){
                 c.setRequestMethod("POST");c.setDoOutput(true);c.setRequestProperty("Content-Type","application/json");
