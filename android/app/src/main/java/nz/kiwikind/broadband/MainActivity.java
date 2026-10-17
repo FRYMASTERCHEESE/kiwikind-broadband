@@ -37,6 +37,7 @@ public class MainActivity extends Activity {
     interface Done { void accept(JSONObject data) throws Exception; }
     @Override public void onCreate(Bundle state){
         super.onCreate(state);api=new Api(BuildConfig.API_ORIGIN,this);
+        if(android.os.Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::backToAccount);
         getWindow().getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|(android.os.Build.VERSION.SDK_INT>=27?android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR:0));
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(PAPER);
         root.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});
@@ -172,7 +173,10 @@ public class MainActivity extends Activity {
             message("KiwiKind Broadband · Public information · Pre-launch");
         }catch(Exception e){paragraph("Website information could not load.");button("Back to My KiwiKind",()->{if(signedIn)home();else auth(false);});}
     }
-    @Override public void onBackPressed(){if(busy)return;if(signedIn)home();else auth(false);}
+    private void backToAccount(){if(busy)return;if(signedIn)home();else auth(false);}
+    // API 26–32 fallback; newer Android uses the gesture callback registered in onCreate.
+    @android.annotation.SuppressLint("GestureBackNavigation")
+    @Override public void onBackPressed(){backToAccount();}
     private JSONObject data(Object... pairs){JSONObject d=new JSONObject();try{for(int i=0;i<pairs.length;i+=2)d.put((String)pairs[i],pairs[i+1]);}catch(JSONException ignored){}return d;}
     private void run(Task task,Done done){if(busy)return;busy=true;message("Working…");worker.submit(()->{try{JSONObject result=task.run();runOnUiThread(()->{busy=false;if(isFinishing()||isDestroyed())return;try{done.accept(result);}catch(Exception e){message("Could not display the result. Refresh and try again.");}});}catch(Exception e){runOnUiThread(()->{busy=false;if(!isFinishing()&&!isDestroyed()){
             if(e instanceof Api.SessionExpiredException){api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);}
