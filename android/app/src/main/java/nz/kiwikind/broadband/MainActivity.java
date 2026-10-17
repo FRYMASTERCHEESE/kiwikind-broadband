@@ -107,10 +107,11 @@ public class MainActivity extends Activity {
     private void auth(boolean register){
         refreshScreen=null;
         content.removeAllViews();title(register?"Create your account":"A kinder connection.");paragraph("A request is not a broadband contract. Verify your email on the website before signing in here.");
+        paragraph("Or sign in with email and password:");
         EditText email=field("Email",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         EditText password=field("Password (at least 12 characters)",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
         CheckBox consent=new CheckBox(this);consent.setText(R.string.account_consent);if(register)content.addView(consent);
-        button(register?"Create account":"Sign in",()->{
+        button(register?"Create account":"Sign in with email",()->{
             if(register&&!consent.isChecked()){message("Please read and accept the pre-launch terms.");return;}
             String e=email.getText().toString().trim(),p=password.getText().toString();password.setText("");
             run(()->api.call(register?"register":"login",data("email",e,"password",p,"consent_version",CONSENT)),r->{if(register){message(r.optString("message"));}else{signedIn=true;home();}});
@@ -150,7 +151,7 @@ public class MainActivity extends Activity {
             }
             @Override public void onError(GetCredentialException e){
                 String kind=e.getClass().getSimpleName();
-                if("GetCredentialCancellationException".equals(kind))message("Google account selection was cancelled. Tap Sign in with Google to try again.");
+                if("GetCredentialCancellationException".equals(kind))message("Google did not finish signing in. No account changes were made. You can retry Google sign-in.");
                 else if("NoCredentialException".equals(kind))retryGoogleWithExplicitButton();
                 else message("Android Google sign-in could not start ("+kind+"). Check the Android OAuth client package and signing SHA-1 in Google Cloud. Website sign-in is available below.");
             }
@@ -178,7 +179,7 @@ public class MainActivity extends Activity {
             }
             @Override public void onError(GetCredentialException e){
                 if("GetCredentialCancellationException".equals(e.getClass().getSimpleName()))
-                    message("Google sign-in cancelled. Your saved login was kept.");
+                    message("Google did not finish signing in. Your saved login was kept.");
                 else message("Google sign-in is unavailable ("+e.getClass().getSimpleName()+"). Check Google Play services and the app signing SHA-1; your saved login was kept.");
             }
         });
