@@ -1,6 +1,9 @@
 name: Approved website portal visual review
 on:
   workflow_dispatch:
+  push:
+    branches: [feat/native-website-parity]
+    paths: ['site/**', '.github/workflows/web-visual-review.yml']
 permissions:
   contents: read
 jobs:
