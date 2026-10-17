@@ -11,7 +11,9 @@ def limited(request, scope, limit=10, seconds=900):
     key = hmac.new(settings.SECRET_KEY.encode(), f'{scope}:{identity}'.encode(), hashlib.sha256).hexdigest()
     window = int(time.time()) // seconds
     with transaction.atomic():
-        bucket, _ = RateBucket.objects.get_or_create(key=key, defaults={'window':window})
+        # Serialize read/modify/write, including get_or_create's uniqueness retry.
+        # PostgreSQL row locks last until this transaction commits.
+        bucket, _ = RateBucket.objects.select_for_update().get_or_create(key=key, defaults={'window':window})
         if bucket.window != window:
             bucket.window, bucket.count = window, 0
         bucket.count += 1

@@ -34,6 +34,7 @@ class ExtendedJourneys(TestCase):
         return client
 
     def reset_token(self, user):
+        user.refresh_from_db()
         return signing.dumps({'id':user.pk, 'token':default_token_generator.make_token(user)}, salt='reset')
 
     def test_reset_revokes_both_old_sessions_and_keeps_other_account(self):
@@ -106,6 +107,7 @@ class ExtendedJourneys(TestCase):
     def test_restored_synthetic_records_preserve_ownership_and_authentication(self):
         # Portable fixture recovery in disposable DB; not a production recovery drill.
         ticket = Ticket.objects.create(user=self.alice, subject='Recovery fixture', category='support')
+        ticket_id = ticket.pk
         message = Message.objects.create(ticket=ticket, author=self.alice, body='Restorable synthetic record')
         fixture = serializers.serialize('json', [ticket, message])
         message.delete()
@@ -113,8 +115,8 @@ class ExtendedJourneys(TestCase):
         for row in serializers.deserialize('json', fixture):
             row.save()
         alice, bob = self.login(self.alice), self.login(self.bob)
-        self.assertEqual(alice.get(f'/api/tickets/{ticket.pk}/messages').json()['messages'][0]['body'], 'Restorable synthetic record')
-        self.assertEqual(bob.get(f'/api/tickets/{ticket.pk}/messages').status_code, 404)
+        self.assertEqual(alice.get(f'/api/tickets/{ticket_id}/messages').json()['messages'][0]['body'], 'Restorable synthetic record')
+        self.assertEqual(bob.get(f'/api/tickets/{ticket_id}/messages').status_code, 404)
 
 class ConcurrentRateLimit(TransactionTestCase):
     def burst(self, scope, window):
