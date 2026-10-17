@@ -1,0 +1,52 @@
+name: Capture existing KiwiKind Android screenshots
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: KiwiKind-signed-prelaunch-f8397edebb898f8523931167658091239c567278
+          run-id: 38999521027
+          github-token: ${{ github.token }}
+          path: existing
+      - name: Warm existing backend
+        run: curl --fail --retry 3 --max-time 100 https://kiwikind-backend.onrender.com/healthz
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -dns-server 8.8.8.8,1.1.1.1
+          script: |
+            mkdir -p screenshots
+            adb install existing/android/app/build/outputs/apk/release/app-release.apk
+            adb shell am start -n nz.kiwikind.broadband/.MainActivity
+            sleep 60
+            adb shell uiautomator dump /sdcard/window.xml
+            adb pull /sdcard/window.xml screenshots/window.xml
+            if ! grep -q 'Sign in with Google' screenshots/window.xml; then echo 'Connected sign-in screen unavailable'; exit 1; fi
+            if grep -q 'Unable to resolve host' screenshots/window.xml; then echo 'DNS failed'; exit 1; fi
+            adb shell settings put system time_12_24 24
+            adb exec-out screencap -p > screenshots/01-sign-in.png
+            adb shell input swipe 500 1800 500 450 500
+            sleep 2
+            adb exec-out screencap -p > screenshots/02-account-options.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: KiwiKind-existing-release-screenshots
+          path: screenshots/
+          retention-days: 14
