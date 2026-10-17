@@ -1,5 +1,6 @@
 """Additional prelaunch journeys. Disposable DB and local mail only."""
 import json
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
@@ -158,3 +159,61 @@ class ConcurrentRateLimit(TransactionTestCase):
         with patch('portal.security.time.time', return_value=899100):
             limited(request, 'rollover')
         self.burst('rollover', 1000)
+
+@override_settings(INTAKE_ENABLED=False)
+class ConcurrentAccountActions(TransactionTestCase):
+    def burst(self, action):
+        if connection.vendor != 'postgresql':
+            self.skipTest('Production concurrency must run on disposable PostgreSQL')
+        barrier = Barrier(4)
+        def call(_):
+            close_old_connections()
+            try:
+                client = Client()
+                client.raise_request_exception = False
+                barrier.wait(timeout=15)
+                return action(client).status_code
+            finally:
+                close_old_connections()
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            return list(pool.map(call, range(4)))
+
+    def post(self, client, route, body):
+        return client.post('/api/'+route, json.dumps(body), content_type='application/json')
+
+    def test_reset_token_consumed_once_under_concurrency(self):
+        user = User.objects.create_user('parallel-reset@example.invalid', password=OLD)
+        token = signing.dumps({'id':user.pk,'token':default_token_generator.make_token(user)},salt='reset')
+        original = User.set_password
+        def delayed(user, raw):
+            time.sleep(0.05)
+            return original(user, raw)
+        with patch.object(User,'set_password',delayed):
+            statuses = self.burst(lambda c:self.post(c,'password-reset/confirm',{'token':token,'password':NEW}))
+        self.assertEqual(sorted(statuses), [200,400,400,400])
+
+    def test_google_first_login_race_does_not_duplicate_or_return_500(self):
+        claims={'iss':'https://accounts.google.com','email_verified':True,'email':'parallel-google@example.invalid','sub':'parallel-synthetic-subject'}
+        original = User.save
+        def delayed(user,*args,**kwargs):
+            if user.pk is None: time.sleep(0.05)
+            return original(user,*args,**kwargs)
+        with patch.dict(os.environ,{'GOOGLE_WEB_CLIENT_ID':'synthetic-client'}), patch('google.oauth2.id_token.verify_oauth2_token',return_value=claims), patch.object(User,'save',delayed):
+            statuses=self.burst(lambda c:self.post(c,'google-login',{'id_token':'synthetic-token-with-required-length'}))
+        self.assertTrue(all(s in (200,409) for s in statuses), statuses)
+        self.assertEqual(User.objects.count(),1)
+        self.assertEqual(GoogleIdentity.objects.count(),1)
+
+    def test_parallel_deletion_requests_remain_one_queue_item(self):
+        user=User.objects.create_user('parallel-deletion@example.invalid',password=OLD)
+        original = PrivacyRequest.save
+        def delayed(request,*args,**kwargs):
+            time.sleep(0.05)
+            return original(request,*args,**kwargs)
+        def action(client):
+            client.force_login(user)
+            return self.post(client,'privacy/deletion',{'password':OLD})
+        with patch.object(PrivacyRequest,'save',delayed):
+            statuses=self.burst(action)
+        self.assertEqual(statuses,[202]*4)
+        self.assertEqual(PrivacyRequest.objects.count(),1)
