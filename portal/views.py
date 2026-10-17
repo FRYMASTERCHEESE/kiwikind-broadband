@@ -154,10 +154,11 @@ def reset_start(request):
 def reset_confirm(request):
     try: payload=signing.loads(text(request.data,'token',1000),salt='reset',max_age=3600)
     except signing.BadSignature: raise ValueError('Invalid or expired reset link')
-    user=get_object_or_404(User,pk=payload['id'])
-    if not default_token_generator.check_token(user,payload['token']): raise ValueError('Invalid or used reset link')
-    password=text(request.data,'password',128,12); validate_password(password,user)
-    user.set_password(password); user.save(update_fields=['password'])
+    with transaction.atomic():
+        user=get_object_or_404(User.objects.select_for_update(),pk=payload['id'])
+        if not default_token_generator.check_token(user,payload['token']): raise ValueError('Invalid or used reset link')
+        password=text(request.data,'password',128,12); validate_password(password,user)
+        user.set_password(password); user.save(update_fields=['password'])
     return JsonResponse({'message':'Password updated. Sign in again.'})
 
 @endpoint(['GET'],True)
@@ -232,6 +233,8 @@ def deletion(request):
     if not request.user.check_password(text(request.data,'password',128)): return JsonResponse({'error':'Confirm your current password'},status=403)
     if limited(request,'deletion'): return JsonResponse({'error':'Try later'},status=429)
     with transaction.atomic():
+        # Lock the parent even when no queue item exists yet.
+        User.objects.select_for_update().get(pk=request.user.pk)
         existing=PrivacyRequest.objects.filter(user=request.user).exclude(status='completed').first()
         if not existing: existing=PrivacyRequest.objects.create(user=request.user)
         audit(request,'deletion_requested',existing.pk)
@@ -257,17 +260,24 @@ def _verified_google_signin(request, token):
     if not email or not subject:
         return JsonResponse({'error': 'Invalid Google account'}, status=401)
     from .models import GoogleIdentity
-    with transaction.atomic():
+    try:
+        with transaction.atomic():
+            identity = GoogleIdentity.objects.select_related('user').filter(subject=subject).first()
+            if identity:
+                user = identity.user
+            else:
+                # Existing password identities are NEVER automatically linked by email.
+                if User.objects.filter(username=email).exists():
+                    return JsonResponse({'error': 'This email already has an account. Sign in with your password first to link Google.'}, status=409)
+                user = User.objects.create_user(username=email, email=email, password=None, is_active=True)
+                GoogleIdentity.objects.create(user=user, subject=subject)
+    except IntegrityError:
+        # A concurrent first login may have committed the same verified subject.
+        # Recover outside the rolled-back transaction; never link by email.
         identity = GoogleIdentity.objects.select_related('user').filter(subject=subject).first()
-        if identity:
-            user = identity.user
-        else:
-            # Google-only portal accounts are allowed while broadband intake stays closed.
-            # Existing password identities are NEVER automatically linked by email.
-            if User.objects.filter(username=email).exists():
-                return JsonResponse({'error': 'This email already has an account. Sign in with your password first to link Google.'}, status=409)
-            user = User.objects.create_user(username=email, email=email, password=None, is_active=True)
-            GoogleIdentity.objects.create(user=user, subject=subject)
+        if not identity:
+            return JsonResponse({'error': 'Account changed during sign-in. Try again or sign in with your password.'}, status=409)
+        user = identity.user
     if not user.is_active:
         return JsonResponse({'error': 'Account unavailable'}, status=403)
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')

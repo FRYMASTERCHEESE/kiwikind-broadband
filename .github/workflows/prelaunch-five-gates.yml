@@ -15,6 +15,10 @@ on:
         description: Source revision to verify with additional tests
         type: string
         default: feature/neon-postgres-config
+      test_labels:
+        description: Additional test classes to run
+        type: string
+        default: portal.test_extended_verification
 permissions:
   contents: read
 jobs:
@@ -42,6 +46,7 @@ jobs:
       DEBUG: '1'
       DATABASE_URL: postgresql://kiwikind_ci:synthetic-ci-only@localhost:5432/kiwikind_ci
       DB_SSLMODE: disable
+      TEST_LABELS: ${{ inputs.test_labels }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -56,4 +61,4 @@ jobs:
         run: |
           cp portal/test_extended_verification.py runtime/portal/test_extended_verification.py
           cd runtime
-          python manage.py test portal.test_extended_verification --settings=config.test_settings -v 2
+          python manage.py test $TEST_LABELS --settings=config.test_settings -v 2
