@@ -75,7 +75,10 @@ SECURE_HSTS_PRELOAD = False
 # Preload is deliberately deferred until a permanent owned domain is approved.
 SILENCED_SYSTEM_CHECKS = ['security.W021']
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_REFERRER_POLICY = 'same-origin'
+# GIS uses the HTTPS origin to validate its cross-origin button frame. Send
+# only the origin cross-site, never account paths or query strings.
+# https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 X_FRAME_OPTIONS = 'DENY'
 # Enable ONLY behind a trusted proxy that strips incoming X-Forwarded-Proto.
 if os.getenv('TRUST_PROXY_HTTPS') == '1':
