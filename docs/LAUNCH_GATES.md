@@ -1,6 +1,8 @@
 # NZ business and service launch gates
 
-As of 16 October 2026 the owner confirms no registered operating business/NZBN and no wholesale agreement. KiwiKind Broadband is a working brand, not evidence of company incorporation. Company versus sole-trader structure needs an owner decision; this build does not register either.
+As of 18 October 2026, the owner reports that a name reservation application for KiwiKind Broadband Limited was submitted on that date (application ID 15492426) and is awaiting approval. The company is NOT incorporated. KiwiKind Broadband remains a prelaunch working brand, with no verified wholesale agreement or operating ISP service. A pending application, or an approved name reservation, is not company incorporation, trademark clearance or permission to sell broadband. This build does not register a company or enter supplier agreements.
+
+Keep customer intake, orders, payments, provisioning and public admin disabled until genuine wholesale contracts, operational/legal compliance and explicit owner launch approval are evidenced. A closed Play test is not approval to launch broadband services. Do not set `LEGAL_ENTITY` to the proposed limited company while it is unincorporated.
 
 ## Before public customer intake
 
