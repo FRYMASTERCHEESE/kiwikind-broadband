@@ -91,7 +91,9 @@ $('auth-form').addEventListener('submit',safeAction(async e=>{
     else{notice('Signing in. Please wait for your account to load.');await api('login',d);await refresh();notice('You’re signed in.');}
   }finally{authPending=false;$('auth-submit').disabled=!backend||(registration&&!intake);}
 }));
-$('forgot').addEventListener('click',safeAction(async()=>{if(!backend)throw new Error('Password reset is available when the customer backend is connected.');const email=$('auth-form').elements.email.value;if(!$('auth-form').elements.email.reportValidity())return;notice((await api('password-reset',{email})).message);}));
+$('forgot').addEventListener('click',()=>{if(!backend){notice('Password reset is available when the customer backend is connected.',true);return;}const email=$('auth-form').elements.email.value;$('reset-request-form').elements.email.value=email;$('auth-form').classList.add('hidden');$('reset-request-form').classList.remove('hidden');$('reset-request-form').elements.email.focus();});
+$('reset-request-back').addEventListener('click',()=>{$('reset-request-form').classList.add('hidden');$('auth-form').classList.remove('hidden');});
+$('reset-request-form').addEventListener('submit',safeAction(async e=>{const email=e.target.elements.email.value.trim();notice((await api('password-reset',{email})).message);}));
 $('reset-form').addEventListener('submit',safeAction(async e=>{
   const result=await api('password-reset/confirm',{token:resetToken,password:formData(e.target).password});
   resetToken='';e.target.reset();$('reset-form').classList.add('hidden');$('auth-form').classList.remove('hidden');
