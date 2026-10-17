@@ -43,28 +43,22 @@
           "text": "Good internet should feel simple."
         },
         {
-          "kind": "h3",
-          "text": "Fairness first"
+          "kind": "card",
+          "text": "Fairness first",
+          "answer": "We're exploring ways to make broadband more affordable without confusing introductory prices or surprise charges.",
+          "icon": "💚"
         },
         {
-          "kind": "p",
-          "text": "We're exploring ways to make broadband more affordable without confusing introductory prices or surprise charges."
+          "kind": "card",
+          "text": "Reliable connections",
+          "answer": "Our aim is to offer fibre services through genuine New Zealand wholesale partners once agreements are in place.",
+          "icon": "📶"
         },
         {
-          "kind": "h3",
-          "text": "Reliable connections"
-        },
-        {
-          "kind": "p",
-          "text": "Our aim is to offer fibre services through genuine New Zealand wholesale partners once agreements are in place."
-        },
-        {
-          "kind": "h3",
-          "text": "One KiwiKind account"
-        },
-        {
-          "kind": "p",
-          "text": "We're developing a website and Android app designed to share customer information securely through one backend."
+          "kind": "card",
+          "text": "One KiwiKind account",
+          "answer": "We're developing a website and Android app designed to share customer information securely through one backend.",
+          "icon": "📱"
         }
       ]
     },
@@ -84,28 +78,22 @@
           "text": "Your existing KiwiKind account uses the same customer portal and account system as the Android app. Sign in through our secure portal. Email registration remains closed during pre-launch."
         },
         {
-          "kind": "h3",
-          "text": "My account"
+          "kind": "card",
+          "text": "My account",
+          "answer": "Sign in to your existing account through the customer portal used by the website and Android app.",
+          "icon": "👤"
         },
         {
-          "kind": "p",
-          "text": "Sign in to your existing account through the customer portal used by the website and Android app."
+          "kind": "card",
+          "text": "My connection",
+          "answer": "Follow future connection requests and updates. Availability and ordering remain disabled during pre-launch.",
+          "icon": "🏠"
         },
         {
-          "kind": "h3",
-          "text": "My connection"
-        },
-        {
-          "kind": "p",
-          "text": "Follow future connection requests and updates. Availability and ordering remain disabled during pre-launch."
-        },
-        {
-          "kind": "h3",
-          "text": "My support"
-        },
-        {
-          "kind": "p",
-          "text": "Keep conversations and request history together, with the same records available across devices."
+          "kind": "card",
+          "text": "My support",
+          "answer": "Keep conversations and request history together, with the same records available across devices.",
+          "icon": "💬"
         },
         {
           "kind": "p",

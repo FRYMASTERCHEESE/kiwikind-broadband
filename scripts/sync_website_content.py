@@ -32,7 +32,10 @@ def blocks(n):
     out=[]
     for c in n.children:
         if not isinstance(c,Node): continue
-        if c.tag in ('p','h1','h2','h3','strong','b','summary'):
+        if c.tag=='article':
+            icons=[x.text() for x in c.find('div') if x.attrs.get('class')=='icon']
+            out.append({'kind':'card','text':c.find('h3')[0].text(),'answer':'\n\n'.join(x.text() for x in c.find('p')),'icon':' '.join(icons)})
+        elif c.tag in ('p','h1','h2','h3','strong','b','summary'):
             out.append({'kind':c.tag,'text':c.text()})
         elif c.tag=='details':
             out.append({'kind':'faq','text':c.find('summary')[0].text(),'answer':'\n\n'.join(x.text() for x in c.find('p'))})

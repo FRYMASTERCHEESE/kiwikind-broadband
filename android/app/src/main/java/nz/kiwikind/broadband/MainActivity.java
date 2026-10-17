@@ -153,6 +153,11 @@ public class MainActivity extends Activity {
                         LinearLayout answer=new LinearLayout(this);answer.setOrientation(LinearLayout.VERTICAL);answer.setVisibility(android.view.View.GONE);
                         Button question=button(text,()->{});question.setOnClickListener(v->{boolean open=answer.getVisibility()!=android.view.View.VISIBLE;answer.setVisibility(open?android.view.View.VISIBLE:android.view.View.GONE);question.setContentDescription(text+(open?", expanded":", collapsed"));});
                         TextView body=new TextView(this);body.setText(block.getString("answer"));body.setTextColor(INK);body.setTextSize(16);body.setPadding(dp(18),dp(12),dp(18),dp(18));answer.addView(body);content.addView(answer,spaced());
+                    }else if(kind.equals("card")){
+                        String heading=block.optString("icon")+" "+text;
+                        android.text.SpannableString card=new android.text.SpannableString(heading+"\n\n"+block.getString("answer"));
+                        card.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD),0,heading.length(),0);
+                        TextView body=new TextView(this);body.setText(card);body.setTextColor(INK);body.setTextSize(16);body.setLineSpacing(dp(3),1);body.setPadding(dp(24),dp(24),dp(24),dp(24));body.setBackground(shape(Color.WHITE,22));content.addView(body,spaced());
                     }else if(kind.startsWith("h"))title(text);else paragraph(text);
                     if(id.equals("home")&&kind.equals("h1"))landscape();
                 }
