@@ -25,7 +25,10 @@ public class VisualCapture extends Instrumentation {
             java.lang.reflect.Method method=MainActivity.class.getDeclaredMethod(screen,screen.equals("auth")?new Class<?>[]{boolean.class}:new Class<?>[]{});
             method.setAccessible(true);method.invoke(activity,screen.equals("auth")?new Object[]{false}:new Object[]{});
         }catch(Exception e){throw new RuntimeException(e);}});
-        waitForIdleSync();Thread.sleep(600);
+        waitForIdleSync();Thread.sleep(1200);
+        runOnMainSync(()->{
+            if(android.os.Build.VERSION.SDK_INT>=30){android.view.WindowInsetsController bars=activity.getWindow().getInsetsController();if(bars==null||(bars.getSystemBarsAppearance()&android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS)==0)throw new IllegalStateException("Status bar contrast not configured");}
+        });
         runOnMainSync(()->checkLayout(activity.getWindow().getDecorView()));
         save(filename);
         runOnMainSync(()->scrollToBottom(activity));
