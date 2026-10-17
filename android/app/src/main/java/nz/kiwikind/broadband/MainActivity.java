@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
         root.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});
         LinearLayout header=new LinearLayout(this);header.setGravity(android.view.Gravity.CENTER_VERTICAL);header.setBackgroundColor(FOREST);header.setPadding(dp(18),dp(12),dp(18),dp(12));
         ImageView mark=new ImageView(this);mark.setImageResource(R.drawable.ic_launcher);mark.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO);header.addView(mark,new LinearLayout.LayoutParams(dp(44),dp(44)));
-        TextView brand=new TextView(this);brand.setText("KiwiKind Broadband");brand.setTextSize(22);brand.setTypeface(android.graphics.Typeface.DEFAULT,1);brand.setTextColor(Color.WHITE);brand.setPadding(dp(10),0,0,0);header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));root.addView(header);
+        TextView brand=new TextView(this);brand.setText("KiwiKind Broadband");brand.setTextSize(22);brand.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);brand.setTextColor(Color.WHITE);brand.setPadding(dp(10),0,0,0);header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));root.addView(header);
         feedback=new TextView(this);feedback.setTextSize(13);feedback.setTextColor(FOREST);feedback.setBackgroundColor(MINT);feedback.setPadding(dp(22),dp(10),dp(22),dp(10));feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
         ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(22),dp(12),dp(22),dp(24));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
@@ -97,7 +97,7 @@ public class MainActivity extends Activity {
         android.graphics.drawable.GradientDrawable d=new android.graphics.drawable.GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));d.setStroke(dp(1),Color.rgb(217,233,222));return d;
     }
     private LinearLayout.LayoutParams spaced(){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=dp(12);return lp;}
-    private void title(String text){TextView t=new TextView(this);t.setText(text);t.setTextColor(INK);t.setTextSize(30);t.setTypeface(android.graphics.Typeface.DEFAULT,1);t.setPadding(0,dp(20),0,dp(16));if(android.os.Build.VERSION.SDK_INT>=28)t.setAccessibilityHeading(true);content.addView(t);}
+    private void title(String text){TextView t=new TextView(this);t.setText(text);t.setTextColor(INK);t.setTextSize(30);t.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);t.setPadding(0,dp(20),0,dp(16));if(android.os.Build.VERSION.SDK_INT>=28)t.setAccessibilityHeading(true);content.addView(t);}
     private void paragraph(String text){TextView t=new TextView(this);t.setText(text);t.setTextColor(INK);t.setTextSize(16);t.setLineSpacing(dp(3),1);t.setPadding(dp(20),dp(18),dp(20),dp(18));t.setBackground(shape(Color.WHITE,22));content.addView(t,spaced());}
     private EditText field(String label,int type){TextView l=new TextView(this);l.setText(label);l.setTextColor(INK);l.setTextSize(14);l.setPadding(0,dp(8),0,dp(6));content.addView(l);EditText input=new EditText(this);input.setId(android.view.View.generateViewId());l.setLabelFor(input.getId());input.setInputType(type);input.setContentDescription(label);input.setTextColor(INK);input.setTextSize(16);input.setSingleLine();input.setMinHeight(dp(56));input.setPadding(dp(16),dp(12),dp(16),dp(12));input.setBackground(shape(Color.WHITE,12));content.addView(input,spaced());return input;}
     private Button button(String text,Runnable action){Button b=new Button(this);b.setText(text);b.setTextSize(16);b.setAllCaps(false);b.setMinHeight(dp(56));b.setGravity(android.view.Gravity.CENTER);b.setPadding(dp(18),dp(14),dp(18),dp(14));
@@ -111,7 +111,7 @@ public class MainActivity extends Activity {
                 paint.setColor(Color.rgb(249,217,136));canvas.drawCircle(w*.76f,h*.32f,h*.22f,paint);
                 paint.setColor(Color.rgb(49,137,102));canvas.drawOval(-w*.4f,h*.51f,w*1.05f,h*1.6f,paint);
                 paint.setColor(Color.rgb(29,101,78));canvas.drawOval(w*.2f,h*.65f,w*1.5f,h*1.7f,paint);
-                paint.setColor(Color.WHITE);paint.setTextSize(dp(24));paint.setTypeface(android.graphics.Typeface.create("sans-serif",1));canvas.drawText("Made for Kiwis.",dp(22),h-dp(24),paint);canvas.restore();
+                paint.setColor(Color.WHITE);paint.setTextSize(dp(24));paint.setTypeface(android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.BOLD));canvas.drawText("Made for Kiwis.",dp(22),h-dp(24),paint);canvas.restore();
             }
         };art.setContentDescription("Illustration of green hills and sunshine. Made for Kiwis.");LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(170));lp.topMargin=dp(6);lp.bottomMargin=dp(16);content.addView(art,lp);
     }
