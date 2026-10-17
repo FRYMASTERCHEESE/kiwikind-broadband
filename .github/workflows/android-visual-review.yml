@@ -1,6 +1,15 @@
 name: Native Android visual review
 on:
   workflow_dispatch:
+    inputs:
+      extended:
+        description: Run additional recovery checks only
+        type: boolean
+        default: false
+      source_ref:
+        description: Android source to verify
+        type: string
+        default: feature/neon-postgres-config
   push:
     branches: [fix/native-website-style, feat/native-website-parity]
     paths: ['android/**', '.github/workflows/android-visual-review.yml']
@@ -8,6 +17,7 @@ permissions:
   contents: read
 jobs:
   visual:
+    if: ${{ !inputs.extended }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -56,3 +66,48 @@ jobs:
           path: |
             visual-evidence/
             android/app/build/reports/lint-results-debug.html
+  recovery:
+    if: ${{ inputs.extended }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          path: runtime
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+      - name: Compile only new emulator recovery instrumentation
+        working-directory: runtime/android
+        run: |
+          cp ../../android/app/src/androidTest/java/nz/kiwikind/broadband/RecoveryVerification.java app/src/androidTest/java/nz/kiwikind/broadband/
+          sed -i 's/nz.kiwikind.broadband.VisualCapture/nz.kiwikind.broadband.RecoveryVerification/' app/src/androidTest/AndroidManifest.xml
+          gradle --no-daemon assembleDebug assembleDebugAndroidTest -PKIWIKIND_API_ORIGIN=
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install runtime/android/app/build/outputs/apk/debug/app-debug.apk
+            adb install runtime/android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell am instrument -w nz.kiwikind.broadband.test/nz.kiwikind.broadband.RecoveryVerification | tee recovery.txt
+            grep -q EXTENDED_RECOVERY_PASS recovery.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: extended-emulator-recovery
+          path: recovery.txt
