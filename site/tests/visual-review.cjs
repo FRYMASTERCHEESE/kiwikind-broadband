@@ -19,6 +19,11 @@ const fs=require('node:fs');
     if(hash==='questions')await page.getByText('Can I sign up for broadband today?',{exact:true}).click();
     if(hash==='signin')await page.locator('#auth-form').waitFor({state:'visible'});
     if(hash==='signup')assert.equal(await page.locator('#auth-submit').isDisabled(),true);
+    if(hash==='signin'||hash==='signup'){
+     await page.locator('#auth-area').scrollIntoViewIfNeeded();
+     assert.equal(await page.locator('#progress').isVisible(),false,'Public content must not interrupt account routes');
+    }
+    if(hash==='home')await page.evaluate(()=>scrollTo(0,0));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Horizontal overflow: '+name+' '+hash);
     await page.screenshot({path:`web-visual-evidence/${name}-${hash}.png`});
    }
