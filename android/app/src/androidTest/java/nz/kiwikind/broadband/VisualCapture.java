@@ -28,11 +28,17 @@ public class VisualCapture extends Instrumentation {
         waitForIdleSync();Thread.sleep(600);
         runOnMainSync(()->checkLayout(activity.getWindow().getDecorView()));
         save(filename);
-        runOnMainSync(()->{
-            android.widget.ScrollView scroll=findScroll(activity.getWindow().getDecorView());
-            if(scroll!=null)scroll.fullScroll(android.view.View.FOCUS_DOWN);
-        });
+        runOnMainSync(()->scrollToBottom(activity));
+        waitForIdleSync();Thread.sleep(300);
+        runOnMainSync(()->scrollToBottom(activity));
         waitForIdleSync();Thread.sleep(300);save(filename.replace(".png","-controls.png"));
+    }
+    private void scrollToBottom(Activity activity){
+        android.widget.ScrollView scroll=findScroll(activity.getWindow().getDecorView());
+        if(scroll==null)throw new IllegalStateException("Scrollable content missing");
+        scroll.clearFocus();scroll.scrollTo(0,scroll.getChildAt(0).getHeight());
+        int bottom=scroll.getChildAt(0).getBottom();
+        if(bottom>scroll.getScrollY()+scroll.getHeight()+2)throw new IllegalStateException("Bottom controls not reachable");
     }
     private android.widget.ScrollView findScroll(android.view.View view){
         if(view instanceof android.widget.ScrollView)return (android.widget.ScrollView)view;
