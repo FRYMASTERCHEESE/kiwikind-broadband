@@ -1,9 +1,9 @@
 <resources>
-  <style name="KiwiKindTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+  <style name="KiwiKindBase" parent="android:style/Theme.Material.Light.NoActionBar">
     <item name="android:colorAccent">#103E34</item>
     <item name="android:statusBarColor">#F6F8F3</item>
-    <item name="android:navigationBarColor">#F6F8F3</item>
+    <item name="android:navigationBarColor">#103E34</item>
     <item name="android:windowLightStatusBar">true</item>
-    <item name="android:windowLightNavigationBar">true</item>
   </style>
+  <style name="KiwiKindTheme" parent="KiwiKindBase" />
 </resources>
