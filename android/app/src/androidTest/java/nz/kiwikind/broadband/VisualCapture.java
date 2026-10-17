@@ -17,8 +17,24 @@ public class VisualCapture extends Instrumentation {
             Activity activity=startActivitySync(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             capture(activity,"auth","01-sign-in.png");
             capture(activity,"home","02-dashboard-fixture.png");
+            for(String page:new String[]{"home","why","mykiwikind","progress","questions"}){
+                runOnMainSync(()->{try{java.lang.reflect.Method m=MainActivity.class.getDeclaredMethod("publicPage",String.class);m.setAccessible(true);m.invoke(activity,page);}catch(Exception e){throw new RuntimeException(e);}});
+                waitForIdleSync();Thread.sleep(300);
+                runOnMainSync(()->checkLayout(activity.getWindow().getDecorView()));
+                if(page.equals("questions")){
+                    runOnMainSync(()->{android.widget.Button question=findButton(activity.getWindow().getDecorView(),"Can I sign up for broadband today?");if(question==null)throw new IllegalStateException("Website FAQ missing");question.performClick();});
+                    waitForIdleSync();
+                    runOnMainSync(()->{android.widget.Button question=findButton(activity.getWindow().getDecorView(),"Can I sign up for broadband today?");if(!question.getContentDescription().toString().endsWith("expanded"))throw new IllegalStateException("FAQ did not expand");});
+                }
+                save("public-"+page+".png");
+                runOnMainSync(()->scrollToBottom(activity));waitForIdleSync();Thread.sleep(300);save("public-"+page+"-bottom.png");
+            }
             result.putString("stream","Native sign-in and dashboard fixture captured successfully.");finish(-1,result);
         } catch(Exception e){result.putString("stream",e.toString());finish(Activity.RESULT_CANCELED,result);}
+    }
+    private android.widget.Button findButton(android.view.View v,String text){
+        if(v instanceof android.widget.Button && ((android.widget.Button)v).getText().toString().equals(text))return (android.widget.Button)v;
+        if(v instanceof android.view.ViewGroup){android.view.ViewGroup g=(android.view.ViewGroup)v;for(int i=0;i<g.getChildCount();i++){android.widget.Button b=findButton(g.getChildAt(i),text);if(b!=null)return b;}}return null;
     }
     private void capture(Activity activity,String screen,String filename) throws Exception {
         runOnMainSync(()->{try {

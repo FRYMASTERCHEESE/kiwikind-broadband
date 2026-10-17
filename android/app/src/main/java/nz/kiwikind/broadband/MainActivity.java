@@ -43,6 +43,13 @@ public class MainActivity extends Activity {
         LinearLayout header=new LinearLayout(this);header.setGravity(android.view.Gravity.CENTER_VERTICAL);header.setBackgroundColor(FOREST);header.setPadding(dp(18),dp(12),dp(18),dp(12));
         ImageView mark=new ImageView(this);mark.setImageResource(R.drawable.ic_launcher);mark.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO);header.addView(mark,new LinearLayout.LayoutParams(dp(44),dp(44)));
         TextView brand=new TextView(this);brand.setText("KiwiKind Broadband");brand.setTextSize(22);brand.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);brand.setTextColor(Color.WHITE);brand.setPadding(dp(10),0,0,0);header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));root.addView(header);
+        Button menu=new Button(this);menu.setText("Menu");menu.setAllCaps(false);menu.setMinHeight(dp(48));menu.setContentDescription("KiwiKind navigation");header.addView(menu);menu.setOnClickListener(v->{
+            PopupMenu pages=new PopupMenu(this,menu);
+            String[] labels={"Home","Our vision","My KiwiKind","Our journey","FAQs",signedIn?"My account":"Sign in","Sign up"};
+            String[] ids={"home","why","mykiwikind","progress","questions","account","signup"};
+            for(int i=0;i<labels.length;i++)pages.getMenu().add(0,i,i,labels[i]);
+            pages.setOnMenuItemClickListener(item->{if(busy)return true;String page=ids[item.getItemId()];if(page.equals("account")){if(signedIn)home();else auth(false);}else if(page.equals("signup")){if(signedIn)home();else auth(true);}else publicPage(page);return true;});pages.show();
+        });
         feedback=new TextView(this);feedback.setTextSize(13);feedback.setTextColor(FOREST);feedback.setBackgroundColor(MINT);feedback.setPadding(dp(22),dp(10),dp(22),dp(10));feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
         ScrollView scroll=new ScrollView(this){@Override protected void onSizeChanged(int w,int h,int oldw,int oldh){super.onSizeChanged(w,h,oldw,oldh);int side=Math.max(dp(22),(w-dp(680))/2);content.setPadding(side,dp(12),side,dp(24));}};scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(22),dp(12),dp(22),dp(24));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         root.post(this::applySystemBarAppearance);
@@ -129,6 +136,38 @@ public class MainActivity extends Activity {
         Button card=button(label+"\n"+detail+"  ›",action);card.setGravity(android.view.Gravity.START|android.view.Gravity.CENTER_VERTICAL);card.setTextColor(INK);
         card.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(Color.rgb(198,229,207)),shape(Color.WHITE,22),null));
     }
+    /** Bundled verbatim public copy; no scripts, web cookies or private data in the preview. */
+    private void publicPage(String id){
+        refreshScreen=null;content.removeAllViews();
+        try(java.io.InputStream stream=getAssets().open("website-content.json")){
+            java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();byte[] buffer=new byte[4096];int count;
+            while((count=stream.read(buffer))!=-1)bytes.write(buffer,0,count);
+            JSONArray sections=new JSONObject(bytes.toString("UTF-8")).getJSONArray("sections");
+            for(int i=0;i<sections.length();i++){
+                JSONObject section=sections.getJSONObject(i);if(!id.equals(section.getString("id")))continue;
+                if(id.equals("mykiwikind"))paragraph("Public website · Dashboard design preview only. This screen does not load account information. Use My account to view your records.");
+                JSONArray blocks=section.getJSONArray("blocks");
+                for(int j=0;j<blocks.length();j++){
+                    JSONObject block=blocks.getJSONObject(j);String kind=block.getString("kind"),text=block.getString("text");
+                    if(kind.equals("faq")){
+                        LinearLayout answer=new LinearLayout(this);answer.setOrientation(LinearLayout.VERTICAL);answer.setVisibility(android.view.View.GONE);
+                        Button question=button(text,()->{});question.setOnClickListener(v->{boolean open=answer.getVisibility()!=android.view.View.VISIBLE;answer.setVisibility(open?android.view.View.VISIBLE:android.view.View.GONE);question.setContentDescription(text+(open?", expanded":", collapsed"));});
+                        TextView body=new TextView(this);body.setText(block.getString("answer"));body.setTextColor(INK);body.setTextSize(16);body.setPadding(dp(18),dp(12),dp(18),dp(18));answer.addView(body);content.addView(answer,spaced());
+                    }else if(kind.startsWith("h"))title(text);else paragraph(text);
+                    if(id.equals("home")&&kind.equals("h1"))landscape();
+                }
+            }
+            if(id.equals("home"))button("Discover our vision ↗",()->publicPage("why"));
+            if(id.equals("why"))button("Meet My KiwiKind",()->publicPage("mykiwikind"));
+            if(id.equals("mykiwikind"))button("What happens next?",()->publicPage("progress"));
+            button(signedIn?"My account":"Sign in",()->{if(signedIn)home();else auth(false);});
+            button("Our vision",()->publicPage("why"));button("FAQs",()->publicPage("questions"));
+            button("Privacy notice",()->privacyPage("/privacy/"));button("Terms",()->legal("terms"));
+            paragraph("A kinder connection. In the making. 🇳🇿\n© 2026 KiwiKind Broadband · Pre-launch project · No broadband services currently offered.");
+            message("KiwiKind Broadband · Public information · Pre-launch");
+        }catch(Exception e){paragraph("Website information could not load.");button("Back to My KiwiKind",()->{if(signedIn)home();else auth(false);});}
+    }
+    @Override public void onBackPressed(){if(busy)return;if(signedIn)home();else auth(false);}
     private JSONObject data(Object... pairs){JSONObject d=new JSONObject();try{for(int i=0;i<pairs.length;i+=2)d.put((String)pairs[i],pairs[i+1]);}catch(JSONException ignored){}return d;}
     private void run(Task task,Done done){if(busy)return;busy=true;message("Working…");worker.submit(()->{try{JSONObject result=task.run();runOnUiThread(()->{busy=false;if(isFinishing()||isDestroyed())return;try{done.accept(result);}catch(Exception e){message("Could not display the result. Refresh and try again.");}});}catch(Exception e){runOnUiThread(()->{busy=false;if(!isFinishing()&&!isDestroyed()){
             if(e instanceof Api.SessionExpiredException){api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);}
@@ -157,7 +196,9 @@ public class MainActivity extends Activity {
         googleButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(FOREST));
         googleButton.setAllCaps(false);
         googleButton.setMinHeight((int)(52*getResources().getDisplayMetrics().density));
-        button(register?"Back to sign in":"Create an account",()->auth(!register)).setEnabled(register||intake);
+        if(register&&!intake)paragraph("Email registration remains closed during pre-launch.");
+        button(register?"Back to sign in":"Create an account",()->auth(!register));
+        button("Discover our vision ↗",()->publicPage("home"));
         button("Open My KiwiKind website",()->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#portal")))).setEnabled(api.configured());
         button("Reset password",()->{
             String address=email.getText().toString().trim();
@@ -221,8 +262,13 @@ public class MainActivity extends Activity {
     }
     private void nav(){button("Back to account",this::home);}
     private void home(){
+        if(api.configured()){run(()->api.call("me",null),this::accountHome);}else accountHome(new JSONObject());
+    }
+    private void accountHome(JSONObject account){
         refreshScreen=this::home;
-        content.removeAllViews();title("My KiwiKind");landscape();paragraph("Kia ora, welcome home.\nOne KiwiKind account, on your website and app.");
+        content.removeAllViews();title("My KiwiKind");landscape();paragraph("Kia ora, welcome home. 💚");
+        if(account.has("email"))paragraph(account.optString("email"));
+        paragraph("Your existing KiwiKind account uses the same customer portal and account system as the Android app. Sign in through our secure portal. Email registration remains closed during pre-launch.");
         accountCard("My connection","No active service · View requests",this::orders);accountCard("My support","Support & complaints",this::tickets);accountCard("Billing","Payments disabled",()->run(()->api.call("invoices",null),r->{refreshScreen=null;content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());nav();}));
         button("Refresh account from website",()->run(()->api.call("me",null),r->{signedIn=true;home();message("Account refreshed from KiwiKind server.");}));
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
@@ -250,7 +296,7 @@ public class MainActivity extends Activity {
         button("Start a conversation",this::newTicket);nav();message("Your conversations");
     });}
     private void newTicket(){refreshScreen=null;content.removeAllViews();title("How can we help?");paragraph("Do not include payment card details, identity documents or health information.");EditText subject=field("Subject",1);Spinner category=new Spinner(this);category.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"support","complaint","privacy"}));category.setContentDescription("Topic");content.addView(category);EditText body=field("Message",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);body.setSingleLine(false);body.setMinLines(4);button("Send message",()->run(()->api.call("tickets",data("subject",subject.getText().toString(),"category",category.getSelectedItem().toString(),"body",body.getText().toString())),r->tickets()));nav();}
-    private void conversation(String id){run(()->api.call("tickets/"+id+"/messages",null),r->{refreshScreen=null;content.removeAllViews();title("Conversation");JSONArray a=r.getJSONArray("messages");for(int i=0;i<a.length();i++){JSONObject m=a.getJSONObject(i);paragraph((m.optBoolean("from_support")?"Support: ":"You: ")+m.getString("body"));}EditText reply=field("Your reply",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);reply.setSingleLine(false);button("Send reply",()->run(()->api.call("tickets/"+id+"/messages",data("body",reply.getText().toString())),x->conversation(id)));nav();message("Your conversation");});}
+    private void conversation(String id){run(()->api.call("tickets/"+id+"/messages",null),r->{refreshScreen=null;content.removeAllViews();title("Conversation");JSONArray a=r.getJSONArray("messages");for(int i=0;i<a.length();i++){JSONObject m=a.getJSONObject(i);paragraph((m.optBoolean("from_support")?"Support: ":"You: ")+m.getString("body"));}EditText reply=field("Your reply",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);reply.setSingleLine(false);button("Refresh conversation",()->conversation(id));button("Send reply",()->run(()->api.call("tickets/"+id+"/messages",data("body",reply.getText().toString())),x->conversation(id)));nav();message("Your conversation");});}
     @Override protected void onActivityResult(int request,int result,Intent intent){super.onActivityResult(request,result,intent);if(request==10){if(result==RESULT_OK&&intent!=null&&intent.getData()!=null&&exportData!=null){try(var out=getContentResolver().openOutputStream(intent.getData())){if(out!=null){out.write(exportData.getBytes(java.nio.charset.StandardCharsets.UTF_8));message("Export saved.");}}catch(Exception e){message("Could not save export.");}}exportData=null;}}
     @Override protected void onDestroy(){worker.shutdownNow();exportData=null;super.onDestroy();}
 }

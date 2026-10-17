@@ -2,7 +2,7 @@ name: Native Android visual review
 on:
   workflow_dispatch:
   push:
-    branches: [fix/native-website-style]
+    branches: [fix/native-website-style, feat/native-website-parity]
     paths: ['android/**', '.github/workflows/android-visual-review.yml']
 permissions:
   contents: read
