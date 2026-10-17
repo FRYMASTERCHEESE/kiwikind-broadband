@@ -35,7 +35,10 @@ def endpoint(methods, authenticated=False, throttle=None, intake=False):
             try:
                 if request.method == 'POST':
                     if len(request.body)>16000: return JsonResponse({'error':'Request too large'},status=413)
-                    request.data = json.loads(request.body or b'{}')
+                    try:
+                        request.data = json.loads(request.body or b'{}')
+                    except (json.JSONDecodeError, UnicodeDecodeError, RecursionError):
+                        return JsonResponse({'error':'Invalid JSON request'},status=400)
                     if not isinstance(request.data,dict): raise ValueError('Expected a JSON object')
                 return fn(request,*args,**kwargs)
             except (ValueError, TypeError, ValidationError, KeyError) as e:
@@ -46,6 +49,10 @@ def endpoint(methods, authenticated=False, throttle=None, intake=False):
 def text(data,key,maximum,minimum=1):
     value=data.get(key,'')
     if not isinstance(value,str) or not minimum <= len(value.strip()) <= maximum: raise ValueError(f'{key}: use {minimum}–{maximum} characters')
+    # PostgreSQL cannot store NUL or unpaired UTF-16 surrogates. Reject them
+    # before database/identity/mail calls, consistently on both database engines.
+    if '\x00' in value or any(0xD800 <= ord(char) <= 0xDFFF for char in value):
+        raise ValueError(f'{key}: use valid text without null characters')
     return value.strip()
 
 def audit(request,action,reference=''):
