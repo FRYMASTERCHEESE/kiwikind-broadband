@@ -37,15 +37,25 @@ public class MainActivity extends Activity {
     interface Done { void accept(JSONObject data) throws Exception; }
     @Override public void onCreate(Bundle state){
         super.onCreate(state);api=new Api(BuildConfig.API_ORIGIN,this);
-        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(Color.rgb(244,242,233));
-        root.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(22,insets.getSystemWindowInsetTop()+12,22,insets.getSystemWindowInsetBottom()+12);return insets;});
-        TextView brand=new TextView(this);brand.setText(R.string.app_name);brand.setTextSize(25);brand.setTextColor(Color.rgb(18,63,50));root.addView(brand);
-        TextView label=new TextView(this);label.setText(R.string.prelaunch);root.addView(label);
-        feedback=new TextView(this);feedback.setTextSize(14);feedback.setPadding(0,16,0,16);feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
-        ScrollView scroll=new ScrollView(this);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
+        getWindow().getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|(android.os.Build.VERSION.SDK_INT>=27?android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR:0));
+        LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(PAPER);
+        root.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});
+        LinearLayout header=new LinearLayout(this);header.setGravity(android.view.Gravity.CENTER_VERTICAL);header.setBackgroundColor(FOREST);header.setPadding(dp(18),dp(12),dp(18),dp(12));
+        ImageView mark=new ImageView(this);mark.setImageResource(R.drawable.ic_launcher);mark.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO);header.addView(mark,new LinearLayout.LayoutParams(dp(44),dp(44)));
+        TextView brand=new TextView(this);brand.setText("KiwiKind Broadband");brand.setTextSize(22);brand.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);brand.setTextColor(Color.WHITE);brand.setPadding(dp(10),0,0,0);header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));root.addView(header);
+        feedback=new TextView(this);feedback.setTextSize(13);feedback.setTextColor(FOREST);feedback.setBackgroundColor(MINT);feedback.setPadding(dp(22),dp(10),dp(22),dp(10));feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
+        ScrollView scroll=new ScrollView(this){@Override protected void onSizeChanged(int w,int h,int oldw,int oldh){super.onSizeChanged(w,h,oldw,oldh);int side=Math.max(dp(22),(w-dp(680))/2);content.setPadding(side,dp(12),side,dp(24));}};scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(22),dp(12),dp(22),dp(24));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
+        root.post(this::applySystemBarAppearance);
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
         else connectAccount();
     }
+    private void applySystemBarAppearance(){
+        if(android.os.Build.VERSION.SDK_INT>=30){
+            android.view.WindowInsetsController controller=getWindow().getInsetsController();
+            if(controller!=null){int light=android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;controller.setSystemBarsAppearance(light,light);}
+        }
+    }
+    @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);if(hasFocus)applySystemBarAppearance();}
     @Override protected void onResume(){
         super.onResume();
         // On returning from the browser, verify the saved session without interrupting active screens.
@@ -89,10 +99,36 @@ public class MainActivity extends Activity {
         });
     }
     private void message(String text){feedback.setText(text);}
-    private void title(String text){TextView t=new TextView(this);t.setText(text);t.setTextSize(23);t.setPadding(0,22,0,14);content.addView(t);}
-    private void paragraph(String text){TextView t=new TextView(this);t.setText(text);t.setTextSize(15);t.setPadding(0,10,0,16);content.addView(t);}
-    private EditText field(String label,int type){TextView l=new TextView(this);l.setText(label);content.addView(l);EditText input=new EditText(this);input.setInputType(type);input.setContentDescription(label);input.setSingleLine();content.addView(input);return input;}
-    private Button button(String text,Runnable action){Button b=new Button(this);b.setText(text);b.setAllCaps(false);content.addView(b);b.setOnClickListener(v->{if(!busy)action.run();});return b;}
+    // Tokens taken from the approved public website, revision dda5601.
+    private static final int FOREST=Color.rgb(16,62,52), INK=Color.rgb(22,59,49), PAPER=Color.rgb(246,248,243), MINT=Color.rgb(231,243,232);
+    private int dp(float value){return Math.round(value*getResources().getDisplayMetrics().density);}
+    private android.graphics.drawable.GradientDrawable shape(int color,int radius){
+        android.graphics.drawable.GradientDrawable d=new android.graphics.drawable.GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));d.setStroke(dp(1),Color.rgb(217,233,222));return d;
+    }
+    private LinearLayout.LayoutParams spaced(){LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=dp(12);return lp;}
+    private void title(String text){TextView t=new TextView(this);t.setText(text);t.setTextColor(INK);t.setTextSize(30);t.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);t.setPadding(0,dp(20),0,dp(16));if(android.os.Build.VERSION.SDK_INT>=28)t.setAccessibilityHeading(true);content.addView(t);content.post(()->{if(content.getParent() instanceof ScrollView)((ScrollView)content.getParent()).scrollTo(0,0);});}
+    private void paragraph(String text){TextView t=new TextView(this);t.setText(text);t.setTextColor(INK);t.setTextSize(16);t.setLineSpacing(dp(3),1);t.setPadding(dp(20),dp(18),dp(20),dp(18));t.setBackground(shape(Color.WHITE,22));content.addView(t,spaced());}
+    private EditText field(String label,int type){TextView l=new TextView(this);l.setText(label);l.setTextColor(INK);l.setTextSize(14);l.setPadding(0,dp(8),0,dp(6));content.addView(l);EditText input=new EditText(this);input.setId(android.view.View.generateViewId());l.setLabelFor(input.getId());input.setInputType(type);input.setContentDescription(label);input.setTextColor(INK);input.setTextSize(16);input.setSingleLine();input.setMinHeight(dp(56));input.setPadding(dp(16),dp(12),dp(16),dp(12));android.graphics.drawable.StateListDrawable states=new android.graphics.drawable.StateListDrawable();android.graphics.drawable.GradientDrawable focused=shape(Color.WHITE,12);focused.setStroke(dp(3),FOREST);states.addState(new int[]{android.R.attr.state_focused},focused);states.addState(new int[]{},shape(Color.WHITE,12));input.setBackground(states);content.addView(input,spaced());return input;}
+    private Button button(String text,Runnable action){Button b=new Button(this);b.setText(text);b.setTextSize(16);b.setAllCaps(false);b.setMinHeight(dp(56));b.setGravity(android.view.Gravity.CENTER);b.setPadding(dp(18),dp(14),dp(18),dp(14));
+        b.setTextColor(new android.content.res.ColorStateList(new int[][]{new int[]{-android.R.attr.state_enabled},new int[]{}},new int[]{Color.rgb(75,96,83),Color.WHITE}));
+        android.graphics.drawable.StateListDrawable states=new android.graphics.drawable.StateListDrawable();states.addState(new int[]{-android.R.attr.state_enabled},shape(Color.rgb(223,232,222),14));states.addState(new int[]{android.R.attr.state_pressed},shape(Color.rgb(35,87,72),14));states.addState(new int[]{android.R.attr.state_focused},shape(Color.rgb(35,87,72),14));states.addState(new int[]{},shape(FOREST,14));b.setBackground(states);content.addView(b,spaced());b.setOnClickListener(v->{if(!busy)action.run();});return b;}
+    private void landscape(){
+        android.view.View art=new android.view.View(this){
+            private final android.graphics.Paint paint=new android.graphics.Paint(3);
+            private final android.graphics.Path clip=new android.graphics.Path();
+            @Override protected void onDraw(android.graphics.Canvas canvas){
+                super.onDraw(canvas);float w=getWidth(),h=getHeight();canvas.save();clip.reset();clip.addRoundRect(0,0,w,h,dp(28),dp(28),android.graphics.Path.Direction.CW);canvas.clipPath(clip);canvas.drawColor(Color.rgb(198,229,207));
+                paint.setColor(Color.rgb(249,217,136));canvas.drawCircle(w*.76f,h*.32f,h*.22f,paint);
+                paint.setColor(Color.rgb(49,137,102));canvas.drawOval(-w*.4f,h*.51f,w*1.05f,h*1.6f,paint);
+                paint.setColor(Color.rgb(29,101,78));canvas.drawOval(w*.2f,h*.65f,w*1.5f,h*1.7f,paint);
+                paint.setColor(Color.WHITE);paint.setTextSize(dp(24));paint.setTypeface(android.graphics.Typeface.create("sans-serif",android.graphics.Typeface.BOLD));canvas.drawText("Made for Kiwis.",dp(22),h-dp(24),paint);canvas.restore();
+            }
+        };art.setContentDescription("Illustration of green hills and sunshine. Made for Kiwis.");LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,dp(170));lp.topMargin=dp(6);lp.bottomMargin=dp(16);content.addView(art,lp);
+    }
+    private void accountCard(String label,String detail,Runnable action){
+        Button card=button(label+"\n"+detail+"  ›",action);card.setGravity(android.view.Gravity.START|android.view.Gravity.CENTER_VERTICAL);card.setTextColor(INK);
+        card.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(Color.rgb(198,229,207)),shape(Color.WHITE,22),null));
+    }
     private JSONObject data(Object... pairs){JSONObject d=new JSONObject();try{for(int i=0;i<pairs.length;i+=2)d.put((String)pairs[i],pairs[i+1]);}catch(JSONException ignored){}return d;}
     private void run(Task task,Done done){if(busy)return;busy=true;message("Working…");worker.submit(()->{try{JSONObject result=task.run();runOnUiThread(()->{busy=false;if(isFinishing()||isDestroyed())return;try{done.accept(result);}catch(Exception e){message("Could not display the result. Refresh and try again.");}});}catch(Exception e){runOnUiThread(()->{busy=false;if(!isFinishing()&&!isDestroyed()){
             if(e instanceof Api.SessionExpiredException){api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);}
@@ -106,7 +142,7 @@ public class MainActivity extends Activity {
     }
     private void auth(boolean register){
         refreshScreen=null;
-        content.removeAllViews();title(register?"Create your account":"A kinder connection.");paragraph("A request is not a broadband contract. Verify your email on the website before signing in here.");
+        content.removeAllViews();title(register?"Create your account":"A kinder connection.");landscape();paragraph("My KiwiKind · Pre-launch\nSign in to your existing account. Broadband requests and payments remain closed.");
         EditText email=field("Email",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         EditText password=field("Password (at least 12 characters)",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
         CheckBox consent=new CheckBox(this);consent.setText(R.string.account_consent);if(register)content.addView(consent);
@@ -118,7 +154,7 @@ public class MainActivity extends Activity {
         Button googleButton=button("Sign in with Google",this::googleSignIn);
         googleButton.setEnabled(api.configured());
         googleButton.setTextColor(Color.WHITE);
-        googleButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(25,25,25)));
+        googleButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(FOREST));
         googleButton.setAllCaps(false);
         googleButton.setMinHeight((int)(52*getResources().getDisplayMetrics().density));
         button(register?"Back to sign in":"Create an account",()->auth(!register)).setEnabled(register||intake);
@@ -186,9 +222,9 @@ public class MainActivity extends Activity {
     private void nav(){button("Back to account",this::home);}
     private void home(){
         refreshScreen=this::home;
-        content.removeAllViews();title("My KiwiKind");paragraph("No active broadband service. Your website and app use the same customer backend.");
+        content.removeAllViews();title("My KiwiKind");landscape();paragraph("Kia ora, welcome home.\nOne KiwiKind account, on your website and app.");
+        accountCard("My connection","No active service · View requests",this::orders);accountCard("My support","Support & complaints",this::tickets);accountCard("Billing","Payments disabled",()->run(()->api.call("invoices",null),r->{refreshScreen=null;content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());nav();}));
         button("Refresh account from website",()->run(()->api.call("me",null),r->{signedIn=true;home();message("Account refreshed from KiwiKind server.");}));
-        button("My broadband requests",this::orders);button("Support & complaints",this::tickets);button("Billing",()->run(()->api.call("invoices",null),r->{refreshScreen=null;content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());nav();}));
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
         button("Request account deletion",()->{refreshScreen=null;content.removeAllViews();title("Request deletion");paragraph("This is a request for manual review, not instant deletion. Google-only users can request deletion without a password using the web/email option below.");button("Request without a password (Google accounts)",()->privacyPage("/account-deletion/"));EditText p=field("Current password",129);button("Submit deletion request",()->{String password=p.getText().toString();p.setText("");run(()->api.call("privacy/deletion",data("password",password)),r->message(r.optString("message")));});nav();});
         button("Privacy & account correction",()->privacyPage("/privacy/"));
