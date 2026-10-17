@@ -121,6 +121,28 @@ class HttpsBackendTests(ProviderMock, SimpleTestCase):
                 self.assertNotIn('synthetic-unit-test-key', str(failure.exception))
                 self.assertNotIn('private-body', str(failure.exception))
 
+    def test_runtime_diagnostics_identify_stage_without_secret_or_response_body(self):
+        self.session.request.side_effect = [reply({'message': 'private-provider-detail'}, 403)]
+        with self.assertLogs('portal.email_backend', level='WARNING') as logs:
+            with self.assertRaises(MailDeliveryError):
+                get_connection().open()
+        output = '\n'.join(logs.output)
+        self.assertIn('stage=account http_status=403', output)
+        self.assertNotIn('private-provider-detail', output)
+        self.assertNotIn(EMAIL_SETTINGS['BREVO_API_KEY'], output)
+
+    def test_disabled_relay_diagnostic_reports_free_allowance_without_account_data(self):
+        self.session.request.side_effect = [reply({
+            'plan': [{'type': 'free', 'credits': 300}], 'relay': {'enabled': False},
+            'email': 'private@example.invalid',
+        })]
+        with self.assertLogs('portal.email_backend', level='WARNING') as logs:
+            with self.assertRaises(MailDeliveryError):
+                get_connection().open()
+        output = '\n'.join(logs.output)
+        self.assertIn('free_credits=300 relay_enabled=False', output)
+        self.assertNotIn('private@example.invalid', output)
+
     def test_send_rejection_or_missing_receipt_is_never_reported_as_delivered(self):
         for result in (reply({'message': 'private-recipient'}, 400), reply({}, 201), requests.Timeout('private')):
             with self.subTest(result=type(result).__name__):

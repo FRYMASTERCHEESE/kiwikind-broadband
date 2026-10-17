@@ -1,5 +1,6 @@
 """Backend-only Brevo HTTPS delivery. No SMTP fallback or automatic retries."""
 from email.utils import parseaddr
+import logging
 
 import requests
 from django.conf import settings
@@ -7,6 +8,8 @@ from django.core.exceptions import ValidationError
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.validators import validate_email
 from django.views.decorators.debug import sensitive_variables
+
+logger = logging.getLogger(__name__)
 
 
 class MailDeliveryError(OSError):
@@ -40,6 +43,10 @@ class BrevoEmailBackend(BaseEmailBackend):
             ) as response:
                 if response.status_code != expected:
                     # Do not include response text: it can contain recipient or key data.
+                    stage = {'/account': 'account', '/senders': 'senders',
+                             '/smtp/email': 'send'}.get(path, 'unknown')
+                    logger.warning('Brevo request rejected: stage=%s http_status=%d',
+                                   stage, response.status_code)
                     raise MailDeliveryError('HTTPS email provider unavailable')
                 result = response.json()
         except (requests.RequestException, ValueError):
@@ -54,6 +61,7 @@ class BrevoEmailBackend(BaseEmailBackend):
             return False
         key = settings.BREVO_API_KEY.strip()
         if not key:
+            logger.warning('Brevo preflight: missing_api_key')
             raise MailDeliveryError('HTTPS email provider is not configured')
         self.sender = self.address(settings.DEFAULT_FROM_EMAIL)
         self.reply_to = self.address(settings.EMAIL_REPLY_TO)
@@ -69,6 +77,12 @@ class BrevoEmailBackend(BaseEmailBackend):
                 or not any(p.get('type') == 'free' and isinstance(p.get('credits'), (int, float))
                            and p['credits'] > 0 for p in plans)
                 or not isinstance(relay, dict) or relay.get('enabled') is not True):
+                free_credits = [p.get('credits') for p in plans
+                                if isinstance(p, dict) and p.get('type') == 'free'
+                                and isinstance(p.get('credits'), (int, float))] if isinstance(plans, list) else []
+                logger.warning('Brevo preflight: free_allowance_unavailable free_credits=%s relay_enabled=%s',
+                               max(free_credits, default=0),
+                               isinstance(relay, dict) and relay.get('enabled') is True)
                 raise MailDeliveryError('Free transactional email allowance unavailable')
             senders = self._request('GET', '/senders', 200).get('senders', [])
             if not isinstance(senders, list) or not any(
@@ -76,6 +90,7 @@ class BrevoEmailBackend(BaseEmailBackend):
                 and str(s.get('email', '')).lower() == self.sender['email'].lower()
                 for s in senders
             ):
+                logger.warning('Brevo preflight: sender_not_verified')
                 raise MailDeliveryError('HTTPS email sender is not verified')
         except Exception:
             self.close()
