@@ -1,4 +1,5 @@
 import json
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -8,12 +9,23 @@ from .models import Ticket, Message
 
 class InputValidationTests(TestCase):
     def test_deeply_nested_json_is_a_client_error(self):
-        # Below the body-size cap, but above the JSON decoder's recursion limit.
+        # Below the body-size cap. Decoder depth limits vary by Python build;
+        # either decoding rejection or rejecting the array root must be safe.
         response = self.client.post('/api/login', '[' * 7000 + '0' + ']' * 7000,
                                     content_type='application/json')
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {'error': 'Invalid JSON request'})
+        self.assertIn('error', response.json())
         self.assertEqual(response['Cache-Control'], 'no-store')
+
+    def test_decoder_errors_are_safe_json_responses(self):
+        with patch('portal.views.json.loads', side_effect=RecursionError):
+            response = self.client.post('/api/login', '{}', content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {'error': 'Invalid JSON request'})
+        for body in (b'{', b'\xff'):
+            response = self.client.post('/api/login', body, content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.json(), {'error': 'Invalid JSON request'})
 
     def test_invalid_text_cannot_create_partial_support_records(self):
         user = get_user_model().objects.create_user('synthetic@example.invalid')
