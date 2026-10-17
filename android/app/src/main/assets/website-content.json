@@ -1,0 +1,227 @@
+{
+  "source": "https://frymastercheese.github.io/kiwikind-broadband-website/",
+  "sha256": "d5ee917cf668857d27be0d0f1e1821d2ec6722331065ebc4cc80f2223bf80390",
+  "sections": [
+    {
+      "id": "home",
+      "blocks": [
+        {
+          "kind": "p",
+          "text": "Aotearoa New Zealand · In development"
+        },
+        {
+          "kind": "h1",
+          "text": "A kinder connection."
+        },
+        {
+          "kind": "p",
+          "text": "We're building KiwiKind Broadband with a simple goal: make reliable internet more affordable, more transparent and easier for Kiwi households to understand."
+        },
+        {
+          "kind": "p",
+          "text": "We're still preparing. No plans, orders or payments are available."
+        },
+        {
+          "kind": "strong",
+          "text": "Building carefully, before connecting anyone."
+        },
+        {
+          "kind": "p",
+          "text": "KiwiKind is not yet an operating internet service provider. No prices, fibre availability, supplier arrangements or installation dates have been confirmed."
+        }
+      ]
+    },
+    {
+      "id": "why",
+      "blocks": [
+        {
+          "kind": "p",
+          "text": "Why KiwiKind?"
+        },
+        {
+          "kind": "h2",
+          "text": "Good internet should feel simple."
+        },
+        {
+          "kind": "card",
+          "text": "Fairness first",
+          "answer": "We're exploring ways to make broadband more affordable without confusing introductory prices or surprise charges.",
+          "icon": "💚"
+        },
+        {
+          "kind": "card",
+          "text": "Reliable connections",
+          "answer": "Our aim is to offer fibre services through genuine New Zealand wholesale partners once agreements are in place.",
+          "icon": "📶"
+        },
+        {
+          "kind": "card",
+          "text": "One KiwiKind account",
+          "answer": "We're developing a website and Android app designed to share customer information securely through one backend.",
+          "icon": "📱"
+        }
+      ]
+    },
+    {
+      "id": "mykiwikind",
+      "blocks": [
+        {
+          "kind": "p",
+          "text": "Website + Android · One KiwiKind"
+        },
+        {
+          "kind": "h2",
+          "text": "Meet My KiwiKind."
+        },
+        {
+          "kind": "p",
+          "text": "Your existing KiwiKind account uses the same customer portal and account system as the Android app. Sign in through our secure portal. Email registration remains closed during pre-launch."
+        },
+        {
+          "kind": "card",
+          "text": "My account",
+          "answer": "Sign in to your existing account through the customer portal used by the website and Android app.",
+          "icon": "👤"
+        },
+        {
+          "kind": "card",
+          "text": "My connection",
+          "answer": "Follow future connection requests and updates. Availability and ordering remain disabled during pre-launch.",
+          "icon": "🏠"
+        },
+        {
+          "kind": "card",
+          "text": "My support",
+          "answer": "Keep conversations and request history together, with the same records available across devices.",
+          "icon": "💬"
+        },
+        {
+          "kind": "p",
+          "text": "My KiwiKind · Dashboard preview"
+        },
+        {
+          "kind": "h3",
+          "text": "Kia ora, welcome home. 💚"
+        },
+        {
+          "kind": "p",
+          "text": "This is a visual demonstration. No account information is loaded or stored."
+        },
+        {
+          "kind": "strong",
+          "text": "Connection"
+        },
+        {
+          "kind": "p",
+          "text": "No active service"
+        },
+        {
+          "kind": "strong",
+          "text": "Support"
+        },
+        {
+          "kind": "p",
+          "text": "No conversations"
+        },
+        {
+          "kind": "strong",
+          "text": "Billing"
+        },
+        {
+          "kind": "p",
+          "text": "Payments disabled"
+        },
+        {
+          "kind": "p",
+          "text": "Dashboard design preview only. Open the secure customer portal below to access your existing account. Broadband orders and payments remain disabled."
+        },
+        {
+          "kind": "p",
+          "text": "Account pages open on our secure Render customer portal. Sign up opens the existing registration page, but email registration is disabled while customer intake is closed. If the free server is waking up, allow a moment for the page to connect."
+        }
+      ]
+    },
+    {
+      "id": "progress",
+      "blocks": [
+        {
+          "kind": "p",
+          "text": "Our journey"
+        },
+        {
+          "kind": "h2",
+          "text": "What happens next?"
+        },
+        {
+          "kind": "b",
+          "text": "01 · NOW"
+        },
+        {
+          "kind": "h3",
+          "text": "Build the experience"
+        },
+        {
+          "kind": "p",
+          "text": "Design the website and Android app, and test a secure shared account system."
+        },
+        {
+          "kind": "b",
+          "text": "02 · BEFORE LAUNCH"
+        },
+        {
+          "kind": "h3",
+          "text": "Verify the service"
+        },
+        {
+          "kind": "p",
+          "text": "Confirm wholesale partnerships, actual costs, legal requirements and customer support arrangements."
+        },
+        {
+          "kind": "b",
+          "text": "03 · WHEN READY"
+        },
+        {
+          "kind": "h3",
+          "text": "Publish real plans"
+        },
+        {
+          "kind": "p",
+          "text": "Only publish pricing, coverage and ordering when they're backed by verified agreements."
+        }
+      ]
+    },
+    {
+      "id": "questions",
+      "blocks": [
+        {
+          "kind": "p",
+          "text": "Good to know"
+        },
+        {
+          "kind": "h2",
+          "text": "Frequently asked questions"
+        },
+        {
+          "kind": "faq",
+          "text": "Can I sign up for broadband today?",
+          "answer": "Not yet. KiwiKind is a pre-launch project, not an operating internet service provider."
+        },
+        {
+          "kind": "faq",
+          "text": "Will KiwiKind offer cheaper fibre?",
+          "answer": "Affordable fibre is our goal. We cannot promise prices until wholesale costs and business requirements are confirmed."
+        },
+        {
+          "kind": "faq",
+          "text": "Is there an Android app?",
+          "answer": "An Android app is in development. It isn't available for public customer use yet."
+        },
+        {
+          "kind": "faq",
+          "text": "Can I check availability or pay?",
+          "answer": "No. Coverage checks, orders and payments are disabled until the service is ready."
+        }
+      ]
+    }
+  ]
+}

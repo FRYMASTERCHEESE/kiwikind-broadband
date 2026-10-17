@@ -1,0 +1,26 @@
+name: Approved website portal visual review
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/native-website-parity]
+    paths: ['site/**', '.github/workflows/web-visual-review.yml']
+permissions:
+  contents: read
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: python -m http.server 8765 --bind 127.0.0.1 --directory site/dist &
+      - run: node site/tests/visual-review.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portal-visual-review
+          path: web-visual-evidence/
