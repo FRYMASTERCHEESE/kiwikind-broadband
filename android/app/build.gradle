@@ -22,8 +22,8 @@ android {
         applicationId 'nz.kiwikind.broadband'
         minSdk 26
         targetSdk 36
-        versionCode 3
-        versionName '0.2.1-prelaunch'
+        versionCode 4
+        versionName '0.2.2-prelaunch'
         buildConfigField 'String', 'API_ORIGIN', '"' + apiOrigin + '"'
         buildConfigField 'String', 'GOOGLE_WEB_CLIENT_ID', '"956119315558-mgaqlpnfr9r0ic9n4jtb284gaa4n7i61.apps.googleusercontent.com"'
     }

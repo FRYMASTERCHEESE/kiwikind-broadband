@@ -99,6 +99,11 @@ public class MainActivity extends Activity {
             message(e.getMessage()==null?"Connection failed. Try again.":e.getMessage());
         }});}});}
     private void legal(String hash){if(api.configured())startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#"+hash)));else message("Read the privacy notice and terms in the website preview. No data is collected by this unconfigured build.");}
+    private void privacyPage(String path){
+        if(!api.configured()){message("Contact kiwikindbroadband@gmail.com for privacy or account deletion.");return;}
+        try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+path)));}
+        catch(android.content.ActivityNotFoundException e){message("Open "+BuildConfig.API_ORIGIN+path+" in a browser, or email kiwikindbroadband@gmail.com. Do not send your password.");}
+    }
     private void auth(boolean register){
         refreshScreen=null;
         content.removeAllViews();title(register?"Create your account":"A kinder connection.");paragraph("A request is not a broadband contract. Verify your email on the website before signing in here.");
@@ -123,7 +128,7 @@ public class MainActivity extends Activity {
             if(!android.util.Patterns.EMAIL_ADDRESS.matcher(address).matches()){email.setError("Enter a valid email address");email.requestFocus();return;}
             run(()->api.call("password-reset",data("email",address)),r->message(r.optString("message")+" Open the email link in your browser, then return here to sign in."));
         }).setEnabled(api.configured());
-        button("Privacy notice",()->legal("privacy"));button("Pre-launch terms",()->legal("terms"));
+        button("Privacy policy",()->privacyPage("/privacy/"));button("Account deletion information",()->privacyPage("/account-deletion/"));button("Pre-launch terms",()->legal("terms"));
     }
     private void googleSignIn(){
         if(BuildConfig.GOOGLE_WEB_CLIENT_ID.trim().isEmpty()){message("Google sign-in is not configured in this Android build. Use the website while setup is completed.");return;}
@@ -185,8 +190,8 @@ public class MainActivity extends Activity {
         button("Refresh account from website",()->run(()->api.call("me",null),r->{signedIn=true;home();message("Account refreshed from KiwiKind server.");}));
         button("My broadband requests",this::orders);button("Support & complaints",this::tickets);button("Billing",()->run(()->api.call("invoices",null),r->{refreshScreen=null;content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());nav();}));
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
-        button("Request account deletion",()->{refreshScreen=null;content.removeAllViews();title("Request deletion");paragraph("We will review lawful retention needs. This is not instant deletion. Request corrections using a privacy support ticket.");EditText p=field("Current password",129);button("Submit deletion request",()->{String password=p.getText().toString();p.setText("");run(()->api.call("privacy/deletion",data("password",password)),r->message(r.optString("message")));});nav();});
-        button("Privacy & account correction",()->legal("privacy"));
+        button("Request account deletion",()->{refreshScreen=null;content.removeAllViews();title("Request deletion");paragraph("This is a request for manual review, not instant deletion. Google-only users can request deletion without a password using the web/email option below.");button("Request without a password (Google accounts)",()->privacyPage("/account-deletion/"));EditText p=field("Current password",129);button("Submit deletion request",()->{String password=p.getText().toString();p.setText("");run(()->api.call("privacy/deletion",data("password",password)),r->message(r.optString("message")));});nav();});
+        button("Privacy & account correction",()->privacyPage("/privacy/"));
         button("Sign out",()->run(()->api.call("logout",data()),r->{api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);message("Signed out.");}));
         message("Account connected · Pre-launch only");
     }

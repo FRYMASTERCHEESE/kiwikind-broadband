@@ -1,6 +1,15 @@
 name: Android signed prelaunch release
 on:
   workflow_dispatch:
+    inputs:
+      reuse_endpoint_tests:
+        description: Reuse passing Endpoint tests only when their source and test tree are unchanged from verified run 38972732788
+        type: boolean
+        default: false
+      capture_screenshots:
+        description: Capture real signed-app screenshots on an Android emulator
+        type: boolean
+        default: true
 permissions:
   contents: read
 jobs:
@@ -17,6 +26,8 @@ jobs:
         shell: bash
         run: echo "KIWIKIND_KEYSTORE=$RUNNER_TEMP/kiwikind-upload.jks" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -36,9 +47,16 @@ jobs:
           umask 077
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KIWIKIND_KEYSTORE"
           keytool -list -keystore "$KIWIKIND_KEYSTORE" -storepass:env KIWIKIND_STORE_PASSWORD -alias "$KIWIKIND_KEY_ALIAS" > /dev/null
-      - name: Test, lint and build signed APK and bundle
+      - name: Verify reused Endpoint unit-test coverage is unchanged
+        if: inputs.reuse_endpoint_tests
+        run: git diff --exit-code 02297394b7e8a01c970897708fd4ac69f8a1763b HEAD -- android/app/src/test android/app/src/main/java/nz/kiwikind/broadband/Endpoint.java
+      - name: Endpoint unit tests when not reusing verified coverage
+        if: ${{ !inputs.reuse_endpoint_tests }}
         working-directory: android
-        run: gradle --no-daemon testDebugUnitTest lintRelease assembleRelease bundleRelease
+        run: gradle --no-daemon testDebugUnitTest
+      - name: Lint and build signed APK and bundle
+        working-directory: android
+        run: gradle --no-daemon lintRelease assembleRelease bundleRelease
       - name: Verify signatures and record public certificate and checksums
         shell: bash
         run: |
@@ -52,6 +70,33 @@ jobs:
           keytool -printcert -jarfile "$AAB" > release-evidence/BUNDLE-CERTIFICATE.txt
           sha256sum "$APK" "$AAB" > release-evidence/SHA256SUMS.txt
           printf '%s\n' "$GITHUB_SHA" > release-evidence/COMMIT.txt
+      - name: Enable emulator acceleration
+        if: inputs.capture_screenshots
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Capture real signed Android app screens
+        if: inputs.capture_screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            mkdir -p release-evidence/screenshots
+            adb install android/app/build/outputs/apk/release/app-release.apk
+            adb shell am start -n nz.kiwikind.broadband/.MainActivity
+            sleep 85
+            adb shell uiautomator dump /sdcard/window.xml
+            adb pull /sdcard/window.xml release-evidence/screenshots/window.xml
+            adb exec-out screencap -p > release-evidence/screenshots/01-sign-in.png
+            adb shell input swipe 500 1800 500 450 500
+            sleep 2
+            adb exec-out screencap -p > release-evidence/screenshots/02-privacy-controls.png
+            adb logcat -d -s AndroidRuntime:E > release-evidence/ANDROID-CRASHES.txt
       - uses: actions/upload-artifact@v4
         with:
           name: KiwiKind-signed-prelaunch-${{ github.sha }}

@@ -61,6 +61,12 @@ def styles(request): return FileResponse(open(settings.BASE_DIR/'site'/'dist'/'s
 def script(request): return FileResponse(open(settings.BASE_DIR/'site'/'dist'/'app.js','rb'),content_type='application/javascript')
 
 @require_GET
+def privacy_policy(request): return FileResponse(open(settings.BASE_DIR/'site'/'dist'/'privacy.html','rb'),content_type='text/html')
+
+@require_GET
+def account_deletion_info(request): return FileResponse(open(settings.BASE_DIR/'site'/'dist'/'account-deletion.html','rb'),content_type='text/html')
+
+@require_GET
 def health(request): return JsonResponse({'status':'ok','service':'kiwikind-broadband'})
 
 @endpoint(['GET'])
