@@ -26,6 +26,7 @@ public class MainActivity extends Activity {
     private static final String CONSENT="prelaunch-2026-10-16";
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private Api api;
+    private BannerAds bannerAds;
     private LinearLayout content;
     private TextView feedback;
     private ProgressBar operationProgress;
@@ -37,7 +38,7 @@ public class MainActivity extends Activity {
     interface Task { JSONObject run() throws Exception; }
     interface Done { void accept(JSONObject data) throws Exception; }
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);api=new Api(BuildConfig.API_ORIGIN,this);
+        super.onCreate(state);bannerAds=new BannerAds(this);api=new Api(BuildConfig.API_ORIGIN,this);
         if(android.os.Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::backToAccount);
         getWindow().getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|(android.os.Build.VERSION.SDK_INT>=27?android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR:0));
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(PAPER);
@@ -69,6 +70,7 @@ public class MainActivity extends Activity {
     @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);if(hasFocus)applySystemBarAppearance();}
     @Override protected void onResume(){
         super.onResume();
+        if(bannerAds!=null)bannerAds.resume();
         // On returning from the browser, verify the saved session without interrupting active screens.
         long now=android.os.SystemClock.elapsedRealtime();
         if(api!=null && api.configured() && signedIn && !busy && now-lastResumeCheck>30000L){
@@ -169,11 +171,10 @@ public class MainActivity extends Activity {
                 }
             }
             if(id.equals("home"))button("Discover our vision ↗",()->publicPage("why"));
-            if(id.equals("home")&&BuildConfig.DEBUG&&BuildConfig.TEST_ADS){
-                // A dedicated child detaches on navigation, invalidating delayed consent callbacks.
+            if(AdPolicy.publicPlacement(id)){
                 LinearLayout adSlot=new LinearLayout(this);adSlot.setOrientation(LinearLayout.VERTICAL);
-                button("Internal test ad preview",()->{try{Class.forName("nz.kiwikind.broadband.AdPreview").getMethod("show",Activity.class,LinearLayout.class).invoke(null,this,adSlot);}catch(Exception e){message("Test ad preview unavailable. Live ads remain off.");}});
-                content.addView(adSlot,spaced());
+                content.addView(adSlot,spaced());bannerAds.show(adSlot);
+                button("Advertising privacy choices",()->bannerAds.privacyChoices());
             }
             if(id.equals("why"))button("Meet My KiwiKind",()->publicPage("mykiwikind"));
             if(id.equals("mykiwikind"))button("What happens next?",()->publicPage("progress"));
@@ -288,6 +289,7 @@ public class MainActivity extends Activity {
             JSONArray blocks=new JSONObject(out.toString("UTF-8")).getJSONArray(key);
             for(int i=0;i<blocks.length();i++){JSONObject block=blocks.getJSONObject(i);if(block.getString("kind").startsWith("h"))title(block.getString("text"));else paragraph(block.getString("text"));}
         }catch(Exception e){title("Privacy and account help");paragraph("Contact kiwikindbroadband@gmail.com. Do not send passwords, login codes or identity documents.");}
+        if(key.equals("privacy"))button("Advertising privacy choices",()->bannerAds.privacyChoices());
         if(signedIn)button("Request access or account correction",this::correctionScreen);
         if(signedIn)nav();else button("Back to sign in",()->auth(false));
         message("KiwiKind Broadband · Public policy · Available offline");
@@ -354,5 +356,6 @@ public class MainActivity extends Activity {
     private void newTicket(){refreshScreen=null;content.removeAllViews();title("How can we help?");paragraph("Do not include payment card details, identity documents or health information.");EditText subject=field("Subject",1);Spinner category=new Spinner(this);category.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,new String[]{"support","complaint","privacy"}));category.setContentDescription("Topic");content.addView(category);EditText body=field("Message",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);body.setSingleLine(false);body.setMinLines(4);button("Send message",()->run(()->api.call("tickets",data("subject",subject.getText().toString(),"category",category.getSelectedItem().toString(),"body",body.getText().toString())),r->tickets()));nav();}
     private void conversation(String id){run(()->api.call("tickets/"+id+"/messages",null),r->{refreshScreen=null;content.removeAllViews();title("Conversation");JSONArray a=r.getJSONArray("messages");for(int i=0;i<a.length();i++){JSONObject m=a.getJSONObject(i);paragraph((m.optBoolean("from_support")?"Support: ":"You: ")+m.getString("body"));}EditText reply=field("Your reply",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);reply.setSingleLine(false);button("Refresh conversation",()->conversation(id));button("Send reply",()->run(()->api.call("tickets/"+id+"/messages",data("body",reply.getText().toString())),x->conversation(id)));nav();message("Your conversation");});}
     @Override protected void onActivityResult(int request,int result,Intent intent){super.onActivityResult(request,result,intent);if(request==10){if(result==RESULT_OK&&intent!=null&&intent.getData()!=null&&exportData!=null){try(var out=getContentResolver().openOutputStream(intent.getData())){if(out!=null){out.write(exportData.getBytes(java.nio.charset.StandardCharsets.UTF_8));message("Export saved.");}}catch(Exception e){message("Could not save export.");}}exportData=null;}}
-    @Override protected void onDestroy(){worker.shutdownNow();exportData=null;super.onDestroy();}
+    @Override protected void onPause(){if(bannerAds!=null)bannerAds.pause();super.onPause();}
+    @Override protected void onDestroy(){if(bannerAds!=null)bannerAds.destroy();worker.shutdownNow();exportData=null;super.onDestroy();}
 }

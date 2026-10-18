@@ -198,12 +198,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
-      - name: Compile only official test-ad lifecycle fixture
+      - name: Compile affected release-capable AdMob lifecycle fixture
         working-directory: runtime/android
         run: |
           cp ../../scripts/android/AdPlacementVerification.java app/src/androidTest/java/nz/kiwikind/broadband/
           sed -i 's/nz.kiwikind.broadband.VisualCapture/nz.kiwikind.broadband.AdPlacementVerification/' app/src/androidTest/AndroidManifest.xml
-          gradle --no-daemon assembleDebug assembleDebugAndroidTest -PKIWIKIND_TEST_ADS=true -PKIWIKIND_API_ORIGIN=
+          gradle --no-daemon :app:testDebugUnitTest --tests nz.kiwikind.broadband.AdPolicyTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest -PKIWIKIND_API_ORIGIN=
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
@@ -220,9 +220,12 @@ jobs:
             adb install runtime/android/app/build/outputs/apk/debug/app-debug.apk
             adb install runtime/android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             adb shell am instrument -w nz.kiwikind.broadband.test/nz.kiwikind.broadband.AdPlacementVerification | tee advertising-emulator.txt
+            adb pull /sdcard/Android/data/nz.kiwikind.broadband/files/advertising-v8 advertising-v8 || true
             grep -q AD_PLACEMENT_PASS advertising-emulator.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: advertising-emulator-evidence
-          path: advertising-emulator.txt
+          path: |
+            advertising-emulator.txt
+            advertising-v8/
