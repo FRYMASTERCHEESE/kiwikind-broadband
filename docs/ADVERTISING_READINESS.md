@@ -33,7 +33,7 @@ the independent test-device guard remains mandatory in every case.
 
 AD_ID and AdServices ad ID/attribution/topics permissions are removed. This does
 not imply no SDK collection: the public portal privacy policy and offline native
-copy disclose IP/general location, interactions, diagnostics/crash information,
+copy disclose IP/general location, interactions and diagnostic information,
 installation/device identifiers, Google processing, consent and privacy options.
 No account emails/passwords/messages/records are included in AdRequest.
 
@@ -60,7 +60,7 @@ Contains ads/Data safety review are complete.
 Contains ads: Yes (SDK/banner code is included, even though restricted to testing).
 Advertising ID: No, provided the final merged manifest confirms removal and no
 other SDK requests it. Retain existing account data. Add the SDK's applicable
-approximate location, app interactions, crash logs/diagnostics and device/other ID
+approximate location, app interactions, diagnostics and device/other ID
 collection/sharing, purposes, encryption and deletion descriptions based on actual
 behavior and Google's current SDK disclosure guide. Do not claim AD_ID removal
 eliminates all other IDs. Do not submit a no-data-collection declaration.
@@ -71,9 +71,8 @@ The project-path URL itself is rejected by AdSense's Add site form. The owned fr
 root frymastercheese.github.io is accepted. Its existing public ads.txt already
 contains the exact publisher record and Google verified site ownership using that
 file; no root/project website files or ad scripts were changed. A site entry was
-created in the existing publisher account. Approval/review is separate. Review
-submission requires the owner's answer to the pending approval question after an
-automatic approval review blocked that external submission. No paid service is
+created in the existing publisher account. Approval/review is separate. The owner explicitly authorised the root-site review submission. Google now shows
+Getting ready / Review requested; approval remains pending. No paid service is
 needed merely to reach Google's review. The root also hosts other owned content;
 Google's review covers the root property, including the KiwiKind project path.
 

@@ -70,7 +70,7 @@
     },
     {
       "kind": "p",
-      "text": "The Google SDKs may process IP address and general location, app interactions, crash reports, diagnostic information and device or installation identifiers for test-ad delivery, measurement and fraud prevention. Data may be transmitted to Google and its advertising technology providers, including processing overseas. Removing the Android Advertising ID permission does not eliminate all SDK data processing; the V8 build removes that permission and does not request precise device location. No KiwiKind email address, password, support message, billing record or referral record is included in an ad request."
+      "text": "The Google SDKs may process IP address and general location, app interactions, diagnostic information and device or installation identifiers for test-ad delivery, measurement and fraud prevention. Data may be transmitted to Google and its advertising technology providers, including processing overseas. Removing the Android Advertising ID permission does not eliminate all SDK data processing; the V8 build removes that permission and does not request precise device location. No KiwiKind email address, password, support message, billing record or referral record is included in an ad request."
     },
     {
       "kind": "p",

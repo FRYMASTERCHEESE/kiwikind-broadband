@@ -52,6 +52,9 @@ final class BannerAds {
         &&foreground&&!formShowing&&token==generation&&slot!=null&&slot.isAttachedToWindow();}
     private void gatherConsent(int token){
         if(!active(token)||consentPending||initializing||banner!=null)return;
+        if(!new AdRequest.Builder().build().isTestDevice(activity)){
+            status.setText("Test advertisements are off on unregistered devices. Live advertising remains disabled.");return;
+        }
         consentPending=true;consentUpdated=false;status.setText("Test advertisement · Checking privacy choices…");
         consent.requestConsentInfoUpdate(activity,parameters,()->{
             consentPending=false;
