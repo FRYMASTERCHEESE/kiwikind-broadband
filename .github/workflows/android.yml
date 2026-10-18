@@ -2,6 +2,11 @@ name: Android pre-launch build
 on:
   workflow_dispatch:
     inputs:
+      test_ads:
+        description: Compile and lint only the internal official test-ad preview
+        required: false
+        type: boolean
+        default: false
       api_origin:
         description: Dedicated KiwiKind HTTPS backend origin (blank builds disconnected pre-launch shell)
         required: false
@@ -24,7 +29,13 @@ jobs:
         working-directory: android
         env:
           API_ORIGIN: ${{ inputs.api_origin }}
-        run: gradle --no-daemon testDebugUnitTest lintDebug assembleDebug "-PKIWIKIND_API_ORIGIN=$API_ORIGIN"
+          TEST_ADS: ${{ inputs.test_ads }}
+        run: |
+          if [ "$TEST_ADS" = "true" ]; then
+            gradle --no-daemon lintDebug assembleDebug -PKIWIKIND_TEST_ADS=true "-PKIWIKIND_API_ORIGIN=$API_ORIGIN"
+          else
+            gradle --no-daemon testDebugUnitTest lintDebug assembleDebug "-PKIWIKIND_API_ORIGIN=$API_ORIGIN"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: kiwikind-prelaunch-debug-review
