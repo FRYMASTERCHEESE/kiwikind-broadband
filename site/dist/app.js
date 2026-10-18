@@ -34,6 +34,7 @@ function showSignedOut() {
   $('account-email').textContent='';
   for (const id of ['orders','tickets','invoices','referral-result']) $(id)?.replaceChildren();
   if($('account-notifications'))$('account-notifications').checked=false;
+  if($('confirm-google-deletion'))$('confirm-google-deletion').checked=false;
   if($('create-referral'))$('create-referral').disabled=false;
   location.hash='#signin';
 }
