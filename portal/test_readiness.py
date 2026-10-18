@@ -65,6 +65,7 @@ class ReadinessTests(TestCase):
         count=User.objects.count()
         self.assertEqual(self.post(Client(),'register',{'email':'badref@example.invalid','password':'Synthetic-Totara-Mountain-937!','consent_version':'prelaunch-2026-10-16','referral_code':'x'*24}).status_code,400)
         self.assertEqual(User.objects.count(),count);self.assertEqual(len(mail.outbox),0)
+        self.assertEqual(self.post(Client(),'register',{'email':self.a.email,'password':'Synthetic-Totara-Mountain-937!','consent_version':'prelaunch-2026-10-16','referral_code':'x'*24}).status_code,400)
     def test_database_prevents_self_and_duplicate_referral(self):
         with self.assertRaises(IntegrityError),transaction.atomic():Referral.objects.create(referrer=self.a,invitee=self.a)
         Referral.objects.create(referrer=self.a,invitee=self.b)

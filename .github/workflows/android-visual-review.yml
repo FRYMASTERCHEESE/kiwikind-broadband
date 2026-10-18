@@ -10,6 +10,10 @@ on:
         description: Compare V6/V7 native request counts and timings with synthetic latency
         type: boolean
         default: false
+      compare_baseline:
+        description: Include V6 baseline; false reuses the recorded baseline
+        type: boolean
+        default: true
       source_ref:
         description: Android source to verify
         type: string
@@ -122,7 +126,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        source: [a280ca5ba8e686921cb6d9eb8df1baf1796c6e05, feat/native-readiness-referrals]
+        source: ${{ fromJSON(inputs.compare_baseline && '["a280ca5ba8e686921cb6d9eb8df1baf1796c6e05", "feat/native-readiness-referrals"]' || '["feat/native-readiness-referrals"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4

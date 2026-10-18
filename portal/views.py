@@ -108,6 +108,12 @@ def attach_referral(user, code):
 def register(request):
     email=text(request.data,'email',254).lower(); validate_email(email)
     password=text(request.data,'password',128,12)
+    referral=text(request.data,'referral_code',24,0)
+    # Validate equally for existing and new addresses; invalid codes must not
+    # turn the generic registration response into an account-existence probe.
+    if referral:
+        if not settings.REFERRALS_ENABLED: raise ValueError('Referral registration is not open yet')
+        if not ReferralCode.objects.filter(code=referral,user__is_active=True).exists(): raise ValueError('Invalid referral code')
     if request.data.get('consent_version') != CONSENT: raise ValueError('Accept current pre-launch privacy and terms')
     validate_password(password,User(username=email,email=email))
     # Generic response avoids disclosing registered addresses.
@@ -115,7 +121,7 @@ def register(request):
         try:
             with transaction.atomic():
                 user=User.objects.create_user(username=email,email=email,password=password,is_active=False)
-                attach_referral(user,text(request.data,'referral_code',24,0))
+                attach_referral(user,referral)
                 token=signing.dumps({'id':user.pk},salt='verify')
                 url=f'{settings.PUBLIC_ORIGIN}/#verify={token}'
                 send_mail('Verify your KiwiKind Broadband account',f'Confirm your email within 24 hours: {url}\nThis does not order broadband.',settings.DEFAULT_FROM_EMAIL,[email])
