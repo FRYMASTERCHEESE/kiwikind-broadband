@@ -18,7 +18,7 @@ from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET
 from django.views.decorators.csrf import csrf_exempt
-from .models import Order, Ticket, Message, Invoice, AuditEvent, PrivacyRequest
+from .models import Order, Ticket, Message, Invoice, AuditEvent, PrivacyRequest, ReferralCode, Referral, AccountPreferences
 from .security import limited
 
 User = get_user_model()
@@ -68,6 +68,9 @@ def styles(request): return FileResponse(open(settings.BASE_DIR/'site'/'dist'/'s
 def script(request): return FileResponse(open(settings.BASE_DIR/'site'/'dist'/'app.js','rb'),content_type='application/javascript')
 
 @require_GET
+def readiness_script(request): return FileResponse(open(settings.BASE_DIR/'site'/'dist'/'readiness.js','rb'),content_type='application/javascript')
+
+@require_GET
 def privacy_policy(request): return FileResponse(open(settings.BASE_DIR/'site'/'dist'/'privacy.html','rb'),content_type='text/html')
 
 @require_GET
@@ -85,6 +88,22 @@ def status(request):
 @endpoint(['GET'])
 def csrf(request): return JsonResponse({'csrfToken':get_token(request)})
 
+def account_json(user):
+    return {'email':user.email, 'service_status':'No active service', 'has_password':user.has_usable_password()}
+
+@endpoint(['GET'])
+def bootstrap(request):
+    return JsonResponse({'csrfToken':get_token(request), 'intake_enabled':settings.INTAKE_ENABLED,
+        'billing_enabled':False, 'live_services':False,
+        'account':account_json(request.user) if request.user.is_authenticated else None})
+
+def attach_referral(user, code):
+    if not code: return
+    if not settings.REFERRALS_ENABLED: raise ValueError('Referral registration is not open yet')
+    owner = ReferralCode.objects.select_related('user').filter(code=code, user__is_active=True).first()
+    if not owner or owner.user_id == user.pk: raise ValueError('Invalid referral code')
+    Referral.objects.create(referrer=owner.user, invitee=user)
+
 @endpoint(['POST'],throttle='register',intake=True)
 def register(request):
     email=text(request.data,'email',254).lower(); validate_email(email)
@@ -96,6 +115,7 @@ def register(request):
         try:
             with transaction.atomic():
                 user=User.objects.create_user(username=email,email=email,password=password,is_active=False)
+                attach_referral(user,text(request.data,'referral_code',24,0))
                 token=signing.dumps({'id':user.pk},salt='verify')
                 url=f'{settings.PUBLIC_ORIGIN}/#verify={token}'
                 send_mail('Verify your KiwiKind Broadband account',f'Confirm your email within 24 hours: {url}\nThis does not order broadband.',settings.DEFAULT_FROM_EMAIL,[email])
@@ -109,6 +129,7 @@ def verify(request):
     user=get_object_or_404(User,pk=payload['id'])
     if user.is_active: raise ValueError('This verification link has already been used')
     user.is_active=True; user.save(update_fields=['is_active'])
+    Referral.objects.filter(invitee=user,status='pending').update(status='verified')
     return JsonResponse({'message':'Email verified. You can sign in.'})
 
 @endpoint(['POST'],throttle='login')
@@ -116,7 +137,7 @@ def signin(request):
     user=authenticate(request,username=text(request.data,'email',254).lower(),password=text(request.data,'password',128))
     if user is None: return JsonResponse({'error':'Invalid credentials or email not verified'},status=401)
     login(request,user); audit(request,'login')
-    return JsonResponse({'email':user.email,'csrfToken':get_token(request)})
+    return JsonResponse({**account_json(user),'csrfToken':get_token(request),'intake_enabled':settings.INTAKE_ENABLED})
 
 @endpoint(['POST'],True)
 def signout(request): audit(request,'logout'); logout(request); return JsonResponse({'message':'Signed out'})
@@ -162,7 +183,28 @@ def reset_confirm(request):
     return JsonResponse({'message':'Password updated. Sign in again.'})
 
 @endpoint(['GET'],True)
-def me(request): return JsonResponse({'email':request.user.email,'service_status':'No active service'})
+def me(request): return JsonResponse(account_json(request.user))
+
+@endpoint(['GET','POST'],True,throttle='referrals')
+def referrals(request):
+    code = ReferralCode.objects.filter(user=request.user).first()
+    if request.method == 'POST':
+        code,_ = ReferralCode.objects.get_or_create(user=request.user)
+    return JsonResponse({'code':code.code if code else None,
+        'share_url':f'{settings.PUBLIC_ORIGIN}/?ref={code.code}#signup' if code else None,
+        'accepting_referrals':settings.REFERRALS_ENABLED and settings.INTAKE_ENABLED,
+        'rewards_enabled':False,
+        'history':list(Referral.objects.filter(referrer=request.user).order_by('-created_at').values('id','status','created_at')[:100])})
+
+@endpoint(['GET','POST'],True)
+def preferences(request):
+    pref = AccountPreferences.objects.filter(user=request.user).first()
+    if request.method == 'POST':
+        value=request.data.get('account_notifications')
+        if type(value) is not bool: raise ValueError('Choose a notification preference')
+        pref,_=AccountPreferences.objects.update_or_create(user=request.user,defaults={'account_notifications':value})
+    return JsonResponse({'account_notifications':pref.account_notifications if pref else False,
+        'delivery_enabled':False,'marketing_enabled':False})
 
 def order_json(o): return {'id':str(o.id),'address':o.address,'postcode':o.postcode,'contact_name':o.contact_name,'phone':o.phone,'status':o.status,'created_at':o.created_at.isoformat(),'consent_version':o.consent_version}
 
@@ -225,12 +267,20 @@ def export(request):
       'tickets':[{'id':str(t.id),'subject':t.subject,'category':t.category,'status':t.status,'messages':list(t.messages.values('body','created_at'))} for t in ts],
       'invoices':list(Invoice.objects.filter(user=request.user).values('id','supplier_reference','amount_cents','currency','due_date','status')),
       'privacy_requests':list(PrivacyRequest.objects.filter(user=request.user).values('status','created_at'))})
+    # Never include invited people's addresses or identity details in this export.
+    data=json.loads(response.content)
+    data['referrals']=list(Referral.objects.filter(referrer=request.user).values('id','status','created_at'))
+    data['account_preferences']={'account_notifications':AccountPreferences.objects.filter(user=request.user,account_notifications=True).exists()}
+    response=JsonResponse(data)
     response['Content-Disposition']='attachment; filename="kiwikind-data.json"'
     return response
 
 @endpoint(['POST'],True)
 def deletion(request):
-    if not request.user.check_password(text(request.data,'password',128)): return JsonResponse({'error':'Confirm your current password'},status=403)
+    if request.user.has_usable_password():
+        if not request.user.check_password(text(request.data,'password',128)): return JsonResponse({'error':'Confirm your current password'},status=403)
+    elif request.data.get('confirm') is not True:
+        return JsonResponse({'error':'Confirm the deletion review request'},status=403)
     if limited(request,'deletion'): return JsonResponse({'error':'Try later'},status=429)
     with transaction.atomic():
         # Lock the parent even when no queue item exists yet.
@@ -282,7 +332,7 @@ def _verified_google_signin(request, token):
         return JsonResponse({'error': 'Account unavailable'}, status=403)
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
     audit(request, 'google_login')
-    return JsonResponse({'email': user.email, 'csrfToken': get_token(request)})
+    return JsonResponse({**account_json(user), 'csrfToken': get_token(request),'intake_enabled':settings.INTAKE_ENABLED})
 
 
 @endpoint(['POST'], throttle='google-login')

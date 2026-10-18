@@ -55,7 +55,8 @@ public class MainActivity extends Activity {
         ScrollView scroll=new ScrollView(this){@Override protected void onSizeChanged(int w,int h,int oldw,int oldh){super.onSizeChanged(w,h,oldw,oldh);int side=Math.max(dp(22),(w-dp(680))/2);content.setPadding(side,dp(12),side,dp(24));}};scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(22),dp(12),dp(22),dp(24));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         root.post(this::applySystemBarAppearance);
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
-        else connectAccount();
+        else if(api.hasSession())connectAccount();
+        else {auth(false);message("Ready to sign in. The free server may need time to wake up when you connect.");}
     }
     private void applySystemBarAppearance(){
         if(android.os.Build.VERSION.SDK_INT>=30){
@@ -77,7 +78,7 @@ public class MainActivity extends Activity {
             });
         }
     }
-    private void connectAccount(){loadingAccount();run(()->api.call("status",null),s->{intake=s.optBoolean("intake_enabled");restoreSession();});}
+    private void connectAccount(){loadingAccount();restoreSession();}
     private void loadingAccount(){
         content.removeAllViews();
         title("Restoring your account…");
@@ -91,7 +92,7 @@ public class MainActivity extends Activity {
     private void restoreSession(){
         // A server-verified session, not a local flag, determines whether to show the account.
         run(()->{
-            try { return api.call("me",null); }
+            try { return api.call("bootstrap",null); }
             catch(Api.SessionExpiredException e) { api.clear();return new JSONObject().put("session_unavailable",true); }
             catch(Exception e) { return new JSONObject().put("connection_unavailable",true); }
         },r->{
@@ -101,8 +102,10 @@ public class MainActivity extends Activity {
             }else if(r.optBoolean("session_unavailable")){
                 signedIn=false;auth(false);
                 message("Sign in to My KiwiKind. Customer intake remains closed.");
+            }else if(r.isNull("account")){
+                intake=r.optBoolean("intake_enabled");api.clear();signedIn=false;auth(false);message("Sign in to My KiwiKind. Customer intake remains closed.");
             }else{
-                signedIn=true;home();message("Account restored from KiwiKind server.");
+                intake=r.optBoolean("intake_enabled");signedIn=true;accountHome(r.getJSONObject("account"));message("Account restored from KiwiKind server.");
             }
         });
     }
@@ -164,6 +167,7 @@ public class MainActivity extends Activity {
                 }
             }
             if(id.equals("home"))button("Discover our vision ↗",()->publicPage("why"));
+            if(id.equals("home")&&BuildConfig.DEBUG&&BuildConfig.TEST_ADS)button("Internal test ad preview",()->{try{Class.forName("nz.kiwikind.broadband.AdPreview").getMethod("show",Activity.class,LinearLayout.class).invoke(null,this,content);}catch(Exception e){message("Test ad preview unavailable. Live ads remain off.");}});
             if(id.equals("why"))button("Meet My KiwiKind",()->publicPage("mykiwikind"));
             if(id.equals("mykiwikind"))button("What happens next?",()->publicPage("progress"));
             button(signedIn?"My account":"Sign in",()->{if(signedIn)home();else auth(false);});
@@ -182,22 +186,21 @@ public class MainActivity extends Activity {
             if(e instanceof Api.SessionExpiredException){api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);}
             message(e.getMessage()==null?"Connection failed. Try again.":e.getMessage());
         }});}});}
-    private void legal(String hash){if(api.configured())startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#"+hash)));else message("Read the privacy notice and terms in the website preview. No data is collected by this unconfigured build.");}
+    private void legal(String hash){policyScreen(hash.equals("terms")?"terms":"privacy");}
     private void privacyPage(String path){
-        if(!api.configured()){message("Contact kiwikindbroadband@gmail.com for privacy or account deletion.");return;}
-        try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+path)));}
-        catch(android.content.ActivityNotFoundException e){message("Open "+BuildConfig.API_ORIGIN+path+" in a browser, or email kiwikindbroadband@gmail.com. Do not send your password.");}
+        policyScreen(path.contains("deletion")?"deletion":"privacy");
     }
     private void auth(boolean register){
         refreshScreen=null;
         content.removeAllViews();title(register?"Create your account":"A kinder connection.");landscape();paragraph("My KiwiKind · Pre-launch\nSign in to your existing account. Broadband requests and payments remain closed.");
         EditText email=field("Email",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         EditText password=field("Password (at least 12 characters)",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        EditText referral=register?field("Referral code (optional; programme not open yet)",1):null;
         CheckBox consent=new CheckBox(this);consent.setText(R.string.account_consent);if(register)content.addView(consent);
         button(register?"Create account":"Sign in",()->{
             if(register&&!consent.isChecked()){message("Please read and accept the pre-launch terms.");return;}
             String e=email.getText().toString().trim(),p=password.getText().toString();password.setText("");
-            run(()->api.call(register?"register":"login",data("email",e,"password",p,"consent_version",CONSENT)),r->{if(register){message(r.optString("message"));}else{signedIn=true;home();}});
+            run(()->api.call(register?"register":"login",data("email",e,"password",p,"consent_version",CONSENT,"referral_code",referral==null?"":referral.getText().toString().trim())),r->{if(register){message(r.optString("message"));}else{acceptLogin(r);}});
         }).setEnabled(api.configured()&&(!register||intake));
         Button googleButton=button("Sign in with Google",this::googleSignIn);
         googleButton.setEnabled(api.configured());
@@ -207,6 +210,7 @@ public class MainActivity extends Activity {
         googleButton.setMinHeight((int)(52*getResources().getDisplayMetrics().density));
         if(register&&!intake)paragraph("Email registration remains closed during pre-launch.");
         button(register?"Back to sign in":"Create an account",()->auth(!register));
+        button("Retry account connection",this::connectAccount).setEnabled(api.configured());
         button("Discover our vision ↗",()->publicPage("home"));
         button("Open My KiwiKind website",()->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#portal")))).setEnabled(api.configured());
         button("Reset password",()->{
@@ -231,7 +235,7 @@ public class MainActivity extends Activity {
                 if(!GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(credential.getType())){message("Google did not return an ID token.");return;}
                 try{
                     String token=GoogleIdTokenCredential.createFrom(credential.getData()).getIdToken();
-                    run(()->api.call("google-login",data("id_token",token)),r->{signedIn=true;home();message("Signed in with Google.");});
+                    run(()->api.call("google-login",data("id_token",token)),r->{acceptLogin(r);message("Signed in with Google.");});
                 }catch(Exception e){message("Could not verify the Google account. Try again.");}
             }
             @Override public void onError(GetCredentialException e){
@@ -259,7 +263,7 @@ public class MainActivity extends Activity {
                 }
                 try{
                     String token=GoogleIdTokenCredential.createFrom(credential.getData()).getIdToken();
-                    run(()->api.call("google-login",data("id_token",token)),r->{signedIn=true;home();message("Signed in with Google.");});
+                    run(()->api.call("google-login",data("id_token",token)),r->{acceptLogin(r);message("Signed in with Google.");});
                 }catch(Exception e){message("Google sign-in could not be completed. Your saved login was kept.");}
             }
             @Override public void onError(GetCredentialException e){
@@ -270,6 +274,40 @@ public class MainActivity extends Activity {
         });
     }
     private void nav(){button("Back to account",this::home);}
+    private void policyScreen(String key){
+        refreshScreen=null;content.removeAllViews();
+        try(java.io.InputStream stream=getAssets().open("policy-content.json")){
+            java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();byte[] buffer=new byte[4096];int n;while((n=stream.read(buffer))!=-1)out.write(buffer,0,n);
+            JSONArray blocks=new JSONObject(out.toString("UTF-8")).getJSONArray(key);
+            for(int i=0;i<blocks.length();i++){JSONObject block=blocks.getJSONObject(i);if(block.getString("kind").startsWith("h"))title(block.getString("text"));else paragraph(block.getString("text"));}
+        }catch(Exception e){title("Privacy and account help");paragraph("Contact kiwikindbroadband@gmail.com. Do not send passwords, login codes or identity documents.");}
+        if(signedIn)button("Request access or account correction",this::correctionScreen);
+        if(signedIn)nav();else button("Back to sign in",()->auth(false));
+        message("KiwiKind Broadband · Public policy · Available offline");
+    }
+    private void correctionScreen(){
+        refreshScreen=null;content.removeAllViews();title("Privacy & account correction");paragraph("Tell us which account information needs review. Changes are reviewed manually. Do not include passwords, identity documents or payment details.");
+        EditText body=field("Your access or correction request",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_MULTI_LINE);body.setSingleLine(false);body.setMinLines(4);
+        button("Send private request",()->run(()->api.call("tickets",data("subject","Account access or correction","category","privacy","body",body.getText().toString())),r->{tickets();}));nav();
+    }
+    private void deletionScreen(boolean hasPassword){
+        refreshScreen=null;content.removeAllViews();title("Request account deletion");paragraph("Request manual review of your account and associated data. No records are deleted immediately. Any lawful retention will be explained. You can also contact kiwikindbroadband@gmail.com without signing in.");
+        EditText password=hasPassword?field("Current password",129):null;
+        CheckBox confirm=new CheckBox(this);confirm.setText("I want my account and associated data reviewed for deletion.");content.addView(confirm);
+        button("Submit deletion request",()->{if(!confirm.isChecked()){message("Confirm that you want deletion review.");return;}String value=password==null?"":password.getText().toString();if(password!=null)password.setText("");run(()->api.call("privacy/deletion",data("password",value,"confirm",true)),r->message(r.optString("message")));});
+        button("Read deletion policy",()->policyScreen("deletion"));nav();
+    }
+    private void referralsScreen(){run(()->api.call("referrals",null),this::renderReferrals);}
+    private void renderReferrals(JSONObject result) throws Exception {
+        refreshScreen=this::referralsScreen;content.removeAllViews();title("Invite friends & whānau");paragraph("Referral programme preview. Registration remains closed. No rewards, discounts or free broadband are promised.");
+        String code=result.optString("code","");if(code.isEmpty()||code.equals("null"))button("Create my referral code",()->run(()->api.call("referrals",data()),this::renderReferrals));
+        else{paragraph("Your code: "+code);String url=result.getString("share_url");paragraph(url);button("Share my referral link",()->{Intent send=new Intent(Intent.ACTION_SEND);send.setType("text/plain");send.putExtra(Intent.EXTRA_TEXT,"KiwiKind Broadband · Pre-launch referral preview. Registration and rewards are not open. "+url);startActivity(Intent.createChooser(send,"Share KiwiKind"));});}
+        JSONArray history=result.getJSONArray("history");if(history.length()==0)paragraph("No referrals recorded.");for(int i=0;i<history.length();i++){JSONObject item=history.getJSONObject(i);paragraph(item.getString("status")+" · "+item.getString("created_at"));}nav();
+    }
+    private void settingsScreen(){run(()->api.call("preferences",null),r->{refreshScreen=this::settingsScreen;content.removeAllViews();title("Account settings & notifications");paragraph("Preferences use your shared KiwiKind account. Notification delivery and marketing are disabled; saving this preference does not enable push messages or emails.");
+        CheckBox choice=new CheckBox(this);choice.setText("Account update notifications, when delivery becomes available");choice.setChecked(r.optBoolean("account_notifications"));content.addView(choice);
+        button("Save preference",()->run(()->api.call("preferences",data("account_notifications",choice.isChecked())),s->message("Preference saved to your KiwiKind account. Delivery remains disabled.")));button("Review account details or request correction",this::correctionScreen);nav();});}
+    private void acceptLogin(JSONObject account){signedIn=true;intake=account.optBoolean("intake_enabled");accountHome(account);}
     private void home(){
         if(api.configured()){run(()->api.call("me",null),this::accountHome);}else accountHome(new JSONObject());
     }
@@ -279,10 +317,12 @@ public class MainActivity extends Activity {
         if(account.has("email"))paragraph(account.optString("email"));
         paragraph("Your existing KiwiKind account uses the same customer portal and account system as the Android app. Sign in through our secure portal. Email registration remains closed during pre-launch.");
         accountCard("My connection","No active service · View requests",this::orders);accountCard("My support","Support & complaints",this::tickets);accountCard("Billing","Payments disabled",()->run(()->api.call("invoices",null),r->{refreshScreen=null;content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());nav();}));
-        button("Refresh account from website",()->run(()->api.call("me",null),r->{signedIn=true;home();message("Account refreshed from KiwiKind server.");}));
+        button("Refresh account from website",()->run(()->api.call("me",null),r->{signedIn=true;accountHome(r);message("Account refreshed from KiwiKind server.");}));
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
-        button("Request account deletion",()->{refreshScreen=null;content.removeAllViews();title("Request deletion");paragraph("This is a request for manual review, not instant deletion. Google-only users can request deletion without a password using the web/email option below.");button("Request without a password (Google accounts)",()->privacyPage("/account-deletion/"));EditText p=field("Current password",129);button("Submit deletion request",()->{String password=p.getText().toString();p.setText("");run(()->api.call("privacy/deletion",data("password",password)),r->message(r.optString("message")));});nav();});
-        button("Privacy & account correction",()->privacyPage("/privacy/"));
+        button("Request account deletion",()->deletionScreen(account.optBoolean("has_password",true)));
+        button("Privacy & account correction",()->policyScreen("privacy"));
+        accountCard("Invite friends & whānau","Referral preview · Rewards disabled",this::referralsScreen);
+        accountCard("Account settings","Shared notification preferences",this::settingsScreen);
         button("Sign out",()->run(()->api.call("logout",data()),r->{api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);message("Signed out.");}));
         message("Account connected · Pre-launch only");
     }

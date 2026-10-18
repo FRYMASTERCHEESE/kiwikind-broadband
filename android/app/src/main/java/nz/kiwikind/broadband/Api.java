@@ -78,6 +78,7 @@ final class Api {
         }catch(Exception ignored){cookies.getCookieStore().removeAll();prefs.edit().clear().apply();}
     }
     boolean configured() { return Endpoint.valid(origin); }
+    boolean hasSession() { for(HttpCookie cookie:cookies.getCookieStore().getCookies())if(cookie.getName().equals("sessionid")&&!cookie.hasExpired())return true;return false; }
     void clear() { cookies.getCookieStore().removeAll(); csrf=""; prefs.edit().clear().apply(); }
     JSONObject call(String path, JSONObject data) throws Exception {
         if(!configured()) throw new Exception("Pre-launch build: customer backend is not configured.");
@@ -93,7 +94,8 @@ final class Api {
                 c.setRequestProperty("X-CSRFToken",csrf);c.setRequestProperty("Referer",origin+"/");c.setRequestProperty("Origin",origin);
                 try(var out=c.getOutputStream()){out.write(data.toString().getBytes(StandardCharsets.UTF_8));}
             }
-            int code=c.getResponseCode();cookies.put(uri,c.getHeaderFields());saveCookies();
+            int code=c.getResponseCode();cookies.put(uri,c.getHeaderFields());
+            if(c.getHeaderFields().keySet().stream().anyMatch(k->k!=null&&k.equalsIgnoreCase("Set-Cookie")))saveCookies();
             InputStream stream=code<400?c.getInputStream():c.getErrorStream();
             if(stream==null) throw new Exception("No server response. Please try again.");
             ByteArrayOutputStream out=new ByteArrayOutputStream();

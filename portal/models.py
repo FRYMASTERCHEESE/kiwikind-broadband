@@ -1,4 +1,5 @@
 import uuid
+import secrets
 from django.conf import settings
 from django.db import models
 
@@ -60,3 +61,23 @@ class GoogleIdentity(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='google_identity')
     subject = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+def referral_code():
+    return secrets.token_urlsafe(18)
+
+class ReferralCode(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    code = models.CharField(max_length=24, default=referral_code, unique=True, editable=False)
+
+class Referral(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    referrer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='referrals_sent')
+    invitee = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='referral_received')
+    status = models.CharField(max_length=20, default='pending', choices=[('pending','Awaiting verification'),('verified','Email verified')])
+    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        constraints = [models.CheckConstraint(condition=~models.Q(referrer=models.F('invitee')), name='referral_not_self')]
+
+class AccountPreferences(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    account_notifications = models.BooleanField(default=False)

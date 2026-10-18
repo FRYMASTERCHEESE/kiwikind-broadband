@@ -1,0 +1,160 @@
+{
+  "privacy": [
+    {
+      "kind": "h1",
+      "text": "Privacy policy"
+    },
+    {
+      "kind": "p",
+      "text": "Effective 18 October 2026. This policy covers the KiwiKind Broadband Android app and customer portal. KiwiKind Broadband is a prelaunch project, not a registered limited company or operating internet service provider represented by this policy. A name reservation application for KiwiKind Broadband Limited was submitted on 18 October 2026 and is awaiting approval. The company is not incorporated; neither the application nor a name reservation establishes an operating ISP. The Google Play developer display name is FryMasterCheese Studios."
+    },
+    {
+      "kind": "h2",
+      "text": "Contact"
+    },
+    {
+      "kind": "p",
+      "text": "For support, privacy, access, correction or account deletion, email kiwikindbroadband@gmail.com. You do not need to sign in to contact us."
+    },
+    {
+      "kind": "h2",
+      "text": "Information we collect"
+    },
+    {
+      "kind": "p",
+      "text": "Signing in sends your email and account identifiers to our backend. Google sign-in supplies a verified email and Google account identifier; we do not receive your Google password. Email/password sign-in sends your password over HTTPS; the backend stores a one-way password hash, not a readable password. Essential cookies maintain sessions and protect forms. Android stores its session encrypted with a key held by Android Keystore; a session is still checked by the server."
+    },
+    {
+      "kind": "p",
+      "text": "If you choose to send support or privacy messages, we collect their subject, category, contents and timestamps. Do not include payment-card details, identity documents or health information. Security and service logs can contain request paths, timestamps, network addresses, browser/device information and authentication/audit events."
+    },
+    {
+      "kind": "p",
+      "text": "Broadband orders, payments and provisioning are disabled. No active service, price or coverage is promised. Address, contact name, postcode and optional phone fields exist in the software for future requests, but customer intake is closed. We will update relevant notices before enabling collection for live services."
+    },
+    {
+      "kind": "h2",
+      "text": "How information is used"
+    },
+    {
+      "kind": "p",
+      "text": "We use account data to authenticate you, maintain your account, show your own records across the website and Android app, respond to your messages, provide privacy controls and prevent abuse. A website session and Android session are separate; they access the same server-side account. There are no advertising or marketing analytics SDKs in this app."
+    },
+    {
+      "kind": "h2",
+      "text": "Hosting and service providers"
+    },
+    {
+      "kind": "p",
+      "text": "The portal is hosted on Render, with PostgreSQL data hosted by Neon. Current service regions are Singapore for the application and Sydney, Australia for the database. GitHub Pages hosts the separate public information website; account sign-in remains on the Render portal. Google processes Google sign-in. When configured, Brevo processes transactional verification/reset email, including recipient address and the message needed for account recovery. Email delivery can be unavailable during prelaunch. These providers process information to deliver the specified functions; we do not sell personal information or provide it for targeted advertising. Provider operational processing may occur overseas."
+    },
+    {
+      "kind": "h2",
+      "text": "Referral preview and account preferences"
+    },
+    {
+      "kind": "p",
+      "text": "If you choose to create a referral code, we store the code against your account. When referral registration is enabled, we record who referred a new account and whether its email is verified. Referral history shows status and date, not invited people’s email addresses. Codes are shareable; share them only where appropriate. Rewards, discounts, financial credits and referral registration are disabled during prelaunch. Notification preferences are stored with your account, but notification delivery and marketing remain disabled."
+    },
+    {
+      "kind": "h2",
+      "text": "Advertising preparation"
+    },
+    {
+      "kind": "p",
+      "text": "The public website and distributed release app do not currently serve advertising or load advertising SDKs. A separate optional internal debug build prepares Google Mobile Ads test banners and the User Messaging Platform consent flow. It uses Google’s official sample IDs only and is not the Play release. If advertising is approved later, we will publish the applicable device-data, advertising, cookies, consent and privacy-choice disclosures before activation. Account, sign-in, privacy and deletion workflows will remain free of advertising."
+    },
+    {
+      "kind": "h2",
+      "text": "Security"
+    },
+    {
+      "kind": "p",
+      "text": "The connected app uses HTTPS and disallows cleartext HTTP. Access to account records is restricted by server authentication. Android app backups are disabled. No system is risk-free; protect your device and credentials, and keep account exports private. Support requests must not contain secrets."
+    },
+    {
+      "kind": "h2",
+      "text": "Retention and deletion"
+    },
+    {
+      "kind": "p",
+      "text": "We keep account and support records while needed for the account, support, security and any applicable legal duties. There is currently no automatic account-expiry or data-purge schedule; deletion requests are reviewed and processed manually. A request acknowledgement does not mean records have already been deleted."
+    },
+    {
+      "kind": "p",
+      "text": "On a verified deletion request, we review the account and associated support/request records for deletion. If any information must be retained for a legal or security reason, we explain the categories, reason and applicable retention period. Existing recovery snapshots may contain older copies until the snapshot is retired; they are used for recovery rather than ordinary account access. A restore must preserve verified deletion instructions."
+    },
+    {
+      "kind": "p",
+      "text": "You can request account deletion from the app or this public deletion page. Google-only users do not need a KiwiKind password to use the email pathway. We may verify control of the account email before acting, without asking for your password."
+    },
+    {
+      "kind": "h2",
+      "text": "Your choices"
+    },
+    {
+      "kind": "p",
+      "text": "You can sign out, request an account export in the portal/app, or contact us for access, correction and deletion. Sending support messages is optional. The app is intended for adults managing their own accounts, not children. Policy changes will be published here with a revised date."
+    }
+  ],
+  "deletion": [
+    {
+      "kind": "h1",
+      "text": "Request account deletion"
+    },
+    {
+      "kind": "p",
+      "text": "This page covers the KiwiKind Broadband Android app (package nz.kiwikind.broadband) and shared website account."
+    },
+    {
+      "kind": "p",
+      "text": "Email kiwikindbroadband@gmail.com with the subject KiwiKind account deletion request. Send from the email used for your KiwiKind account if possible, and say that you want the account and its associated data deleted. You can use this page without signing in or reinstalling the app."
+    },
+    {
+      "kind": "p",
+      "text": "Google-only account? You do not need a KiwiKind password. Do not send your Google password, KiwiKind password, login code, reset link, identity document or payment information. If you cannot access the account email, explain that in your message so we can discuss proportionate verification."
+    },
+    {
+      "kind": "h2",
+      "text": "What happens next"
+    },
+    {
+      "kind": "p",
+      "text": "We verify account ownership, review the account and associated support/request records, and process the request manually. No account or data is deleted merely by opening this page. If information must be retained for a legal or security reason, we explain what is retained, why and for how long. Recovery snapshots can contain earlier copies until retired; verified deletion instructions must be respected after recovery."
+    },
+    {
+      "kind": "p",
+      "text": "You can also request deletion from the signed-in app or portal. Google-only users can explicitly confirm a manual deletion review using their authenticated account, without setting a password. The password-protected request remains available for email/password accounts; the public email pathway is available to all users, including Google sign-in users."
+    },
+    {
+      "kind": "p",
+      "text": "Broadband orders, payments and provisioning are disabled. This deletion request does not require buying a service or paying a fee. Read our privacy policy or contact the same email for access/correction requests."
+    }
+  ],
+  "terms": [
+    {
+      "kind": "p",
+      "text": "DRAFT · PRE-LAUNCH · VERSION prelaunch-2026-10-16"
+    },
+    {
+      "kind": "h2",
+      "text": "A request is just a request."
+    },
+    {
+      "kind": "p",
+      "text": "KiwiKind Broadband is a working brand for a planned New Zealand broadband retail business. It is not yet offering a live broadband service. The legal supplier and contact details must be confirmed before customer intake opens."
+    },
+    {
+      "kind": "p",
+      "text": "Creating an account or submitting a request does not form a broadband service contract, guarantee availability, start provisioning, authorise switching or create any charge. Don’t cancel your current broadband on the basis of a request. You may cancel a pending request in the portal."
+    },
+    {
+      "kind": "p",
+      "text": "Only submit accurate details for an address you are authorised to enquire about. Protect your password. Support tickets and complaints are recorded in your account; no pre-launch response time is promised. We do not claim Telecommunications Dispute Resolution membership. A live complaints and escalation process must be approved before service launch."
+    },
+    {
+      "kind": "p",
+      "text": "Any future offer needs separate acceptance of confirmed pricing, GST, speeds and limitations, installation, equipment, minimum term, cancellation and switching terms. Nothing here excludes rights that cannot lawfully be excluded under New Zealand law, including applicable Consumer Guarantees Act and Fair Trading Act protections. These draft portal terms require review before public customer use."
+    }
+  ]
+}
