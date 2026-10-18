@@ -94,6 +94,37 @@ class OwnerAdminTests(TestCase):
             self.assertEqual(self.client.post('/admin/owner-signin/', {}).status_code, 403)
         self.assertEqual(self.client.post('/admin/owner-signin/', {}).status_code, 429)
 
+    def test_redirect_login_without_lax_session_cookie(self):
+        nonce = self.challenge()
+        cookie = self.client.cookies['owner_admin_challenge']
+        self.assertEqual(cookie['samesite'], 'None')
+        self.assertTrue(cookie['httponly'])
+        # Simulate Google's cross-site POST: challenge cookie present, no session cookie.
+        client = Client(enforce_csrf_checks=True)
+        client.cookies['owner_admin_challenge'] = cookie.value
+        client.cookies['g_csrf_token'] = 'synthetic-double-submit'
+        claims = {'iss': 'accounts.google.com', 'email': OWNER_EMAIL, 'email_verified': True,
+                  'sub': 'synthetic', 'iat': time.time(), 'nonce': nonce}
+        with patch('portal.owner_admin.id_token.verify_oauth2_token', return_value=claims):
+            response = client.post('/api/google-callback', {
+                'credential': 'synthetic-token-not-real', 'state': 'kiwikind-owner-admin',
+                'g_csrf_token': 'synthetic-double-submit'})
+        self.assertRedirects(response, '/admin/')
+        self.assertEqual(client.get('/admin/').status_code, 200)
+
+    def test_redirect_rejects_missing_or_forged_cookie_and_google_csrf(self):
+        self.challenge()
+        for cookie, csrf in [('', 'synthetic'), ('forged-cookie', 'synthetic'),
+                             (self.client.cookies['owner_admin_challenge'].value, 'wrong')]:
+            client = Client(enforce_csrf_checks=True)
+            client.cookies['owner_admin_challenge'] = cookie
+            client.cookies['g_csrf_token'] = 'synthetic'
+            response = client.post('/api/google-callback', {
+                'credential': 'synthetic-token-not-real', 'state': 'kiwikind-owner-admin',
+                'g_csrf_token': csrf})
+            self.assertEqual(response.status_code, 403)
+        self.assertFalse(get_user_model().objects.filter(username=OWNER_USERNAME).exists())
+
     def test_expired_challenge_is_rejected(self):
         nonce = self.challenge()
         OwnerAdminChallenge.objects.filter(digest=hashlib.sha256(nonce.encode()).hexdigest()).update(expires_at=timezone.now())
@@ -135,7 +166,9 @@ class OwnerAdminTests(TestCase):
     def test_page_has_no_password_field_and_is_not_cached(self):
         response = self.client.get('/admin/login/')
         self.assertContains(response, OWNER_EMAIL)
-        self.assertEqual(response['Cross-Origin-Opener-Policy'], 'same-origin-allow-popups')
+        self.assertContains(response, 'data-ux_mode="redirect"')
+        self.assertContains(response, 'data-state="kiwikind-owner-admin"')
+        self.assertEqual(response['Cross-Origin-Opener-Policy'], 'same-origin')
         self.assertNotContains(response, 'type="password"')
         self.assertIn('no-store', response['Cache-Control'])
         script = self.client.get('/admin/owner.js')

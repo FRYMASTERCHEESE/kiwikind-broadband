@@ -369,6 +369,9 @@ def google_callback(request):
     credential = request.POST.get('credential', '')
     if not 20 <= len(credential) <= 8192:
         return JsonResponse({'error': 'Invalid Google credential'}, status=400)
+    if request.POST.get('state') == 'kiwikind-owner-admin':
+        from .owner_admin import owner_redirect_signin
+        return owner_redirect_signin(request)
     response = _verified_google_signin(request, credential)
     if response.status_code == 200:
         return HttpResponseRedirect('/#portal')

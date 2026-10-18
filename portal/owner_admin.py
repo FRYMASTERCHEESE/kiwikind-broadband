@@ -59,10 +59,13 @@ def owner_login(request, extra_context=None):
         **admin.site.each_context(request), 'title': 'Owner sign-in',
         'client_id': settings.GOOGLE_WEB_CLIENT_ID, 'nonce': nonce,
         'owner_email': OWNER_EMAIL,
+        'google_callback': settings.PUBLIC_ORIGIN + '/api/google-callback',
     })
-    # Google popup mode must retain its opener to return the verified credential.
-    # Keep Django's stricter default on the dashboard and all other pages.
-    response['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
+    # A cross-site Google POST does not carry the normal SameSite=Lax session.
+    # Bind that callback to a short-lived signed, HttpOnly challenge cookie only.
+    response.set_signed_cookie('owner_admin_challenge', nonce, salt='owner-admin-redirect',
+                               max_age=300, secure=not settings.DEBUG, httponly=True,
+                               samesite='None', path='/api/google-callback')
     return response
 
 
@@ -70,12 +73,27 @@ def owner_login(request, extra_context=None):
 @sensitive_post_parameters('credential')
 @require_POST
 def owner_signin(request):
+    return complete_owner_signin(request, request.session.get('owner_admin_nonce', ''))
+
+
+def owner_redirect_signin(request):
+    """Called only after google_callback validates Google's double-submit CSRF."""
+    nonce = request.get_signed_cookie('owner_admin_challenge', default='',
+                                      salt='owner-admin-redirect', max_age=300)
+    response = complete_owner_signin(request, nonce)
+    if response.status_code == 200:
+        response = HttpResponseRedirect('/admin/')
+    response.delete_cookie('owner_admin_challenge', path='/api/google-callback', samesite='None')
+    response['Cache-Control'] = 'no-store'
+    return response
+
+
+def complete_owner_signin(request, nonce):
     if not enabled():
         return HttpResponse(status=404)
     if limited(request, 'owner-google-admin', limit=10):
         return JsonResponse({'error': 'Too many attempts. Try again later.'}, status=429)
     credential = request.POST.get('credential', '')
-    nonce = request.session.get('owner_admin_nonce', '')
     if not nonce or not 20 <= len(credential) <= 8192:
         return JsonResponse({'error': 'Reload the admin page and try again.'}, status=403)
     try:
