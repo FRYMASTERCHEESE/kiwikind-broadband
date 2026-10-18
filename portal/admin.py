@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.conf import settings
 from django.contrib.auth.models import User, Group
-from .models import Order, Ticket, Message, Invoice, AuditEvent, PrivacyRequest, Customer
+from .models import Order, Ticket, Message, Invoice, AuditEvent, PrivacyRequest, Customer, Provider
 from django.urls import reverse
 from django.utils.html import format_html
 from django import forms
@@ -139,3 +139,20 @@ class Tickets(Audited):
 class PrivacyRequests(Audited):
     list_display=['id','status','created_at']
     readonly_fields=['user','created_at']
+
+
+@admin.register(Provider)
+class Providers(admin.ModelAdmin):
+    list_display = ['name', 'stage', 'contact_date', 'official_website']
+    search_fields = ['name', 'summary', 'notes']
+    list_filter = ['stage']
+    actions = None
+    change_list_template = 'admin/provider_change_list.html'
+    change_form_template = 'admin/provider_change_form.html'
+    def has_delete_permission(self, request, obj=None): return False
+    @admin.display(description='Official website')
+    def official_website(self, obj):
+        return format_html('<a href="{}" target="_blank" rel="noopener noreferrer">Open provider website</a>', obj.website)
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        AuditEvent.objects.create(actor=request.user, action='provider_updated', reference=f'provider:{obj.pk}')

@@ -97,3 +97,18 @@ class Referral(models.Model):
 class AccountPreferences(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     account_notifications = models.BooleanField(default=False)
+
+
+class Provider(models.Model):
+    name = models.CharField(max_length=120, unique=True)
+    website = models.URLField(max_length=500)
+    summary = models.TextField(help_text='Research notes only; confirm features and terms with the provider.')
+    stage = models.CharField(max_length=30, default='not_contacted', choices=[
+        ('not_contacted', 'Not contacted'), ('enquiry_sent', 'Enquiry sent'),
+        ('proposal_received', 'Proposal received'), ('contract_review', 'Contract under review'),
+        ('agreement_recorded', 'Agreement recorded by owner')])
+    contact_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True, help_text='Record questions, quoted costs and next actions. Do not store passwords or API keys here.')
+    class Meta:
+        ordering = ['name']
+    def __str__(self): return self.name

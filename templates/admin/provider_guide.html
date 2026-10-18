@@ -1,0 +1,36 @@
+<div class="module">
+  <h2>Providers and steps towards launch</h2>
+  <p>These are potential wholesale partners, not KiwiKind suppliers yet. Research checked 18 October 2026. Start with Devoli, Wholesale Group and 2talk; compare Vetta as another option. Pricing, startup acceptance and access to integration tools need written confirmation.</p>
+  <p>Open a provider below, follow its official website to contact its partner team, and record your progress and notes. This page does not contact anyone, sign contracts, connect services or enable customer sales. Stages are your own records, not automatic verification.</p>
+  <details><summary>1. Get comparable wholesale proposals</summary>
+    <p>Explain: KiwiKind Broadband is prelaunch, has no wholesale supplier yet and wants an own-brand residential broadband service with an existing website and Android app. Ask whether they accept a startup with no paying customers.</p>
+    <ul><li>Setup costs, monthly minimums, deposits, credit checks, contract length and exit costs.</li>
+    <li>Per-connection costs, GST treatment, covered fibre networks and addresses, supported plans and modem delivery/returns.</li>
+    <li>Who handles billing, payments, customer support, faults, switching and cancellations; service levels and escalation hours.</li>
+    <li>API documentation, sandbox, webhooks and integration charges for address checks, orders, status, faults and invoices. Confirm the existing KiwiKind wording and design can stay.</li>
+    <li>Customer ownership, data handling, export and exit arrangements. Get a written quote and agreement reviewed before accepting.</li></ul>
+  </details>
+  <details><summary>2. Confirm the business and customer terms</summary>
+    <p>Confirm the actual legal operating identity, business contacts, pricing and supplier agreement. Arrange qualified NZ advice on applicable tax, privacy and telecommunications obligations, customer terms, complaints and vulnerable-customer processes. Do not publish unconfirmed plans or claim company incorporation or industry membership without evidence.</p>
+    <p>Official starting points: <a href="https://www.companiesoffice.govt.nz/">Companies Office</a>, <a href="https://www.ird.govt.nz/">Inland Revenue</a>, <a href="https://www.privacy.org.nz/">Privacy Commissioner</a>, <a href="https://www.comcom.govt.nz/">Commerce Commission</a>.</p>
+  </details>
+  <details><summary>3. Connect the selected supplier safely</summary>
+    <p>After an agreement, use its genuine sandbox and documented interfaces to build and test address qualification, accurate quotes, customer acceptance, provisioning, status updates, faults and cancellation. Test retry safety, authenticated supplier events, reconciliation and failure recovery before a controlled live pilot. Supplier credentials belong in server secret storage, never in these notes, GitHub, the app or the public website.</p>
+  </details>
+  <details><summary>4. Finish accounts, support, billing and privacy workflows</summary>
+    <p>Test customer sign-in, password reset and Google sign-in; customer/admin separation; support messages and replies on website and phone; and account access controls. Verify email delivery before promising email notifications.</p>
+    <p>Billing is currently disabled. If selling services, implement and test real invoices, consented provider-hosted payments, payment-event verification, refunds and reconciliation. Complete privacy export, correction and deletion workflows; changing a privacy request to Completed alone does not delete data.</p>
+  </details>
+  <details><summary>5. Verify hosting reliability and recovery</summary>
+    <p>The existing hosting remains free. Free compute can sleep and delay the first request; this checklist cannot make it instant or guarantee an always-available service. Test expected load, error handling, monitoring and a backup restore into an isolated environment. Confirm free quotas and recovery arrangements before accepting paying customers. No paid upgrade is made by this panel.</p>
+  </details>
+  <details><summary>6. Verify the Android release and advertising separately</summary>
+    <p>Use Play Console to check the current release, tester-group eligibility and actual continuously opted-in tester count. Google's current requirement for applicable new personal developer accounts is at least 12 testers continuously opted in for 14 days. Complete the requirement, test on real Android devices, then apply for production access and submit the production release. A published closed test is not a public production release.</p>
+    <p>Verify the store listing, four real screenshots, privacy policy and Data safety declarations against the final app. For ads, check the actual AdMob app/store-linking status, consent and privacy choices, approved placements and SDK configuration. Keep test ads during development/testing; don't click live ads for testing. This page does not enable live ads.</p>
+    <p><a href="https://support.google.com/googleplay/android-developer/answer/14151465">Google Play testing requirements</a> · <a href="https://support.google.com/admob/answer/10564477">AdMob store linking</a> · <a href="https://developers.google.com/admob/android/test-ads">AdMob test ads</a></p>
+  </details>
+  <details><summary>7. Approve launch only after the evidence is complete</summary>
+    <p>Record the agreed supplier, confirmed costs, approved customer terms, successful end-to-end tests, backup recovery and support ownership. Complete a controlled pilot. The owner must then approve enabling customer intake, orders, payments and provisioning in the relevant systems. Editing a provider stage does not activate any of these.</p>
+    <p>This is a practical work list, not a certification that KiwiKind is 100% operational. Recheck requirements and each service's live status at launch.</p>
+  </details>
+</div>
