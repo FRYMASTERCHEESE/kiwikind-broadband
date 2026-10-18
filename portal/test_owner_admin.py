@@ -36,6 +36,7 @@ class OwnerAdminTests(TestCase):
         response, _ = self.signin()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.client.get('/admin/').status_code, 200)
+        self.assertEqual(self.client.get('/admin/')['Cross-Origin-Opener-Policy'], 'same-origin')
         owner = User.objects.get(username=OWNER_USERNAME)
         self.assertFalse(owner.has_usable_password())
         customer.refresh_from_db()
@@ -134,6 +135,7 @@ class OwnerAdminTests(TestCase):
     def test_page_has_no_password_field_and_is_not_cached(self):
         response = self.client.get('/admin/login/')
         self.assertContains(response, OWNER_EMAIL)
+        self.assertEqual(response['Cross-Origin-Opener-Policy'], 'same-origin-allow-popups')
         self.assertNotContains(response, 'type="password"')
         self.assertIn('no-store', response['Cache-Control'])
         script = self.client.get('/admin/owner.js')

@@ -55,11 +55,15 @@ def owner_login(request, extra_context=None):
         digest=hashlib.sha256(nonce.encode()).hexdigest(),
         expires_at=now + timedelta(minutes=5))
     request.session['owner_admin_nonce'] = nonce
-    return render(request, 'admin/owner_login.html', {
+    response = render(request, 'admin/owner_login.html', {
         **admin.site.each_context(request), 'title': 'Owner sign-in',
         'client_id': settings.GOOGLE_WEB_CLIENT_ID, 'nonce': nonce,
         'owner_email': OWNER_EMAIL,
     })
+    # Google popup mode must retain its opener to return the verified credential.
+    # Keep Django's stricter default on the dashboard and all other pages.
+    response['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
+    return response
 
 
 @never_cache
