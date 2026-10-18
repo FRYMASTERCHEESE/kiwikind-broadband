@@ -2,6 +2,7 @@
 // Opt-in account screens; no ad tags, tracking pixels, or public design changes.
 const pendingReferral=new URL(location.origin+location.pathname+location.search).searchParams.get('ref')||'';
 if (/^[A-Za-z0-9_-]{24}$/.test(pendingReferral)) $('referral-code').value=pendingReferral;
+$('referral-entry').classList.toggle('hidden',!registration);
 $('toggle-auth').addEventListener('click',()=> $('referral-entry').classList.toggle('hidden',!registration));
 async function loadReferrals(create=false){
   const generation=accountGeneration;
