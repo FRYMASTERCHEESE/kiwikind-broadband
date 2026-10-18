@@ -75,9 +75,11 @@ public class MainActivity extends Activity {
         long now=android.os.SystemClock.elapsedRealtime();
         if(api!=null && api.configured() && signedIn && !busy && now-lastResumeCheck>30000L){
             lastResumeCheck=now;
-            run(()->api.call("me",null),r->{
+            // Account screen refreshes already authenticate their own request.
+            // Avoid a serial /me request before fetching the same screen again.
+            if(refreshScreen!=null)refreshScreen.run();
+            else run(()->api.call("me",null),r->{
                 signedIn=true;
-                if(refreshScreen!=null)refreshScreen.run();
                 message("Account connected to KiwiKind server.");
             });
         }
