@@ -62,6 +62,11 @@ def audit(request,action,reference=''):
 def home(request): return FileResponse(open(settings.BASE_DIR/'site'/'dist'/'index.html','rb'),content_type='text/html')
 
 @require_GET
+def advertising_sellers(request):
+    # Public seller authorization only; does not initialize or enable ads.
+    return FileResponse(open(settings.BASE_DIR/'docs'/'advertising'/'app-ads.txt','rb'),content_type='text/plain; charset=utf-8')
+
+@require_GET
 def styles(request): return FileResponse(open(settings.BASE_DIR/'site'/'dist'/'styles.css','rb'),content_type='text/css')
 
 @require_GET
