@@ -18,6 +18,8 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements.txt
       - run: python manage.py makemigrations --check --dry-run
+      - name: Collect production static assets for admin template checks
+        run: python manage.py collectstatic --noinput
       - run: python manage.py test --settings=config.test_settings
       - run: node --check site/dist/app.js
       - run: node --test site/tests/*.test.cjs
@@ -92,5 +94,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements.txt
+      - name: Collect production static assets for admin template checks
+        run: python manage.py collectstatic --noinput
       - name: Test migrations and account isolation on disposable PostgreSQL
         run: python manage.py test --settings=config.test_settings
