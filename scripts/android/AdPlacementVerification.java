@@ -33,6 +33,7 @@ public class AdPlacementVerification extends Instrumentation {
             long now=SystemClock.uptimeMillis();
             MotionEvent down=MotionEvent.obtain(now,now,MotionEvent.ACTION_DOWN,bounds.centerX(),bounds.centerY(),0);
             MotionEvent up=MotionEvent.obtain(now,now+100,MotionEvent.ACTION_UP,bounds.centerX(),bounds.centerY(),0);
+            down.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);up.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
             try{return getUiAutomation().injectInputEvent(down,true)&&getUiAutomation().injectInputEvent(up,true);}
             finally{down.recycle();up.recycle();}
         }
