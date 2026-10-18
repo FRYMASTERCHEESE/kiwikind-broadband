@@ -10,5 +10,6 @@
   "source": "Authenticated AdMob console, 2026-10-18",
   "store_linked": false,
   "live_ads_authorized": false,
-  "runtime_use": "NONE. Documentation inventory only. Debug uses official Google sample IDs."
+  "runtime_use": "V8 release-capable SDK: real KiwiKind App ID and banner unit, requests restricted to SDK-recognised test devices; no live switch.",
+  "consent_message": "KiwiKind-only European-regulations message published for test integration; refusal and options enabled."
 }

@@ -4,7 +4,8 @@ def signingNames = ['KIWIKIND_KEYSTORE', 'KIWIKIND_STORE_PASSWORD', 'KIWIKIND_KE
 def releaseSigningReady = signingNames.every { System.getenv(it)?.trim() }
 
 def apiOrigin = providers.gradleProperty('KIWIKIND_API_ORIGIN').orElse('https://kiwikind-backend.onrender.com').get()
-def testAds = providers.gradleProperty('KIWIKIND_TEST_ADS').orElse('false').get() == 'true'
+def testDeviceIds = providers.gradleProperty('KIWIKIND_AD_TEST_DEVICE_IDS').orElse('').get().toUpperCase(java.util.Locale.ROOT)
+if (testDeviceIds && !(testDeviceIds ==~ /[A-Fa-f0-9]{32}(,[A-Fa-f0-9]{32})*/)) throw new GradleException('Test device IDs must be comma-separated hexadecimal SDK test IDs.')
 if (apiOrigin && !(apiOrigin ==~ /https:\/\/[A-Za-z0-9.-]+(:[0-9]+)?/)) {
     throw new GradleException('KIWIKIND_API_ORIGIN must be an HTTPS origin without a path.')
 }
@@ -23,9 +24,10 @@ android {
         applicationId 'nz.kiwikind.broadband'
         minSdk 26
         targetSdk 36
-        versionCode 7
-        versionName '0.2.5-prelaunch'
-        buildConfigField 'boolean', 'TEST_ADS', testAds.toString()
+        versionCode 8
+        versionName '0.2.6-prelaunch'
+        buildConfigField 'String', 'ADMOB_BANNER_ID', '"ca-app-pub-4051392846058327/4480562173"'
+        buildConfigField 'String', 'AD_TEST_DEVICE_IDS', '"' + testDeviceIds + '"'
         buildConfigField 'String', 'API_ORIGIN', '"' + apiOrigin + '"'
         buildConfigField 'String', 'GOOGLE_WEB_CLIENT_ID', '"956119315558-mgaqlpnfr9r0ic9n4jtb284gaa4n7i61.apps.googleusercontent.com"'
     }
@@ -48,12 +50,9 @@ android {
         }
     }
 }
-if (!testAds) android.sourceSets.debug.java.exclude '**/AdPreview.java'
 dependencies {
-    if (testAds) {
-        debugImplementation 'com.google.android.gms:play-services-ads:25.5.0'
-        debugImplementation 'com.google.android.ump:user-messaging-platform:4.0.0'
-    }
+    implementation 'com.google.android.gms:play-services-ads:25.5.0'
+    implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
     implementation 'androidx.credentials:credentials:1.5.0'
     implementation 'androidx.credentials:credentials-play-services-auth:1.5.0'
     implementation 'com.google.android.libraries.identity.googleid:googleid:1.1.1'

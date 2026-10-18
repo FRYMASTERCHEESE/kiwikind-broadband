@@ -32,7 +32,7 @@ jobs:
           TEST_ADS: ${{ inputs.test_ads }}
         run: |
           if [ "$TEST_ADS" = "true" ]; then
-            gradle --no-daemon lintDebug assembleDebug -PKIWIKIND_TEST_ADS=true "-PKIWIKIND_API_ORIGIN=$API_ORIGIN"
+            gradle --no-daemon :app:testDebugUnitTest --tests nz.kiwikind.broadband.AdPolicyTest :app:lintDebug :app:assembleDebug "-PKIWIKIND_API_ORIGIN=$API_ORIGIN"
           else
             gradle --no-daemon testDebugUnitTest lintDebug assembleDebug "-PKIWIKIND_API_ORIGIN=$API_ORIGIN"
           fi

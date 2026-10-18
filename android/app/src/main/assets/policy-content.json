@@ -38,7 +38,7 @@
     },
     {
       "kind": "p",
-      "text": "We use account data to authenticate you, maintain your account, show your own records across the website and Android app, respond to your messages, provide privacy controls and prevent abuse. A website session and Android session are separate; they access the same server-side account. There are no advertising or marketing analytics SDKs in this app."
+      "text": "We use account data to authenticate you, maintain your account, show your own records across the website and Android app, respond to your messages, provide privacy controls and prevent abuse. A website session and Android session are separate; they access the same server-side account. Account and support records are not passed to advertising placements. Advertising SDK behavior in the V8 test build is described below; V6 and V7 are ad-free."
     },
     {
       "kind": "h2",
@@ -46,7 +46,7 @@
     },
     {
       "kind": "p",
-      "text": "The portal is hosted on Render, with PostgreSQL data hosted by Neon. Current service regions are Singapore for the application and Sydney, Australia for the database. GitHub Pages hosts the separate public information website; account sign-in remains on the Render portal. Google processes Google sign-in. When configured, Brevo processes transactional verification/reset email, including recipient address and the message needed for account recovery. Email delivery can be unavailable during prelaunch. These providers process information to deliver the specified functions; we do not sell personal information or provide it for targeted advertising. Provider operational processing may occur overseas."
+      "text": "The portal is hosted on Render, with PostgreSQL data hosted by Neon. Current service regions are Singapore for the application and Sydney, Australia for the database. GitHub Pages hosts the separate public information website; account sign-in remains on the Render portal. Google processes Google sign-in. When configured, Brevo processes transactional verification/reset email, including recipient address and the message needed for account recovery. Email delivery can be unavailable during prelaunch. These providers process information to deliver the specified functions; we do not sell personal information or provide account/support records for targeted advertising. Google advertising SDK processing is described below. Provider operational processing may occur overseas."
     },
     {
       "kind": "h2",
@@ -62,7 +62,23 @@
     },
     {
       "kind": "p",
-      "text": "The public website and distributed release app do not currently serve advertising or load advertising SDKs. A separate optional internal debug build prepares Google Mobile Ads test banners and the User Messaging Platform consent flow. It uses Google’s official sample IDs only and is not the Play release. If advertising is approved later, we will publish the applicable device-data, advertising, cookies, consent and privacy-choice disclosures before activation. Account, sign-in, privacy and deletion workflows will remain free of advertising."
+      "text": "The approved public information website does not load advertising code. Android V6 and V7 are ad-free. The V8 test-ad build includes Google Mobile Ads SDK 25.5.0 and User Messaging Platform 4.0.0 in release-capable code, using KiwiKind’s own AdMob App ID and banner unit. Requests are limited to SDK-recognised test devices; other phones keep banners off. No live advertising is authorised. A banner is shown only on public Home, after Google’s consent checks permit a request. Sign-in, account, support, billing, privacy and deletion screens have no advertising placements."
+    },
+    {
+      "kind": "h2",
+      "text": "Advertising data and choices"
+    },
+    {
+      "kind": "p",
+      "text": "The Google SDKs may process IP address and general location, app interactions, diagnostic information and device or installation identifiers for test-ad delivery, measurement and fraud prevention. Data may be transmitted to Google and its advertising technology providers, including processing overseas. Removing the Android Advertising ID permission does not eliminate all SDK data processing; the V8 build removes that permission and does not request precise device location. No KiwiKind email address, password, support message, billing record or referral record is included in an ad request."
+    },
+    {
+      "kind": "p",
+      "text": "Google’s applicable consent message explains purposes and providers and offers Consent, Do not consent and Manage options. Refusing personalisation is distinct from preventing every permitted limited-ad request; this build still restricts every request to test devices. Use Advertising privacy choices on public Home or the native Privacy policy screen to revisit choices where Google requires an options form. Opening privacy choices removes the banner, and no automatic ad reload follows. If choices cannot load, ads remain off and essential account functions remain available."
+    },
+    {
+      "kind": "p",
+      "text": "Google controls retention of its SDK data under Google’s Privacy Policy and advertising technology information. Consent preferences may be stored on the device. KiwiKind has no advertising-cookie script on the website; existing essential account cookies remain separate. Any future live advertising, website cookies or additional providers require reviewed disclosures, applicable consent, Google approval and explicit owner authorisation before activation."
     },
     {
       "kind": "h2",

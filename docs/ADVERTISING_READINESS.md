@@ -1,112 +1,96 @@
-# Advertising setup — 18 October 2026
+# KiwiKind release-capable AdMob — V8 (0.2.6-prelaunch)
 
-Live advertising remains OFF. No paid service or new publisher account was created.
+V8 includes Google Mobile Ads 25.5.0 and UMP 4.0.0 as implementation dependencies
+in the signed release. It uses KiwiKind App ID ca-app-pub-4051392846058327~4918264616
+and banner unit ca-app-pub-4051392846058327/4480562173. MoneyMate was inspected
+read-only as a reference (SDK24.5/UMP3.2, consent gating and destruction), not modified.
 
-## Verified account and identifiers
+## Test-only enforcement
 
-Authenticated Google console account: coreyedge123@gmail.com.
-Publisher: pub-4051392846058327. AdMob Home reports the account approved.
-The full app list and apps-to-confirm list contained MoneyMate only before this
-work. One separate Android entry, KiwiKind Broadband, was created without changing
-MoneyMate. Real Google-assigned IDs are recorded in advertising/account-inventory.json:
+Every banner request requires fresh successful UMP handling, canRequestAds(), a
+foreground activity, an attached public-Home placement and AdRequest.isTestDevice().
+This applies identically to signed release and debug builds. There is no live-ad
+runtime switch. The SDK recognises emulators as test devices. Unregistered phones
+show an explanation and make no banner-unit request. An operator can supply actual
+SDK test-device hashes through KIWIKIND_AD_TEST_DEVICE_IDS (comma-separated 32-digit
+hex hashes) for a controlled test build. Do not guess hashes, substitute MoneyMate
+IDs, remove the guard or request real inventory to discover a device ID.
 
-- App: ca-app-pub-4051392846058327~4918264616
-- Banner: ca-app-pub-4051392846058327/4480562173
-- Banner name: KiwiKind Public Home Banner
-- Intended package: nz.kiwikind.broadband (not yet linked to a public store listing)
+The single adaptive banner is on public Home with spacing from controls. It is
+never on auth/account/support/billing/privacy/deletion pages. The placement detaches
+and destroys its AdView on navigation; generation checks reject stale callbacks.
+Pause/resume/destroy are forwarded. Errors leave ads off with retry. Initialization
+runs in the background and does not delay the account sign-in flow.
 
-These IDs are documentation inventory only, absent from runtime manifests/code.
-Account approval does not establish app approval. The unlisted Android entry still
-needs a supported, publicly discoverable store link, verification and app review.
+Consent information is updated before each Home advertising attempt. The official
+UMP form supplies Consent, Do not consent and Manage options. A KiwiKind-only
+European-regulations message is published for this test integration. No MoneyMate
+message or account-wide vendor settings were changed. Advertising privacy choices
+is available on Home and native Privacy policy. Opening it removes the banner;
+there is no automatic reload after choices change. If Google does not require a
+privacy-options form, the app explains that. UMP refusal may permit limited ads;
+the independent test-device guard remains mandatory in every case.
 
-## Public seller records
+AD_ID and AdServices ad ID/attribution/topics permissions are removed. This does
+not imply no SDK collection: the public portal privacy policy and offline native
+copy disclose IP/general location, interactions and diagnostic information,
+installation/device identifiers, Google processing, consent and privacy options.
+No account emails/passwords/messages/records are included in AdRequest.
 
-Both prepared files contain the real publisher seller record:
-`google.com, pub-4051392846058327, DIRECT, f08c47fec0942fa0`.
-The Django routes serve it as plain text at /app-ads.txt and /ads.txt. Publishing
-these files does not initialize ads or request live inventory. Authenticated Play Store settings already lists the correct developer website:
-https://kiwikind-backend.onrender.com/ (existing free KiwiKind portal). No listing
-URL change is needed. It matches the root seller-file hostname.
+## Focused verification and signing
 
-The file under the GitHub project path alone would not satisfy root discovery.
-Google ignores the path when deriving app-ads.txt from a developer website URL.
-Public HTTP success and Google verification are separate checks; allow crawl delay.
-Do not modify another project or shared root to achieve verification.
+New AdPolicyTest covers all 16 combinations of consent/device/foreground/attachment
+and rejects non-Home/sensitive placements. Existing Endpoint/account suites are
+reused where their actual source is unchanged. The ad emulator fixture uses a fresh
+API36 emulator, KiwiKind's real IDs, official UMP EEA test geography and refusal,
+and requires a filled test banner plus navigation destruction. It creates no
+customer account or database records. No physical phone result is implied.
 
-## Android test placement and release
+The protected release workflow retains the existing upload key and checks the
+public SHA256 certificate against the V7 baseline. It verifies SDK classes/real IDs
+in the final signed APK and the merged manifest's non-debuggable, backup/cleartext
+off and absent advertising permissions. A same-signature test harness can exercise
+the actual signed release on a fresh emulator; it is not distributed to customers.
+V6 is preserved. V7 remains an untouched earlier ad-free candidate; V8 is the next
+code and must not be submitted until its focused checks, disclosures and Play
+Contains ads/Data safety review are complete.
 
-Only the optional internal debug variant (-PKIWIKIND_TEST_ADS=true) includes
-Google Mobile Ads 25.5.0 and UMP 4.0.0. It uses official sample app ID
-ca-app-pub-3940256099942544~3347511713 and sample adaptive banner unit
-ca-app-pub-3940256099942544/9214589741. AD_ID is removed in debug.
-The manual preview is restricted to public Home. A dedicated child layout detaches
-on navigation; all delayed success callbacks check that it remains attached before
-showing consent, initializing the SDK or loading an ad. Repeated presses in the
-same Home instance do not start duplicate requests. Detached AdViews are destroyed.
-Login, privacy, deletion, support, billing and account screens have no placement.
+## Play disclosure requirements for V8
 
-UMP errors or canRequestAds=false leave the preview off. Compilation does not
-prove consent-message configuration or filled banners. No actual fill, physical
-phone or production consent check is claimed. The debug preview is never uploaded
-to Play. Release SDK dependencies and signing keys are unchanged; the already
-signed V7 ad-free candidate remains the next safe release, pending physical-device
-acceptance and declaration review. No live IDs are substituted in test builds.
+Contains ads: Yes (SDK/banner code is included, even though restricted to testing).
+Advertising ID: No, provided the final merged manifest confirms removal and no
+other SDK requests it. Retain existing account data. Add the SDK's applicable
+approximate location, app interactions, diagnostics and device/other ID
+collection/sharing, purposes, encryption and deletion descriptions based on actual
+behavior and Google's current SDK disclosure guide. Do not claim AD_ID removal
+eliminates all other IDs. Do not submit a no-data-collection declaration.
 
-## AdSense and website preparation
+## Website: free address found
 
-Authenticated AdSense Sites initially lists only bebo.nz, Getting ready, ads.txt
-Authorized. It is unrelated and was not changed. KiwiKind site approval is not
-established. The approved GitHub Pages design and wording remain untouched.
-Google rejected the exact supplied project URL in the authenticated Add site form:
-"URL must be a valid top-level domain." The form was cancelled; no extra site was
-created and Google's suggested shared root was not submitted. The project URL
-includes a path and is unsuitable under ordinary AdSense site URL rules. An eligible owned site/domain with root control and substantial
-original useful content is needed; no domain purchase is authorized or made.
-Render root hosting solves app-ads.txt hosting, not AdSense domain eligibility.
+The project-path URL itself is rejected by AdSense's Add site form. The owned free
+root frymastercheese.github.io is accepted. Its existing public ads.txt already
+contains the exact publisher record and Google verified site ownership using that
+file; no root/project website files or ad scripts were changed. A site entry was
+created in the existing publisher account. Approval/review is separate. The owner explicitly authorised the root-site review submission. Google now shows
+Getting ready / Review requested; approval remains pending. No paid service is
+needed merely to reach Google's review. The root also hosts other owned content;
+Google's review covers the root property, including the KiwiKind project path.
 
-The existing inert placement preview is suitable only after public informational
-content before the footer, labeled Advertisement, with reserved responsive space
-and distance from controls. No scripts, live calls or empty visible slots are added.
+No website ad code is added before site approval and owner authorisation. Existing
+inert placement and future website consent/privacy preparation remain available.
+Actual content approval is Google's decision; an accepted address is not approval.
+The approved KiwiKind website design/copy remains unchanged. The existing developer
+website on Play is the Render portal; its /app-ads.txt remains the AdMob seller file.
 
-Before activation publish accurate disclosures of Google advertising, device/IP
-and interaction/diagnostic data, cookies/local storage, purposes, recipients,
-retention and privacy choices. Current public privacy notice accurately states
-that distributed releases do not contain ads and describes internal test builds.
-A Google-certified CMP and applicable regional consent/privacy choices must be
-configured before required-region requests; a home-made popup is not sufficient.
-AdMob UMP messages and a privacy-options entry point need verification using the
-real app configuration before any production SDK release.
+## Activation boundary
 
-## Play declarations
+KiwiKind app review/store linking and Google crawler verification remain separate
+from account approval. No live inventory or paid services are authorised. No orders,
+payments, provisioning, public admin, referral rewards or new customer intake are
+enabled. Company name reservation pending; company not incorporated.
 
-Authenticated Play shows V6 (0.2.4-prelaunch) available in Closed testing - Alpha,
-one opted-in tester, production inactive, and Apply for production disabled until
-at least 12 testers qualify continuously for 14 days. Contains ads is saved as No.
-
-Current V6 and prepared V7 release do not contain the advertising SDK or request
-AD_ID. Do not mark Contains ads=yes or advertise SDK data collection solely because
-an internal debug preview exists. Before a production advertising binary, update
-Contains ads, Advertising ID, Data safety, target audience and consent declarations
-to match actual behavior, including collection not eliminated by removing AD_ID.
-Referral/account data in V7 still requires the broader release declaration review.
-No new advertising binary is distributed by this setup.
-
-## Activation gate
-
-Require app/store verification and approval, eligible approved website for AdSense,
-reviewed privacy/consent messages, tested privacy choices, exact declaration review,
-physical-phone acceptance and explicit owner authorization before live advertising.
-Keep customer intake, broadband orders, provisioning, payments and public admin off.
-Company name reservation is pending; the company is not incorporated.
-
-## Official references
-
-- https://support.google.com/admob/answer/9363762
-- https://support.google.com/adsense/answer/12171612
-- https://support.google.com/adsense/answer/2784438
-- https://support.google.com/adsense/answer/9724
-- https://support.google.com/adsense/answer/1348695
-- https://developers.google.com/admob/android/quick-start
-- https://developers.google.com/admob/android/banner
-- https://developers.google.com/admob/android/privacy
-- https://developers.google.com/admob/android/privacy/play-data-disclosure
+Official references:
+https://developers.google.com/admob/android/test-ads
+https://developers.google.com/admob/android/privacy
+https://developers.google.com/admob/android/privacy/play-data-disclosure
+https://support.google.com/admob/answer/9363762
