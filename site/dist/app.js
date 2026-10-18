@@ -32,6 +32,7 @@ function showSignedOut() {
   $('signed-in-bar').classList.add('hidden');
   $('signed-in-email').textContent='';
   $('account-email').textContent='';
+  $('owner-admin-link')?.remove();
   for (const id of ['orders','tickets','invoices','referral-result']) $(id)?.replaceChildren();
   if($('account-notifications'))$('account-notifications').checked=false;
   if($('confirm-google-deletion'))$('confirm-google-deletion').checked=false;
@@ -51,6 +52,13 @@ async function refresh() {
   if (generation !== accountGeneration) return;
   lastAccountSync = Date.now();
   updateAccountNavigation(true); document.body.classList.remove('account-open','signup-view'); if(location.hash==='#signin'||location.hash==='#signup'){history.replaceState(null,'',location.pathname+location.search);} $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email; $('signed-in-email').textContent=me.email; $('signed-in-bar').classList.remove('hidden');
+  $('owner-admin-link')?.remove();
+  if (String(me.email || '').trim().toLowerCase() === 'kiwikindbroadband@gmail.com') {
+    const adminLink = node('a', 'Open admin panel');
+    adminLink.id = 'owner-admin-link'; adminLink.className = 'textbutton';
+    adminLink.href = '/admin/';
+    $('signed-in-bar').append(adminLink);
+  }
   const results=await Promise.allSettled([api('orders', undefined, generation),api('tickets', undefined, generation),api('invoices', undefined, generation)]);
   if (generation !== accountGeneration) {
     if (results.some(r=>r.status==='rejected' && r.reason?.status===401)) throw new Error('Please sign in again.');
