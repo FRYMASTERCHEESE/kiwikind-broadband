@@ -169,7 +169,12 @@ public class MainActivity extends Activity {
                 }
             }
             if(id.equals("home"))button("Discover our vision ↗",()->publicPage("why"));
-            if(id.equals("home")&&BuildConfig.DEBUG&&BuildConfig.TEST_ADS)button("Internal test ad preview",()->{try{Class.forName("nz.kiwikind.broadband.AdPreview").getMethod("show",Activity.class,LinearLayout.class).invoke(null,this,content);}catch(Exception e){message("Test ad preview unavailable. Live ads remain off.");}});
+            if(id.equals("home")&&BuildConfig.DEBUG&&BuildConfig.TEST_ADS){
+                // A dedicated child detaches on navigation, invalidating delayed consent callbacks.
+                LinearLayout adSlot=new LinearLayout(this);adSlot.setOrientation(LinearLayout.VERTICAL);
+                button("Internal test ad preview",()->{try{Class.forName("nz.kiwikind.broadband.AdPreview").getMethod("show",Activity.class,LinearLayout.class).invoke(null,this,adSlot);}catch(Exception e){message("Test ad preview unavailable. Live ads remain off.");}});
+                content.addView(adSlot,spaced());
+            }
             if(id.equals("why"))button("Meet My KiwiKind",()->publicPage("mykiwikind"));
             if(id.equals("mykiwikind"))button("What happens next?",()->publicPage("progress"));
             button(signedIn?"My account":"Sign in",()->{if(signedIn)home();else auth(false);});

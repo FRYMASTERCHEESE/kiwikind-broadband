@@ -1,0 +1,41 @@
+Advertising disclosure preparation — NOT PUBLISHED; not a statement that ads are live
+
+Current status: Public KiwiKind website and distributed Android release do not
+serve advertising. A separate internal test build uses official Google test IDs.
+
+Draft for review before a future advertising release:
+
+Advertising will be limited to clearly labelled placements on public information
+pages. Sign-in, account, support, billing, privacy and deletion screens will remain
+free of advertising. Advertising is optional to the operation of your KiwiKind
+account; refusing optional advertising consent must not block essential account
+functions.
+
+If approved and enabled, Google advertising technology may process IP address and
+general location, device identifiers, app interactions, and diagnostic information
+to deliver and measure advertising and detect fraud. Website advertising may use
+cookies or similar local storage. Advertising ID permission being absent does not
+mean the advertising SDK processes no information. Personalised advertising or
+optional storage must be requested only when the applicable consent requirements
+are met. Google processes data according to its advertising and privacy policies:
+https://policies.google.com/technologies/ads
+https://policies.google.com/privacy
+
+Applicable consent choices will appear before requests where required. A persistent
+Advertising privacy choices control must allow users to revisit or withdraw choices.
+Essential authentication cookies remain separate from optional advertising storage.
+Contact kiwikindbroadband@gmail.com for questions or account privacy requests.
+
+Before publishing this draft:
+- Confirm actual SDK/version, ad personalisation settings, regional messages, data
+  purposes, collection/sharing and retention; disclose only verified behaviour.
+- Configure and verify required Google-certified website CMP / Android UMP messages,
+  including privacy options and withdrawal; test refusal and reset choices.
+- Identify actual recipients, overseas processing, retention/deletion arrangements,
+  and any applicable opt-out rights. Do not invent retention periods.
+- Update Google Play declarations for the final distributed binary.
+- Obtain app/site approval and explicit owner authorisation for live advertising.
+- Preserve the existing accurate prelaunch and not-incorporated status.
+
+This draft is not a substitute for configuring consent. No live Google script or
+production advertising ID has been added to the website/app by preparing it.

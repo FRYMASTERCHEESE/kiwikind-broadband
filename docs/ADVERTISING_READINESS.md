@@ -1,91 +1,112 @@
-# Advertising preparation — 18 October 2026
+# Advertising setup — 18 October 2026
 
-Live advertising is disabled. No publisher account, live ad unit, commercial
-agreement or purchase was created. The app remains free to download.
+Live advertising remains OFF. No paid service or new publisher account was created.
 
-## AdSense
+## Verified account and identifiers
 
-The existing public site is a prelaunch brand/vision page, with no established
-service offering or body of original broadband editorial content. Its approved
-design and wording are preserved. Approval cannot be inferred from technical
-validity, traffic or possession of source code.
+Authenticated Google console account: coreyedge123@gmail.com.
+Publisher: pub-4051392846058327. AdMob Home reports the account approved.
+The full app list and apps-to-confirm list contained MoneyMate only before this
+work. One separate Android entry, KiwiKind Broadband, was created without changing
+MoneyMate. Real Google-assigned IDs are recorded in advertising/account-inventory.json:
 
-The supplied URL contains a project path under `github.io`. Google's current
-[site URL rules](https://support.google.com/adsense/answer/2784438) require a
-standard domain without a path and limit accepted subdomains to host partners.
-The exact project URL is therefore not a suitable ordinary application URL.
-Do not submit `github.io`, imply ownership of it, purchase a domain, or claim
-GitHub is an approved host partner. A separately approved owned domain with root
-file control is the practical next step, subject to the owner's approval.
+- App: ca-app-pub-4051392846058327~4918264616
+- Banner: ca-app-pub-4051392846058327/4480562173
+- Banner name: KiwiKind Public Home Banner
+- Intended package: nz.kiwikind.broadband (not yet linked to a public store listing)
 
-Prepare one responsive inline slot after original public informational content,
-before the footer. Exclude authentication, account dashboards, support messages,
-privacy, deletion, billing, forms, navigation and error screens. Label it
-Advertisement, reserve space to avoid layout shift, keep it away from buttons,
-and ensure the ad never obscures content. No empty visible slot or ad script is
-inserted into the approved public site now.
+These IDs are documentation inventory only, absent from runtime manifests/code.
+Account approval does not establish app approval. The unlisted Android entry still
+needs a supported, publicly discoverable store link, verification and app review.
 
-`advertising/ads.txt` is a comment-only preparation file, not an authorization.
-After publisher approval, publish only the exact seller record supplied by the
-publisher account at the approved domain root. Add publisher verification/meta
-or script only after the real account and owner authorize it. Do not fabricate
-publisher IDs or reuse Google's Android sample IDs on the website.
+## Public seller records
 
-Before activation: original useful content, operator/contact accuracy, publisher
-verification, domain approval, approved privacy disclosures, retention and user
-choices. Inventory cookie/local-storage use; essential account cookies do not
-authorize advertising cookies. Configure a Google-certified CMP where required
-(including EEA/UK/Switzerland), withdrawal/privacy choices and applicable regional
-messages; block ad requests until the required consent decision permits them.
-Do not build an imitation consent popup and call it Google certified.
+Both prepared files contain the real publisher seller record:
+`google.com, pub-4051392846058327, DIRECT, f08c47fec0942fa0`.
+The Django routes serve it as plain text at /app-ads.txt and /ads.txt. Publishing
+these files does not initialize ads or request live inventory. Authenticated Play Store settings already lists the correct developer website:
+https://kiwikind-backend.onrender.com/ (existing free KiwiKind portal). No listing
+URL change is needed. It matches the root seller-file hostname.
 
-References: [eligibility](https://support.google.com/adsense/answer/9724),
-[privacy content](https://support.google.com/adsense/answer/1348695).
+The file under the GitHub project path alone would not satisfy root discovery.
+Google ignores the path when deriving app-ads.txt from a developer website URL.
+Public HTTP success and Google verification are separate checks; allow crawl delay.
+Do not modify another project or shared root to achieve verification.
 
-## AdMob
+## Android test placement and release
 
-An optional internal debug build uses `-PKIWIKIND_TEST_ADS=true`, the official
-sample application ID `ca-app-pub-3940256099942544~3347511713` and adaptive banner
-unit `ca-app-pub-3940256099942544/9214589741`. SDKs are debug-only and absent from
-the ordinary debug/release runtime dependency graph. No publisher ID is invented.
-The optional preview is opened manually from the public Home information screen,
-never during sign-in or sensitive account workflows. AD_ID is removed in that
-debug manifest; this does not imply all other SDK collection is disabled.
+Only the optional internal debug variant (-PKIWIKIND_TEST_ADS=true) includes
+Google Mobile Ads 25.5.0 and UMP 4.0.0. It uses official sample app ID
+ca-app-pub-3940256099942544~3347511713 and sample adaptive banner unit
+ca-app-pub-3940256099942544/9214589741. AD_ID is removed in debug.
+The manual preview is restricted to public Home. A dedicated child layout detaches
+on navigation; all delayed success callbacks check that it remains attached before
+showing consent, initializing the SDK or loading an ad. Repeated presses in the
+same Home instance do not start duplicate requests. Detached AdViews are destroyed.
+Login, privacy, deletion, support, billing and account screens have no placement.
 
-The preview requests UMP consent information, shows a required form when available
-and requests a banner only after `canRequestAds()`. Missing consent configuration
-or a service error leaves ads off. No assurance of a filled ad or configured UMP
-message is made from compilation alone. Sample IDs may not have the publisher's
-consent message configured. No app-open, interstitial or rewarded ads are added.
+UMP errors or canRequestAds=false leave the preview off. Compilation does not
+prove consent-message configuration or filled banners. No actual fill, physical
+phone or production consent check is claimed. The debug preview is never uploaded
+to Play. Release SDK dependencies and signing keys are unchanged; the already
+signed V7 ad-free candidate remains the next safe release, pending physical-device
+acceptance and declaration review. No live IDs are substituted in test builds.
 
-Live-ad preparation still needs: an authorized AdMob account/app, real application
-and banner IDs, policy/readiness review, approved consent messages and privacy
-options entry point, publisher verification and explicit owner authorization.
-The debug preview must never be the Play release. Before embedding a production
-SDK, audit its initialization/provider behavior, lifecycle and network collection.
+## AdSense and website preparation
 
-`advertising/app-ads.txt` is comment-only preparation. The actual seller line must
-be published at the ROOT of the developer website linked from the Play listing,
-not assumed discoverable beneath the current project path. Do not alter a shared
-root site or another project to achieve this without authorization.
+Authenticated AdSense Sites initially lists only bebo.nz, Getting ready, ads.txt
+Authorized. It is unrelated and was not changed. KiwiKind site approval is not
+established. The approved GitHub Pages design and wording remain untouched.
+Google rejected the exact supplied project URL in the authenticated Add site form:
+"URL must be a valid top-level domain." The form was cancelled; no extra site was
+created and Google's suggested shared root was not submitted. The project URL
+includes a path and is unsuitable under ordinary AdSense site URL rules. An eligible owned site/domain with root control and substantial
+original useful content is needed; no domain purchase is authorized or made.
+Render root hosting solves app-ads.txt hosting, not AdSense domain eligibility.
 
-## Google Play declarations
+The existing inert placement preview is suitable only after public informational
+content before the footer, labeled Advertisement, with reserved responsive space
+and distance from controls. No scripts, live calls or empty visible slots are added.
 
-The V7 release prepared here does not contain the advertising SDK, serve ads or
-request Advertising ID. Preserve truthful declarations for the distributed binary;
-do not mark live ads as present merely because an internal debug preview exists.
-Review the current Console form against the final merged manifest and actual SDKs
-before V7 upload. Referral relationships/status and account notification preferences
-now need review alongside existing email/account/support data, purposes, encryption,
-deletion pathway and optional collection choices. Nothing is automatically filed.
+Before activation publish accurate disclosures of Google advertising, device/IP
+and interaction/diagnostic data, cookies/local storage, purposes, recipients,
+retention and privacy choices. Current public privacy notice accurately states
+that distributed releases do not contain ads and describes internal test builds.
+A Google-certified CMP and applicable regional consent/privacy choices must be
+configured before required-region requests; a home-made popup is not sufficient.
+AdMob UMP messages and a privacy-options entry point need verification using the
+real app configuration before any production SDK release.
 
-If a later binary includes production advertising, review Contains ads, Advertising
-ID, Data safety, age/target-audience and consent declarations before distributing it.
-Google's [SDK disclosure guide](https://developers.google.com/admob/android/privacy/play-data-disclosure)
-describes IP/general location, interactions, diagnostics and device identifiers.
-Removing AD_ID alone is not a basis to declare no data collection.
+## Play declarations
 
-References: [SDK setup](https://developers.google.com/admob/android/quick-start),
-[test banner](https://developers.google.com/admob/android/banner),
-[UMP](https://developers.google.com/admob/android/privacy),
-[app-ads.txt](https://support.google.com/admob/answer/9363762).
+Authenticated Play shows V6 (0.2.4-prelaunch) available in Closed testing - Alpha,
+one opted-in tester, production inactive, and Apply for production disabled until
+at least 12 testers qualify continuously for 14 days. Contains ads is saved as No.
+
+Current V6 and prepared V7 release do not contain the advertising SDK or request
+AD_ID. Do not mark Contains ads=yes or advertise SDK data collection solely because
+an internal debug preview exists. Before a production advertising binary, update
+Contains ads, Advertising ID, Data safety, target audience and consent declarations
+to match actual behavior, including collection not eliminated by removing AD_ID.
+Referral/account data in V7 still requires the broader release declaration review.
+No new advertising binary is distributed by this setup.
+
+## Activation gate
+
+Require app/store verification and approval, eligible approved website for AdSense,
+reviewed privacy/consent messages, tested privacy choices, exact declaration review,
+physical-phone acceptance and explicit owner authorization before live advertising.
+Keep customer intake, broadband orders, provisioning, payments and public admin off.
+Company name reservation is pending; the company is not incorporated.
+
+## Official references
+
+- https://support.google.com/admob/answer/9363762
+- https://support.google.com/adsense/answer/12171612
+- https://support.google.com/adsense/answer/2784438
+- https://support.google.com/adsense/answer/9724
+- https://support.google.com/adsense/answer/1348695
+- https://developers.google.com/admob/android/quick-start
+- https://developers.google.com/admob/android/banner
+- https://developers.google.com/admob/android/privacy
+- https://developers.google.com/admob/android/privacy/play-data-disclosure

@@ -1,0 +1,14 @@
+{
+  "account": "coreyedge123@gmail.com",
+  "publisher_id": "pub-4051392846058327",
+  "app_name": "KiwiKind Broadband",
+  "platform": "Android",
+  "intended_package": "nz.kiwikind.broadband",
+  "admob_app_id": "ca-app-pub-4051392846058327~4918264616",
+  "banner_unit_name": "KiwiKind Public Home Banner",
+  "banner_ad_unit_id": "ca-app-pub-4051392846058327/4480562173",
+  "source": "Authenticated AdMob console, 2026-10-18",
+  "store_linked": false,
+  "live_ads_authorized": false,
+  "runtime_use": "NONE. Documentation inventory only. Debug uses official Google sample IDs."
+}

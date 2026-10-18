@@ -1,2 +1,1 @@
-# Preparation only. No authorized advertising sellers or publisher ID yet.
-# Publish Google's exact approved seller line at the developer-website root later.
+google.com, pub-4051392846058327, DIRECT, f08c47fec0942fa0
