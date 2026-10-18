@@ -24,9 +24,9 @@ needs a supported, publicly discoverable store link, verification and app review
 Both prepared files contain the real publisher seller record:
 `google.com, pub-4051392846058327, DIRECT, f08c47fec0942fa0`.
 The Django routes serve it as plain text at /app-ads.txt and /ads.txt. Publishing
-these files does not initialize ads or request live inventory. The developer
-website in the Play listing must use the same hostname where app-ads.txt is hosted:
-https://kiwikind-backend.onrender.com/ (existing free KiwiKind portal).
+these files does not initialize ads or request live inventory. Authenticated Play Store settings already lists the correct developer website:
+https://kiwikind-backend.onrender.com/ (existing free KiwiKind portal). No listing
+URL change is needed. It matches the root seller-file hostname.
 
 The file under the GitHub project path alone would not satisfy root discovery.
 Google ignores the path when deriving app-ads.txt from a developer website URL.
@@ -57,8 +57,10 @@ acceptance and declaration review. No live IDs are substituted in test builds.
 Authenticated AdSense Sites initially lists only bebo.nz, Getting ready, ads.txt
 Authorized. It is unrelated and was not changed. KiwiKind site approval is not
 established. The approved GitHub Pages design and wording remain untouched.
-The supplied project URL includes a path and is unsuitable under ordinary AdSense
-site URL rules. An eligible owned site/domain with root control and substantial
+Google rejected the exact supplied project URL in the authenticated Add site form:
+"URL must be a valid top-level domain." The form was cancelled; no extra site was
+created and Google's suggested shared root was not submitted. The project URL
+includes a path and is unsuitable under ordinary AdSense site URL rules. An eligible owned site/domain with root control and substantial
 original useful content is needed; no domain purchase is authorized or made.
 Render root hosting solves app-ads.txt hosting, not AdSense domain eligibility.
 
@@ -76,6 +78,10 @@ AdMob UMP messages and a privacy-options entry point need verification using the
 real app configuration before any production SDK release.
 
 ## Play declarations
+
+Authenticated Play shows V6 (0.2.4-prelaunch) available in Closed testing - Alpha,
+one opted-in tester, production inactive, and Apply for production disabled until
+at least 12 testers qualify continuously for 14 days. Contains ads is saved as No.
 
 Current V6 and prepared V7 release do not contain the advertising SDK or request
 AD_ID. Do not mark Contains ads=yes or advertise SDK data collection solely because
