@@ -2,6 +2,10 @@ name: Android signed prelaunch release
 on:
   workflow_dispatch:
     inputs:
+      verify_test_ads:
+        description: Verify the signed V8 test banner and consent flow on an emulator
+        type: boolean
+        default: true
       reuse_endpoint_tests:
         description: Reuse passing Endpoint tests only when their source and test tree are unchanged from verified run 38972732788
         type: boolean
@@ -70,12 +74,45 @@ jobs:
           keytool -printcert -jarfile "$AAB" > release-evidence/BUNDLE-CERTIFICATE.txt
           sha256sum "$APK" "$AAB" > release-evidence/SHA256SUMS.txt
           printf '%s\n' "$GITHUB_SHA" > release-evidence/COMMIT.txt
+      - name: Verify advertising in final signed artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print android/app/build/outputs/apk/release/app-release.apk > release-evidence/MERGED-MANIFEST.xml
+          python scripts/verify_ad_release.py android/app/build/outputs/apk/release/app-release.apk release-evidence/MERGED-MANIFEST.xml | tee release-evidence/AD-RELEASE-VERIFICATION.txt
+          grep -i 'd8c8cbf422ece5a38696f8ca199b0b3d31a7a1bbd646816a8af7c17e9bf0ed64' release-evidence/APK-CERTIFICATE.txt
+      - name: Prepare same-signature ad instrumentation for the signed release
+        if: inputs.verify_test_ads
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp scripts/android/AdPlacementVerification.java android/app/src/androidTest/java/nz/kiwikind/broadband/
+          sed -i 's/nz.kiwikind.broadband.VisualCapture/nz.kiwikind.broadband.AdPlacementVerification/' android/app/src/androidTest/AndroidManifest.xml
+          cd android
+          gradle --no-daemon assembleDebugAndroidTest
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$APKSIGNER" sign --ks "$KIWIKIND_KEYSTORE" --ks-key-alias "$KIWIKIND_KEY_ALIAS" --ks-pass env:KIWIKIND_STORE_PASSWORD --key-pass env:KIWIKIND_KEY_PASSWORD --out "$RUNNER_TEMP/kiwikind-ad-tests.apk" app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
       - name: Enable emulator acceleration
-        if: inputs.capture_screenshots
+        if: ${{ inputs.capture_screenshots || inputs.verify_test_ads }}
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+      - name: Verify filled test banner in the actual signed release
+        if: inputs.verify_test_ads
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install android/app/build/outputs/apk/release/app-release.apk
+            adb install "$RUNNER_TEMP/kiwikind-ad-tests.apk"
+            adb shell am instrument -w nz.kiwikind.broadband.test/nz.kiwikind.broadband.AdPlacementVerification | tee release-evidence/advertising-signed-emulator.txt
+            adb pull /sdcard/Android/data/nz.kiwikind.broadband/files/advertising-v8 release-evidence/advertising-v8 || true
+            grep -q AD_PLACEMENT_PASS release-evidence/advertising-signed-emulator.txt
       - name: Capture real signed Android app screens
         if: inputs.capture_screenshots
         uses: reactivecircus/android-emulator-runner@v2

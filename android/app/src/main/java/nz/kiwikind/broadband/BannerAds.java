@@ -37,6 +37,8 @@ final class BannerAds {
     }
     void show(LinearLayout target){
         leave();slot=target;final int token=generation;
+        int gap=(int)(24*activity.getResources().getDisplayMetrics().density);
+        target.setPadding(0,gap,0,gap);
         status=new TextView(activity);status.setText("Advertisement · Test mode. Live advertising is disabled.");target.addView(status);
         Button retry=new Button(activity);retry.setText("Retry test advertisement");retry.setAllCaps(false);
         retry.setOnClickListener(v->{if(active(token)&&!consentPending&&!initializing&&banner==null)gatherConsent(token);});target.addView(retry);
@@ -71,7 +73,7 @@ final class BannerAds {
             status.setText(consent.canRequestAds()?"Live advertising is disabled. This phone must be configured as an SDK test device to display a test banner.":"Advertising stayed off: your privacy choices do not permit a request.");return;
         }
         initializing=true;
-        initialization.execute(()->MobileAds.initialize(activity.getApplicationContext(),result->main.post(()->{
+        initialization.execute(()->{try{MobileAds.initialize(activity.getApplicationContext(),result->main.post(()->{
             initializing=false;
             if(!active(token)||!consentUpdated||!consent.canRequestAds())return;
             AdRequest checkedRequest=new AdRequest.Builder().build();
@@ -84,8 +86,13 @@ final class BannerAds {
                 @Override public void onAdLoaded(){if(active(token)&&banner==view){loaded=true;status.setText("Advertisement · Test ad · No advertising revenue is generated.");}}
                 @Override public void onAdFailedToLoad(LoadAdError error){if(active(token)&&banner==view){removeBanner();status.setText("Test advertisement unavailable ("+error.getCode()+"). You can retry; account functions still work.");}}
             });
-            slot.addView(view);view.loadAd(checkedRequest);
-        })));
+            LinearLayout.LayoutParams layout=new LinearLayout.LayoutParams(-1,-2);
+            int gap=(int)(24*activity.getResources().getDisplayMetrics().density);
+            layout.setMargins(0,gap,0,gap);slot.addView(view,layout);view.loadAd(checkedRequest);
+        }));}catch(RuntimeException error){main.post(()->{
+            initializing=false;
+            if(active(token))status.setText("Advertising stayed off: SDK unavailable. You can retry.");
+        });}});
     }
     void privacyChoices(){
         if(destroyed||activity.isFinishing()||formShowing||consentPending)return;
