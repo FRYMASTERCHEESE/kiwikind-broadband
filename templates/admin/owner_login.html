@@ -1,0 +1,19 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/css/login.css' %}">{% endblock %}
+{% block bodyclass %}{{ block.super }} login{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block content %}
+<div id="content-main">
+  <p>Sign in with {{ owner_email }} to manage KiwiKind Broadband.</p>
+  <p id="owner-error" role="alert"></p>
+  <form id="owner-google-form" method="post" action="/admin/owner-signin/">{% csrf_token %}</form>
+  <div id="g_id_onload" data-client_id="{{ client_id }}" data-nonce="{{ nonce }}"
+       data-callback="kiwiKindOwnerSignIn" data-auto_prompt="false" data-ux_mode="popup"
+       data-login_hint="{{ owner_email }}"></div>
+  <div class="g_id_signin" data-type="standard" data-size="large"></div>
+  <script src="/admin/owner.js" defer></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</div>
+{% endblock %}

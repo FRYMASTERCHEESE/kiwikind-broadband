@@ -3,6 +3,13 @@ import secrets
 from django.conf import settings
 from django.db import models
 
+
+class OwnerAdminChallenge(models.Model):
+    """Single-use Google nonce; no credentials or customer data are stored."""
+    digest = models.CharField(max_length=64, primary_key=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+
 class Order(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)

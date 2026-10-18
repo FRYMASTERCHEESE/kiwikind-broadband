@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from portal import views
+from portal import owner_admin
 
 # Shared native/web account APIs; all account-specific routes enforce sessions.
 
@@ -13,4 +14,6 @@ urlpatterns = [path('privacy/', views.privacy_policy), path('account-deletion/',
  path('api/orders', views.orders), path('api/orders/<uuid:pk>/cancel', views.cancel_order),
  path('api/tickets', views.tickets), path('api/tickets/<uuid:pk>/messages', views.messages),
  path('api/invoices', views.invoices), path('api/privacy/export', views.export),
- path('api/privacy/deletion', views.deletion), path('healthz', views.health), path('admin/', admin.site.urls)]
+ path('api/privacy/deletion', views.deletion), path('healthz', views.health),
+ path('admin/owner-signin/', owner_admin.owner_signin),
+ path('admin/owner.js', owner_admin.owner_script), path('admin/', admin.site.urls)]

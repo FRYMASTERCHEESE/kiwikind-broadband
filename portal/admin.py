@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.conf import settings
 from django.contrib.auth.models import User, Group
 from .models import Order, Ticket, Message, Invoice, AuditEvent, PrivacyRequest
 
@@ -9,11 +10,22 @@ ADMIN_OWNER_EMAIL = 'kiwikindbroadband@gmail.com'
 _original_has_permission = admin.site.has_permission
 
 def owner_only_admin_permission(request):
+    from .owner_admin import owner_session
     return (_original_has_permission(request)
             and request.user.is_superuser
-            and request.user.email.strip().casefold() == ADMIN_OWNER_EMAIL)
+            and request.user.email.strip().casefold() == ADMIN_OWNER_EMAIL
+            and (not settings.OWNER_GOOGLE_ADMIN_ENABLED or owner_session(request)))
 
 admin.site.has_permission = owner_only_admin_permission
+_original_login = admin.site.login
+
+def owner_admin_login(request, extra_context=None):
+    if settings.OWNER_GOOGLE_ADMIN_ENABLED:
+        from .owner_admin import owner_login
+        return owner_login(request, extra_context)
+    return _original_login(request, extra_context)
+
+admin.site.login = owner_admin_login
 
 admin.site.unregister(User)
 admin.site.unregister(Group)
