@@ -147,7 +147,7 @@ jobs:
       - name: Compile native fixture and affected UI
         working-directory: runtime/android
         run: |
-          cp ../../android/app/src/androidTest/java/nz/kiwikind/broadband/ReadinessCapture.java app/src/androidTest/java/nz/kiwikind/broadband/
+          cp ../../scripts/android/ReadinessCapture.java app/src/androidTest/java/nz/kiwikind/broadband/
           sed -i 's/final class Api/class Api/' app/src/main/java/nz/kiwikind/broadband/Api.java
           sed -i 's/nz.kiwikind.broadband.VisualCapture/nz.kiwikind.broadband.ReadinessCapture/' app/src/androidTest/AndroidManifest.xml
           gradle --no-daemon assembleDebug assembleDebugAndroidTest -PKIWIKIND_TEST_ADS=false -PKIWIKIND_API_ORIGIN=
