@@ -2,6 +2,14 @@ import uuid
 import secrets
 from django.conf import settings
 from django.db import models
+from django.contrib.auth.models import User
+
+
+class Customer(User):
+    class Meta:
+        proxy = True
+        verbose_name = 'Customer'
+        verbose_name_plural = 'Customers'
 
 
 class OwnerAdminChallenge(models.Model):
