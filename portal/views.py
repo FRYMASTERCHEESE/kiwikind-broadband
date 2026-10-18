@@ -325,6 +325,8 @@ def _verified_google_signin(request, token):
                 # Existing password identities are NEVER automatically linked by email.
                 if User.objects.filter(username=email).exists():
                     return JsonResponse({'error': 'This email already has an account. Sign in with your password first to link Google.'}, status=409)
+                if not settings.INTAKE_ENABLED:
+                    return JsonResponse({'error':'New account registration is closed during prelaunch. Existing linked Google accounts can still sign in.'},status=503)
                 user = User.objects.create_user(username=email, email=email, password=None, is_active=True)
                 GoogleIdentity.objects.create(user=user, subject=subject)
     except IntegrityError:

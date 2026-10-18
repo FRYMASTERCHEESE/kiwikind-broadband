@@ -192,6 +192,7 @@ class ConcurrentAccountActions(TransactionTestCase):
             statuses = self.burst(lambda c:self.post(c,'password-reset/confirm',{'token':token,'password':NEW}))
         self.assertEqual(sorted(statuses), [200,400,400,400])
 
+    @override_settings(INTAKE_ENABLED=True)
     def test_google_first_login_race_does_not_duplicate_or_return_500(self):
         claims={'iss':'https://accounts.google.com','email_verified':True,'email':'parallel-google@example.invalid','sub':'parallel-synthetic-subject'}
         original = User.save

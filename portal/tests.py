@@ -125,13 +125,13 @@ class GoogleAuthenticationTests(TestCase):
         return self.client.post('/api/google-login', json.dumps({'id_token': token}), content_type='application/json')
 
     @override_settings(INTAKE_ENABLED=False)
-    def test_closed_intake_allows_portal_account_without_broadband_order(self):
+    def test_closed_intake_blocks_new_google_registration(self):
         from unittest.mock import patch
         claims={'iss':'https://accounts.google.com','email_verified':True,'email':'new@example.invalid','sub':'new-google-subject'}
         with patch.dict('os.environ', {'GOOGLE_WEB_CLIENT_ID':'test-client'}):
             with patch('google.oauth2.id_token.verify_oauth2_token', return_value=claims):
-                self.assertEqual(self.post_google().status_code, 200)
-        self.assertEqual(User.objects.count(), 1)
+                self.assertEqual(self.post_google().status_code, 503)
+        self.assertEqual(User.objects.count(), 0)
         self.assertFalse(self.client.get('/api/status').json()['intake_enabled'])
 
     @override_settings(INTAKE_ENABLED=True)
