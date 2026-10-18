@@ -4,6 +4,8 @@ from django.contrib.auth.models import User, Group
 from .models import Order, Ticket, Message, Invoice, AuditEvent, PrivacyRequest, Customer
 from django.urls import reverse
 from django.utils.html import format_html
+from django import forms
+import uuid
 
 admin.site.site_header='KiwiKind Broadband operations · Pre-launch'
 
@@ -102,15 +104,36 @@ class Replies(admin.TabularInline):
     can_delete=False
     def has_change_permission(self,request,obj=None): return False
 
+class TicketReplyForm(forms.ModelForm):
+    reply_submission_key = forms.UUIDField(widget=forms.HiddenInput, initial=uuid.uuid4)
+    class Meta:
+        model = Ticket
+        fields = ['status']
+
+
 @admin.register(Ticket)
 class Tickets(Audited):
+    form = TicketReplyForm
+    class Media:
+        js = ['portal/admin_reply_submit.js']
     list_display=['id','category','status','created_at']
     readonly_fields=['id','user','subject','category','created_at']
     inlines=[Replies]
     def save_formset(self,request,form,formset,change):
-        for item in formset.save(commit=False):
-            item.author=request.user; item.save()
-            AuditEvent.objects.create(actor=request.user,action='support_reply',reference=str(item.ticket_id))
+        formset.save(commit=False)
+        formset.new_objects = []
+        for inline_form in formset.forms:
+            if not inline_form.has_changed() or not inline_form.cleaned_data:
+                continue
+            item = inline_form.instance
+            if item.pk or not item.body:
+                continue
+            key = uuid.uuid5(item.ticket_id, str(form.cleaned_data['reply_submission_key']) + ':' + inline_form.prefix)
+            saved, created = Message.objects.get_or_create(submission_key=key, defaults={
+                'ticket': item.ticket, 'author': request.user, 'body': item.body})
+            if created:
+                formset.new_objects.append(saved)
+                AuditEvent.objects.create(actor=request.user,action='support_reply',reference=str(item.ticket_id))
 
 @admin.register(PrivacyRequest)
 class PrivacyRequests(Audited):

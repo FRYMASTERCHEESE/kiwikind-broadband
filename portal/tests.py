@@ -111,7 +111,7 @@ class PlatformTests(TestCase):
         operator=User.objects.create_superuser('operator@example.invalid','kiwikindbroadband@gmail.com','Staff-Kowhai-Planet-123!')
         self.client.force_login(operator)
         r=self.client.post(f'/admin/portal/ticket/{t.pk}/change/',{
-            'status':'open','messages-TOTAL_FORMS':'2','messages-INITIAL_FORMS':'1',
+            'status':'open','reply_submission_key':'64d0fb32-bb4f-4bf8-b313-81c6ff80cf34','messages-TOTAL_FORMS':'2','messages-INITIAL_FORMS':'1',
             'messages-MIN_NUM_FORMS':'0','messages-MAX_NUM_FORMS':'1000',
             'messages-0-id':str(original.pk),'messages-0-ticket':str(t.pk),
             'messages-1-ticket':str(t.pk),'messages-1-body':'We have received your concern.','_save':'Save'})

@@ -41,6 +41,7 @@ class Ticket(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 class Message(models.Model):
+    submission_key = models.UUIDField(null=True, blank=True, unique=True, editable=False)
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='messages')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     body = models.TextField(max_length=4000)
