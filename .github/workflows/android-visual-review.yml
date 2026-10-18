@@ -6,6 +6,14 @@ on:
         description: Run additional recovery checks only
         type: boolean
         default: false
+      readiness:
+        description: Compare V6/V7 native request counts and timings with synthetic latency
+        type: boolean
+        default: false
+      compare_baseline:
+        description: Include V6 baseline; false reuses the recorded baseline
+        type: boolean
+        default: true
       source_ref:
         description: Android source to verify
         type: string
@@ -17,7 +25,7 @@ permissions:
   contents: read
 jobs:
   visual:
-    if: ${{ !inputs.extended }}
+    if: ${{ !inputs.extended && !inputs.readiness }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -67,7 +75,7 @@ jobs:
             visual-evidence/
             android/app/build/reports/lint-results-debug.html
   recovery:
-    if: ${{ inputs.extended }}
+    if: ${{ inputs.extended && !inputs.readiness }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -111,3 +119,60 @@ jobs:
         with:
           name: extended-emulator-recovery
           path: recovery.txt
+  readiness:
+    if: ${{ inputs.readiness }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        source: ${{ fromJSON(inputs.compare_baseline && '["a280ca5ba8e686921cb6d9eb8df1baf1796c6e05", "feat/native-readiness-referrals"]' || '["feat/native-readiness-referrals"]') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.source }}
+          path: runtime
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+      - name: Compile optional official-test-ID advertising preview
+        if: matrix.source == 'feat/native-readiness-referrals'
+        working-directory: runtime/android
+        run: gradle --no-daemon assembleDebug -PKIWIKIND_TEST_ADS=true -PKIWIKIND_API_ORIGIN=
+      - name: Compile native fixture and affected UI
+        working-directory: runtime/android
+        run: |
+          cp ../../android/app/src/androidTest/java/nz/kiwikind/broadband/ReadinessCapture.java app/src/androidTest/java/nz/kiwikind/broadband/
+          sed -i 's/final class Api/class Api/' app/src/main/java/nz/kiwikind/broadband/Api.java
+          sed -i 's/nz.kiwikind.broadband.VisualCapture/nz.kiwikind.broadband.ReadinessCapture/' app/src/androidTest/AndroidManifest.xml
+          gradle --no-daemon assembleDebug assembleDebugAndroidTest -PKIWIKIND_TEST_ADS=false -PKIWIKIND_API_ORIGIN=
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install runtime/android/app/build/outputs/apk/debug/app-debug.apk
+            adb install runtime/android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell am instrument -w nz.kiwikind.broadband.test/nz.kiwikind.broadband.ReadinessCapture | tee readiness.txt
+            grep -q READINESS_PASS readiness.txt
+            adb pull /sdcard/Android/data/nz.kiwikind.broadband/files/readiness readiness-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: readiness-${{ strategy.job-index }}
+          path: |
+            readiness.txt
+            readiness-evidence/

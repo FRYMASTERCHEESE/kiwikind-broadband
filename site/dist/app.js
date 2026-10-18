@@ -32,7 +32,10 @@ function showSignedOut() {
   $('signed-in-bar').classList.add('hidden');
   $('signed-in-email').textContent='';
   $('account-email').textContent='';
-  for (const id of ['orders','tickets','invoices']) $(id).replaceChildren();
+  for (const id of ['orders','tickets','invoices','referral-result']) $(id)?.replaceChildren();
+  if($('account-notifications'))$('account-notifications').checked=false;
+  if($('confirm-google-deletion'))$('confirm-google-deletion').checked=false;
+  if($('create-referral'))$('create-referral').disabled=false;
   location.hash='#signin';
 }
 function formData(form) { return Object.fromEntries(new FormData(form)); }

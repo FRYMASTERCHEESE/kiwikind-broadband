@@ -101,6 +101,7 @@ LEGAL_ENTITY = os.getenv('LEGAL_ENTITY', '')
 BUSINESS_CONTACT = os.getenv('BUSINESS_CONTACT', '')
 PRIVACY_CONTACT = os.getenv('PRIVACY_CONTACT', '')
 INTAKE_ENABLED = os.getenv('INTAKE_ENABLED') == '1'
+REFERRALS_ENABLED = os.getenv('REFERRALS_ENABLED') == '1'
 ADMIN_ENABLED = os.getenv('ADMIN_ENABLED') == '1'
 mail_configured = bool(BREVO_API_KEY) if EMAIL_BACKEND == 'portal.email_backend.BrevoEmailBackend' else bool(EMAIL_HOST)
 if not DEBUG and INTAKE_ENABLED and not all([LEGAL_ENTITY, BUSINESS_CONTACT, PRIVACY_CONTACT, mail_configured, DEFAULT_FROM_EMAIL]):

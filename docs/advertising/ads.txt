@@ -1,0 +1,2 @@
+# Preparation only. No authorized advertising sellers or publisher ID yet.
+# Do not deploy seller records until the account and domain are approved.

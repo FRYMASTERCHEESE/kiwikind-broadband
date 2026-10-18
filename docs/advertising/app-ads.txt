@@ -1,0 +1,2 @@
+# Preparation only. No authorized advertising sellers or publisher ID yet.
+# Publish Google's exact approved seller line at the developer-website root later.

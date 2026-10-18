@@ -62,3 +62,11 @@ jobs:
           cp portal/test_extended_verification.py runtime/portal/test_extended_verification.py
           cd runtime
           python manage.py test $TEST_LABELS --settings=config.test_settings -v 2
+      - name: Record additive PostgreSQL migration SQL
+        if: ${{ success() && inputs.source_ref == 'feat/native-readiness-referrals' }}
+        run: cd runtime && python manage.py sqlmigrate portal 0003 > ../referral-migration.sql
+      - uses: actions/upload-artifact@v4
+        if: ${{ success() && inputs.source_ref == 'feat/native-readiness-referrals' }}
+        with:
+          name: referral-migration-sql
+          path: referral-migration.sql
