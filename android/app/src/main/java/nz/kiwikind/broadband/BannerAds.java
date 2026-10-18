@@ -63,7 +63,7 @@ final class BannerAds {
                 if(error!=null){status.setText("Advertising stayed off: privacy choices are unavailable. You can retry.");return;}
                 consentUpdated=true;load(token);
             });
-        },error->{consentPending=false;if(active(token))status.setText("Advertising stayed off: consent service unavailable. You can retry.");});
+        },error->{consentPending=false;android.util.Log.w("KiwiKindAds","Consent update: "+error.getErrorCode()+" "+error.getMessage());if(active(token))status.setText("Advertising stayed off: consent service unavailable. You can retry.");});
     }
     private void load(int token){
         if(!active(token)||!consentUpdated||banner!=null||initializing)return;
@@ -84,7 +84,7 @@ final class BannerAds {
             view.setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(activity,width));
             view.setAdListener(new AdListener(){
                 @Override public void onAdLoaded(){if(active(token)&&banner==view){loaded=true;status.setText("Advertisement · Test ad · No advertising revenue is generated.");}}
-                @Override public void onAdFailedToLoad(LoadAdError error){if(active(token)&&banner==view){removeBanner();status.setText("Test advertisement unavailable ("+error.getCode()+"). You can retry; account functions still work.");}}
+                @Override public void onAdFailedToLoad(LoadAdError error){if(active(token)&&banner==view){android.util.Log.w("KiwiKindAds","Banner load: "+error.getCode()+" "+error.getMessage());removeBanner();status.setText("Test advertisement unavailable ("+error.getCode()+"). You can retry; account functions still work.");}}
             });
             LinearLayout.LayoutParams layout=new LinearLayout.LayoutParams(-1,-2);
             int gap=(int)(24*activity.getResources().getDisplayMetrics().density);

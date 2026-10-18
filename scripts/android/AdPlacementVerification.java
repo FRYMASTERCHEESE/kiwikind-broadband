@@ -4,6 +4,11 @@ import android.app.Instrumentation;
 import android.content.Intent;
 import android.os.Bundle;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
+import android.view.MotionEvent;
+import android.os.SystemClock;
+import android.widget.ScrollView;
+import android.widget.LinearLayout;
 import android.view.accessibility.AccessibilityNodeInfo;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -23,8 +28,13 @@ public class AdPlacementVerification extends Instrumentation {
         if(node==null)return false;
         String text=node.getText()==null?"":node.getText().toString().trim();
         if(text.equalsIgnoreCase("Do not consent")||text.equalsIgnoreCase("Do not agree")){
-            if(node.performAction(AccessibilityNodeInfo.ACTION_CLICK))return true;
-            AccessibilityNodeInfo parent=node.getParent();return parent!=null&&parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            Rect bounds=new Rect();node.getBoundsInScreen(bounds);
+            if(!node.isVisibleToUser()||bounds.isEmpty())return false;
+            long now=SystemClock.uptimeMillis();
+            MotionEvent down=MotionEvent.obtain(now,now,MotionEvent.ACTION_DOWN,bounds.centerX(),bounds.centerY(),0);
+            MotionEvent up=MotionEvent.obtain(now,now+100,MotionEvent.ACTION_UP,bounds.centerX(),bounds.centerY(),0);
+            try{return getUiAutomation().injectInputEvent(down,true)&&getUiAutomation().injectInputEvent(up,true);}
+            finally{down.recycle();up.recycle();}
         }
         for(int i=0;i<node.getChildCount();i++)if(clickRefusal(node.getChild(i)))return true;
         return false;
@@ -46,20 +56,46 @@ public class AdPlacementVerification extends Instrumentation {
                 params.set(ads,new ConsentRequestParameters.Builder().setConsentDebugSettings(new ConsentDebugSettings.Builder(activity).setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA).build()).build());
                 invoke("publicPage",String.class,"home");
             }catch(Exception e){throw new RuntimeException(e);}});
-            boolean refused=false,loaded=false;
-            for(int i=0;i<180;i++){
+            boolean refused=false,loaded=false;int taps=0;
+            long deadline=SystemClock.elapsedRealtime()+120000;
+            while(SystemClock.elapsedRealtime()<deadline){
                 waitForIdleSync();
-                if(!refused){if(clickRefusal(getUiAutomation().getRootInActiveWindow())){refused=true;}}
                 BannerAds ads=(BannerAds)field(activity,"bannerAds");
+                if((Boolean)field(ads,"formShowing")){
+                    if(taps==0)capture("00-eea-consent.png");
+                    if(clickRefusal(getUiAutomation().getRootInActiveWindow()))taps++;
+                }
+                refused=taps>0&&(Boolean)field(ads,"consentUpdated")&&!(Boolean)field(ads,"formShowing");
                 if((Boolean)field(ads,"loaded")){loaded=true;break;}
-                Thread.sleep(500);
+                Thread.sleep(1000);
             }
-            capture("01-home-test-banner.png");
-            require(refused,"EEA refusal control was not exercised; consent configuration is not verified");
-            require(loaded,"Real KiwiKind test banner did not fill; inspect screenshot and SDK logs");
+            require(refused,"EEA refusal was not completed; consent configuration is not verified");
+            require(loaded,"KiwiKind test banner did not fill: "+((android.widget.TextView)field(field(activity,"bannerAds"),"status")).getText());
+            runOnMainSync(()->{try{
+                LinearLayout slot=(LinearLayout)field(field(activity,"bannerAds"),"slot");
+                LinearLayout content=(LinearLayout)field(activity,"content");
+                ((ScrollView)content.getParent()).scrollTo(0,slot.getTop());
+            }catch(Exception e){throw new RuntimeException(e);}});
+            Thread.sleep(500);capture("01-home-test-banner.png");
+            runOnMainSync(()->{try{
+                BannerAds ads=(BannerAds)field(activity,"bannerAds");ads.privacyChoices();
+                require(field(ads,"banner")==null,"Privacy choices did not remove banner");
+            }catch(Exception e){throw new RuntimeException(e);}});
+            boolean reopened=false,closed=false;deadline=SystemClock.elapsedRealtime()+60000;
+            while(SystemClock.elapsedRealtime()<deadline){
+                waitForIdleSync();BannerAds ads=(BannerAds)field(activity,"bannerAds");
+                if((Boolean)field(ads,"formShowing")){
+                    if(!reopened)capture("02-privacy-options.png");reopened=true;
+                    clickRefusal(getUiAutomation().getRootInActiveWindow());
+                }
+                if(reopened&&!(Boolean)field(ads,"formShowing")&&(Boolean)field(ads,"consentUpdated")){closed=true;break;}
+                Thread.sleep(1000);
+            }
+            require(reopened&&closed,"Privacy choices did not reopen and close successfully");
+            require(field(field(activity,"bannerAds"),"banner")==null,"Ad automatically reloaded after privacy changes");
             runOnMainSync(()->{try{
                 BannerAds ads=(BannerAds)field(activity,"bannerAds");
-                require(field(ads,"banner")!=null,"Loaded banner missing");
+                require(field(ads,"banner")==null,"Privacy choice dismissal reloaded a banner");
                 ads.pause();require(!(Boolean)field(ads,"foreground"),"Pause gate not closed");
                 ads.resume();require((Boolean)field(ads,"foreground"),"Resume gate not reopened");
                 invoke("auth",boolean.class,false);
@@ -67,8 +103,8 @@ public class AdPlacementVerification extends Instrumentation {
                 invoke("policyScreen",String.class,"privacy");
                 require(field(ads,"banner")==null,"Banner appeared on privacy screen");
             }catch(Exception e){throw new RuntimeException(e);}});
-            waitForIdleSync();capture("02-privacy-no-banner.png");
-            result.putString("stream","AD_PLACEMENT_PASS: Real KiwiKind App ID/banner unit; EEA refusal exercised; filled SDK test banner; pause/resume; navigation destruction; sign-in/privacy exclusion. Emulator only.");
+            waitForIdleSync();capture("03-privacy-no-banner.png");
+            result.putString("stream","AD_PLACEMENT_PASS: Real KiwiKind App ID/banner unit; EEA refusal exercised; filled SDK test banner; reopened/refused privacy choices with no automatic reload; pause/resume; navigation destruction; sign-in/privacy exclusion. Emulator only.");
             runOnMainSync(activity::finish);finish(Activity.RESULT_OK,result);
         }catch(Throwable error){
             try{if(evidence!=null)capture("failure.png");}catch(Exception ignored){}

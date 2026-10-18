@@ -112,6 +112,7 @@ jobs:
             adb install "$RUNNER_TEMP/kiwikind-ad-tests.apk"
             adb shell am instrument -w nz.kiwikind.broadband.test/nz.kiwikind.broadband.AdPlacementVerification | tee release-evidence/advertising-signed-emulator.txt
             adb pull /sdcard/Android/data/nz.kiwikind.broadband/files/advertising-v8 release-evidence/advertising-v8 || true
+            adb logcat -d -s KiwiKindAds:W Ads:E UserMessagingPlatform:E '*:S' > release-evidence/ads-sdk-log.txt
             grep -q AD_PLACEMENT_PASS release-evidence/advertising-signed-emulator.txt
       - name: Capture real signed Android app screens
         if: inputs.capture_screenshots
