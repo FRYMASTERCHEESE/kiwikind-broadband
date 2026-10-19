@@ -1,0 +1,26 @@
+{% extends 'admin/base_site.html' %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'portal/wholesale.css' %}">{% endblock %}
+{% block content %}
+<div class="wholesale">
+<p><strong>KiwiKind Broadband Limited · NZBN 9429054036550</strong></p>
+<div class="wholesale-banner"><h2>Pre-launch: prepare and practise</h2><p>Customer intake, live supplier orders, billing collection and payments stay closed. Saving here never sends anything to Vetta. Practice cases must use synthetic information.</p></div>
+<p>Vetta Group · Layer 3 wholesale onboarding · Phil Wright · Meeting: 20 October 2026, 11:00 AM New Zealand time.</p>
+<div class="wholesale-grid">
+<section><h2>Plans and costs</h2><p>{{ plans }} private draft plans. No published retail prices.</p><a href="{% url 'admin:portal_draftplan_changelist' %}">Manage draft plans and GST illustrations</a></section>
+<section><h2>Fibre availability</h2><p>{{ checks }} manual evidence records. A missing or expired check means unknown.</p><a href="{% url 'admin:portal_availabilityevidence_changelist' %}">Record portal checks</a></section>
+<section><h2>Order preparation</h2><p>{{ orders }} cases. Real preparation stops before portal submission; later stages are practice only.</p><a href="{% url 'admin:portal_wholesaleorder_changelist' %}">Manage preparation and practice orders</a></section>
+<section><h2>Support and faults</h2><p>{{ faults }} cases. KiwiKind handles first-line support, billing, payments and cancellations.</p><a href="{% url 'admin:portal_wholesalefault_changelist' %}">Manage fault preparation</a> · <a href="{% url 'admin:portal_ticket_changelist' %}">Customer support tickets</a></section>
+</div>
+<h2>Approvals still needed</h2><ul>{% for blocker in blockers %}<li>{{ blocker }} — approval evidence required before a separate launch release.</li>{% endfor %}</ul>
+<h2>Manual partner portal checklist</h2><ol>
+<li>Confirm agreements, prices, GST treatment, support processes, privacy and retail terms before handling a live order.</li>
+<li>Open the genuine partner portal using the link and account Vetta supplies. This system stores no supplier password and has no ordering API or sandbox.</li>
+<li>Check the exact service address, record a reference and recheck deadline, and verify the selected speed tier and quote.</li>
+<li>After a future launch approval, obtain customer acceptance and switching authority before manually entering any order. Check the portal for an existing order before retrying.</li>
+<li>Record supplier status and references; manage first-line support, router supply and customer updates through KiwiKind.</li>
+<li>For faults, record diagnostics and line-test results before escalating through the portal. Verify resolution before telling the customer a fault is fixed.</li>
+</ol>
+<p><a href="{% url 'admin:portal_wholesaleevent_changelist' %}">View immutable processing history</a> · <a href="{% url 'admin:index' %}">Back to administration</a></p>
+</div>
+{% endblock %}

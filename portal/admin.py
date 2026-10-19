@@ -156,3 +156,6 @@ class Providers(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         AuditEvent.objects.create(actor=request.user, action='provider_updated', reference=f'provider:{obj.pk}')
+
+
+from . import wholesale_admin  # noqa: E402,F401 — register private onboarding tools

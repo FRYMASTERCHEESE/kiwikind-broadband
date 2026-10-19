@@ -33,7 +33,7 @@ function showSignedOut() {
   $('signed-in-email').textContent='';
   $('account-email').textContent='';
   $('owner-admin-link')?.remove();
-  for (const id of ['orders','tickets','invoices','referral-result']) $(id)?.replaceChildren();
+  for (const id of ['orders','tickets','invoices','referral-result','connection-progress']) $(id)?.replaceChildren();
   if($('account-notifications'))$('account-notifications').checked=false;
   if($('confirm-google-deletion'))$('confirm-google-deletion').checked=false;
   if($('create-referral'))$('create-referral').disabled=false;
@@ -223,3 +223,31 @@ async function syncAccountOnReturn() {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) void syncAccountOnReturn(); });
 window.addEventListener('focus', () => { void syncAccountOnReturn(); });
 window.addEventListener('online', () => { void syncAccountOnReturn(); });
+
+// Read-only wholesale preparation, shared with Android. Supplier notes and draft prices stay private.
+function preparationLabel(stage) {
+  return ({draft:'Preparation started', availability_review:'Availability evidence under review',
+    quote_review:'Draft quote under review', ready:'Prepared — awaiting launch approval',
+    cancelled:'Request cancelled', triage:'KiwiKind reviewing support',
+    resolved:'Support review resolved', closed:'Review closed'})[stage] || 'Awaiting an update from KiwiKind';
+}
+async function loadConnectionProgress() {
+  const generation = accountGeneration;
+  const control = $('load-connection-progress');
+  control.disabled = true;
+  empty('connection-progress', 'Loading preparation updates…');
+  try {
+    const data = await api('connection-progress', undefined, generation);
+    if (generation !== accountGeneration) return;
+    empty('connection-progress', data.message);
+    for (const item of data.orders || []) record($('connection-progress'), preparationLabel(item.stage), `Request ${item.request_id} · ${date(item.updated_at)}`);
+    for (const item of data.faults || []) record($('connection-progress'), preparationLabel(item.stage), `Support ${item.ticket_id} · ${date(item.updated_at)}`);
+    if (!(data.orders?.length || data.faults?.length)) $('connection-progress').append(node('p', 'No preparation updates yet.'));
+  } catch (error) {
+    if (generation === accountGeneration) empty('connection-progress', 'Updates could not load. Your account is preserved. Reconnect and tap Refresh preparation.');
+  } finally { control.disabled = false; }
+}
+$('load-connection-progress')?.addEventListener('click', safeAction(loadConnectionProgress));
+window.addEventListener('offline', () => {
+  notice('You are offline. Reconnect before refreshing or sending anything. Your saved login is kept.', true);
+});

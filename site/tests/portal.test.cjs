@@ -44,6 +44,27 @@ test('Google button fits a narrow viewport even when account form starts hidden'
 
 function deferred(){let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};}
 function reply(data,status=200){return {ok:status===200,status,json:async()=>data};}
+test('preparation updates arriving after sign-out cannot restore private records',async()=>{
+ const a=boot();await settle();const pending=deferred();
+ a.state.respond=()=>pending.promise;
+ a.el('connection-progress').replaceChildren=function(){this.textContent='';};
+ a.el('connection-progress').append=()=>assert.fail('Stale private preparation must not render');
+ const loading=a.run('loadConnectionProgress()');a.run('showSignedOut()');
+ pending.resolve(reply({message:'Private update',orders:[{stage:'draft',request_id:'private'}]}));await loading;
+ assert.equal(a.el('connection-progress').textContent,'');
+ assert.equal(a.el('load-connection-progress').disabled,false);
+});
+test('preparation connection failure retains identity and re-enables retry',async()=>{
+ const a=boot();await settle();a.state.authenticated=true;await a.run('refresh()');a.state.fail=true;
+ await a.run('loadConnectionProgress()');
+ assert.equal(a.el('signed-in-email').textContent,'synthetic@example.invalid');
+ assert.equal(a.el('load-connection-progress').disabled,false);
+});
+test('unknown and practice statuses never claim a live connection',async()=>{
+ const a=boot();await settle();
+ for(const stage of ['active','submitted','<script>'])assert.equal(a.run(`preparationLabel('${stage}')`),'Awaiting an update from KiwiKind');
+ assert.equal(a.run("preparationLabel('ready')"),'Prepared — awaiting launch approval');
+});
 test('identity response arriving after sign-out cannot reopen dashboard',async()=>{
  const a=boot();await settle();const pending=deferred();
  a.state.respond=()=>pending.promise;

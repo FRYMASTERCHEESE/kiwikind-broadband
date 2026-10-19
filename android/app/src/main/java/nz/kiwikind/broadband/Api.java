@@ -106,6 +106,8 @@ final class Api {
             if(code>=300)throw new Exception(result.optString("error","Request failed ("+code+")"));
             if(result.has("csrfToken"))csrf=result.getString("csrfToken");
             return result;
+        } catch (java.io.IOException e) {
+            throw new Exception(RecoveryMessage.interrupted(data != null), e);
         } finally { c.disconnect(); }
     }
 }
