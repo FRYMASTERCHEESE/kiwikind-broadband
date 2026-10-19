@@ -96,6 +96,8 @@ final class Api {
             }
             int code=c.getResponseCode();cookies.put(uri,c.getHeaderFields());
             if(c.getHeaderFields().keySet().stream().anyMatch(k->k!=null&&k.equalsIgnoreCase("Set-Cookie")))saveCookies();
+            if(code==404 && "connection-progress".equals(path))
+                throw new Exception("Connection preparation updates are not available yet. You can continue using your account.");
             InputStream stream=code<400?c.getInputStream():c.getErrorStream();
             if(stream==null) throw new Exception("No server response. Please try again.");
             ByteArrayOutputStream out=new ByteArrayOutputStream();
