@@ -111,3 +111,15 @@ test('retry after server session expiry clears stale private account view',async
  assert.equal(a.el('dashboard').classList.contains('hidden'),true);
  assert.equal(a.el('account-email').textContent,'');
 });
+
+test('bootstrap arriving after sign-out cannot restore the previous identity',async()=>{
+ const a=boot();await settle();const pending=deferred();
+ a.state.respond=()=>pending.promise;
+ const startup=a.run('init()');
+ a.run('showSignedOut()');
+ pending.resolve(reply({account:{email:'previous@example.invalid'},csrfToken:'obsolete'}));
+ await startup;
+ assert.equal(a.el('dashboard').classList.contains('hidden'),true);
+ assert.equal(a.el('account-email').textContent,'');
+ assert.notEqual(a.run('csrfToken'),'obsolete');
+});
