@@ -251,3 +251,28 @@ class WholesaleTests(TestCase):
         self.assertFalse(self.client.get('/api/status').json()['billing_enabled'])
         self.assertEqual(self.client.post('/api/invoices', '{}', content_type='application/json').status_code, 405)
         self.assertFalse(Order.objects.exists()); self.assertFalse(Invoice.objects.exists())
+
+    def test_stale_admin_edit_cannot_overwrite_newer_workflow_status(self):
+        case = self.case()
+        payload = {'address': case.address, 'postcode': case.postcode, 'plan': case.plan_id,
+                   'availability': case.availability_id, 'edit_revision': 0, '_save': 'Save'}
+        self.advance(case, 'availability_review')
+        response = self.client.post(f'/admin/portal/wholesaleorder/{case.pk}/change/', payload)
+        self.assertContains(response, 'Reload before saving')
+        case.refresh_from_db(); self.assertEqual(case.state, 'availability_review'); self.assertEqual(case.revision, 1)
+
+    def test_admin_draft_edit_advances_revision_and_keeps_classification(self):
+        case = self.case()
+        response = self.client.post(f'/admin/portal/wholesaleorder/{case.pk}/change/', {
+            'address': case.address, 'postcode': case.postcode, 'plan': case.plan_id, 'availability': case.availability_id,
+            'edit_revision': 0, 'rehearsal': False, 'state': 'active', '_save': 'Save'})
+        self.assertEqual(response.status_code, 302)
+        case.refresh_from_db()
+        self.assertEqual(case.state, 'draft'); self.assertTrue(case.rehearsal); self.assertEqual(case.revision, 1)
+
+    def test_portal_evidence_and_history_cannot_be_edited_or_deleted(self):
+        case = self.case(); case = self.advance(case, 'availability_review')
+        event = case.events.get()
+        for model, pk in [('availabilityevidence', case.availability_id), ('wholesaleevent', event.pk)]:
+            self.assertEqual(self.client.post(f'/admin/portal/{model}/{pk}/change/', {'note':'tampered'}).status_code, 403)
+            self.assertEqual(self.client.post(f'/admin/portal/{model}/{pk}/delete/', {'post':'yes'}).status_code, 403)

@@ -77,10 +77,37 @@ class TransitionForm(forms.Form):
     note = forms.CharField(max_length=2000, widget=forms.Textarea, help_text='Internal processing note. No passwords or payment details.')
 
 
+class CaseEditForm(forms.ModelForm):
+    edit_revision = forms.IntegerField(widget=forms.HiddenInput, initial=0)
+
+    class Meta:
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['edit_revision'].initial = self.instance.revision
+
+    def clean(self):
+        cleaned = super().clean()
+        if not self.instance._state.adding:
+            # Django's change-form POST is atomic. Hold this lock until save completes.
+            current = type(self.instance).objects.select_for_update().get(pk=self.instance.pk)
+            if (cleaned.get('edit_revision') != current.revision or self.instance.revision != current.revision
+                    or current.state not in ('draft', 'triage')):
+                raise ValidationError('This case changed or is no longer editable. Reload before saving.')
+        return cleaned
+
+
 class CaseAdmin(PrivateRecords):
+    form = CaseEditForm
     readonly_fields = ['state', 'revision', 'created_by', 'created_at', 'updated_at', 'processing', 'history']
     list_display = ['__str__', 'state', 'rehearsal', 'updated_at']
     list_filter = ['rehearsal', 'state']
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            obj.revision += 1
+        super().save_model(request, obj, form, change)
 
     def get_urls(self):
         return [path('<uuid:pk>/process/', admin.site.admin_view(self.process), name=f'portal_{self.model._meta.model_name}_process')] + super().get_urls()

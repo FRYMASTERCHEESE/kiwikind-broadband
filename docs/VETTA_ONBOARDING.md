@@ -61,3 +61,11 @@ Before a future deployment, verify a recoverable database backup/restore point, 
 - Any subsidised offer, its funding, eligibility and permission to market it. No subsidy or affordability guarantee is implemented here.
 
 There is no launch toggle in the wholesale dashboard. A reviewed follow-up release is required before real supplier processing or public sales.
+
+## Reproducible verification
+
+The backend workflow runs the full Django suite against both isolated SQLite and disposable PostgreSQL, website JavaScript tests, migration drift/deployment checks, Docker build, and Android unit tests/lint/debug APK assembly. New coverage includes owner permissions and session expiry, CSRF, customer isolation, GST rounding, evidence validation, duplicate/stale processing, concurrent PostgreSQL operators, and preservation of existing accounts/Google identities/sessions/requests across the additive migration.
+
+The `wholesale-visual` job runs `site/tests/wholesale-visual.cjs` against a disposable local Django server at 360px and 1280px. `scripts/prepare_wholesale_visual.py` refuses any database except the named local SQLite fixture and refuses to alter existing accounts. Screenshots alone are uploaded; the local test session/database are excluded. Tests verify closed intake, connection failure recovery, retained account identity, owner forms and absence of horizontal overflow.
+
+GST reference: [Inland Revenue — Charging GST](https://www.ird.govt.nz/gst/charging-gst), checked 19 October 2026. The draft calculator illustrates standard-rate GST; final tax treatment remains an approval item.
