@@ -31,7 +31,7 @@ public class MainActivity extends Activity {
     private TextView feedback;
     private ProgressBar operationProgress;
     private Button recoveryButton;
-    private boolean intake=false, signedIn=false, busy=false;
+    private boolean intake=false, registrationEnabled=false, signedIn=false, busy=false;
     private String exportData=null;
     private String orderKey=null;
     private long lastResumeCheck=0L;
@@ -113,9 +113,9 @@ public class MainActivity extends Activity {
                 signedIn=false;auth(false);
                 message("Sign in to My KiwiKind. Customer intake remains closed.");
             }else if(r.isNull("account")){
-                intake=r.optBoolean("intake_enabled");api.clear();signedIn=false;auth(false);message("Sign in to My KiwiKind. Customer intake remains closed.");
+                intake=r.optBoolean("intake_enabled");registrationEnabled=r.optBoolean("registration_enabled");api.clear();signedIn=false;auth(false);message("Sign in to My KiwiKind. Customer intake remains closed.");
             }else{
-                intake=r.optBoolean("intake_enabled");signedIn=true;accountHome(r.getJSONObject("account"));message("Account restored from KiwiKind server.");
+                intake=r.optBoolean("intake_enabled");registrationEnabled=r.optBoolean("registration_enabled");signedIn=true;accountHome(r.getJSONObject("account"));message("Account restored from KiwiKind server.");
             }
         });
     }
@@ -207,7 +207,7 @@ public class MainActivity extends Activity {
     }
     private void auth(boolean register){
         refreshScreen=null;
-        content.removeAllViews();title(register?"Create your account":"A kinder connection.");landscape();paragraph("My KiwiKind · Pre-launch\nSign in to your existing account. Broadband requests and payments remain closed.");
+        content.removeAllViews();title(register?"Create your account":"A kinder connection.");landscape();paragraph("My KiwiKind · Pre-launch\nCreate a free account or sign in. Your account and support messages are shared with the website. Broadband orders and payments remain closed.");
         EditText email=field("Email",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         EditText password=field("Password (at least 12 characters)",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
         EditText referral=register?field("Referral code (optional; programme not open yet)",1):null;
@@ -216,14 +216,14 @@ public class MainActivity extends Activity {
             if(register&&!consent.isChecked()){message("Please read and accept the pre-launch terms.");return;}
             String e=email.getText().toString().trim(),p=password.getText().toString();password.setText("");
             run(()->api.call(register?"register":"login",data("email",e,"password",p,"consent_version",CONSENT,"referral_code",referral==null?"":referral.getText().toString().trim())),r->{if(register){message(r.optString("message"));}else{acceptLogin(r);}});
-        }).setEnabled(api.configured()&&(!register||intake));
+        }).setEnabled(api.configured()&&(!register||registrationEnabled));
         Button googleButton=button("Sign in with Google",this::googleSignIn);
         googleButton.setEnabled(api.configured());
         googleButton.setTextColor(Color.WHITE);
         googleButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(FOREST));
         googleButton.setAllCaps(false);
         googleButton.setMinHeight((int)(52*getResources().getDisplayMetrics().density));
-        if(register&&!intake)paragraph("Email registration remains closed during pre-launch.");
+        if(register&&!registrationEnabled)paragraph("Email registration remains closed during pre-launch.");
         button(register?"Back to sign in":"Create an account",()->auth(!register));
         button("Retry account connection",this::connectAccount).setEnabled(api.configured());
         button("Discover our vision ↗",()->publicPage("home"));
@@ -323,7 +323,7 @@ public class MainActivity extends Activity {
     private void settingsScreen(){run(()->api.call("preferences",null),r->{refreshScreen=this::settingsScreen;content.removeAllViews();title("Account settings & notifications");paragraph("Preferences use your shared KiwiKind account. Notification delivery and marketing are disabled; saving this preference does not enable push messages or emails.");
         CheckBox choice=new CheckBox(this);choice.setText("Account update notifications, when delivery becomes available");choice.setChecked(r.optBoolean("account_notifications"));content.addView(choice);
         button("Save preference",()->run(()->api.call("preferences",data("account_notifications",choice.isChecked())),s->message("Preference saved to your KiwiKind account. Delivery remains disabled.")));button("Review account details or request correction",this::correctionScreen);nav();});}
-    private void acceptLogin(JSONObject account){signedIn=true;intake=account.optBoolean("intake_enabled");accountHome(account);}
+    private void acceptLogin(JSONObject account){signedIn=true;intake=account.optBoolean("intake_enabled");registrationEnabled=account.optBoolean("registration_enabled");accountHome(account);}
     private void home(){
         if(api.configured()){run(()->api.call("me",null),this::accountHome);}else accountHome(new JSONObject());
     }

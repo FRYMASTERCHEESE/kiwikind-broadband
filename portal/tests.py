@@ -74,7 +74,7 @@ class PlatformTests(TestCase):
         Invoice.objects.create(user=self.bob,supplier_reference='test-only',amount_cents=100,currency='NZD',due_date='2026-10-16',status='unpaid')
         self.assertEqual(self.client.get('/api/invoices').json()['invoices'],[])
         self.assertEqual(self.post('invoices',{'amount_cents':1}).status_code,405)
-    @override_settings(INTAKE_ENABLED=False)
+    @override_settings(INTAKE_ENABLED=False, REGISTRATION_ENABLED=False)
     def test_intake_gate(self):
         self.assertEqual(self.post('register',{}).status_code,503)
         self.assertEqual(self.post('orders',self.order()).status_code,503)
@@ -124,7 +124,7 @@ class GoogleAuthenticationTests(TestCase):
     def post_google(self, token='synthetic-google-id-token-for-tests'):
         return self.client.post('/api/google-login', json.dumps({'id_token': token}), content_type='application/json')
 
-    @override_settings(INTAKE_ENABLED=False)
+    @override_settings(INTAKE_ENABLED=False, REGISTRATION_ENABLED=False)
     def test_closed_intake_blocks_new_google_registration(self):
         from unittest.mock import patch
         claims={'iss':'https://accounts.google.com','email_verified':True,'email':'new@example.invalid','sub':'new-google-subject'}
@@ -134,7 +134,7 @@ class GoogleAuthenticationTests(TestCase):
         self.assertEqual(User.objects.count(), 0)
         self.assertFalse(self.client.get('/api/status').json()['intake_enabled'])
 
-    @override_settings(INTAKE_ENABLED=True)
+    @override_settings(INTAKE_ENABLED=True, REGISTRATION_ENABLED=True)
     def test_invalid_google_token_does_not_create_user(self):
         from unittest.mock import patch
         with patch.dict('os.environ', {'GOOGLE_WEB_CLIENT_ID':'test-client'}):
@@ -142,7 +142,7 @@ class GoogleAuthenticationTests(TestCase):
                 self.assertEqual(self.post_google().status_code, 401)
         self.assertEqual(User.objects.count(), 0)
 
-    @override_settings(INTAKE_ENABLED=True)
+    @override_settings(INTAKE_ENABLED=True, REGISTRATION_ENABLED=True)
     def test_google_email_collision_cannot_take_over_password_account(self):
         from unittest.mock import patch
         User.objects.create_user('same@example.invalid', email='same@example.invalid', password='Secure-Passphrase-1203!')
@@ -153,7 +153,7 @@ class GoogleAuthenticationTests(TestCase):
         self.assertEqual(User.objects.count(), 1)
         self.assertEqual(self.client.get('/api/me').status_code, 401)
 
-    @override_settings(INTAKE_ENABLED=True)
+    @override_settings(INTAKE_ENABLED=True, REGISTRATION_ENABLED=True)
     def test_verified_google_account_can_sign_in_again_without_duplicate(self):
         from unittest.mock import patch
         from .models import GoogleIdentity
@@ -166,7 +166,7 @@ class GoogleAuthenticationTests(TestCase):
         self.assertEqual(User.objects.count(), 1)
         self.assertEqual(GoogleIdentity.objects.count(), 1)
 
-    @override_settings(INTAKE_ENABLED=True)
+    @override_settings(INTAKE_ENABLED=True, REGISTRATION_ENABLED=True)
     def test_unverified_google_email_rejected(self):
         from unittest.mock import patch
         claims={'iss':'https://accounts.google.com','email_verified':False,'email':'bad@example.invalid','sub':'unverified-google-subject'}
@@ -175,7 +175,7 @@ class GoogleAuthenticationTests(TestCase):
                 self.assertEqual(self.post_google().status_code, 401)
         self.assertEqual(User.objects.count(), 0)
 
-    @override_settings(INTAKE_ENABLED=False)
+    @override_settings(INTAKE_ENABLED=False, REGISTRATION_ENABLED=False)
     def test_existing_google_identity_can_login_when_registration_closed(self):
         from unittest.mock import patch
         from .models import GoogleIdentity
@@ -252,7 +252,7 @@ class WebsiteAndroidSharedDataTests(TestCase):
         self.assertEqual(self.website.get('/api/invoices').json(),self.android.get('/api/invoices').json())
         self.assertFalse(self.android.get('/api/invoices').json()['billing_enabled'])
 
-    @override_settings(INTAKE_ENABLED=False)
+    @override_settings(INTAKE_ENABLED=False, REGISTRATION_ENABLED=False)
     def test_closed_intake_is_consistent_on_both_platforms(self):
         self.assertFalse(self.website.get('/api/status').json()['intake_enabled'])
         self.assertFalse(self.android.get('/api/status').json()['intake_enabled'])

@@ -1,7 +1,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const consentVersion = 'prelaunch-2026-10-16';
-let csrfToken = '', registration = false, backend = false, intake = false;
+let csrfToken = '', registration = false, backend = false, intake = false, registrationEnabled = false;
 let orderKey = null;
 let resetToken = '';
 let lastAccountSync = 0;
@@ -46,9 +46,9 @@ function empty(id, message) { $(id).replaceChildren(node('p',message)); }
 function record(parent, title, subtitle) { const el=node('div',''); el.className='record'; el.append(node('strong',title),node('small',subtitle)); parent.append(el); return el; }
 function button(label, action) { const b=node('button',label); b.className='textbutton'; b.type='button'; b.addEventListener('click',safeAction(action)); return b; }
 function date(value) { return new Date(value).toLocaleDateString('en-NZ'); }
-async function refresh() {
+async function refresh(savedAccount) {
   const generation = ++accountGeneration;
-  const me=await api('me', undefined, generation);
+  const me=savedAccount || await api('me', undefined, generation);
   if (generation !== accountGeneration) return;
   lastAccountSync = Date.now();
   updateAccountNavigation(true); document.body.classList.remove('account-open','signup-view'); if(location.hash==='#signin'||location.hash==='#signup'){history.replaceState(null,'',location.pathname+location.search);} $('auth-area').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('account-email').textContent=me.email; $('signed-in-email').textContent=me.email; $('signed-in-bar').classList.remove('hidden');
@@ -92,7 +92,7 @@ async function refresh() {
   $('order-submit').disabled=!intake;
   $('refresh-account')?.classList.remove('hidden');
 }
-$('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account ↗':'Sign in ↗';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
+$('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account ↗':'Sign in ↗';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!registrationEnabled);});
 $('auth-form').addEventListener('submit',safeAction(async e=>{
   if(authPending||!backend)return;
   authPending=true;$('auth-submit').disabled=true;
@@ -100,7 +100,7 @@ $('auth-form').addEventListener('submit',safeAction(async e=>{
     const d=formData(e.target);
     if(registration){if(!d.consent)throw new Error('Please accept the pre-launch terms.');const r=await api('register',{...d,consent_version:consentVersion});notice(r.message);location.hash='#signin';}
     else{notice('Signing in. Please wait for your account to load.');await api('login',d);await refresh();notice('You’re signed in.');}
-  }finally{authPending=false;$('auth-submit').disabled=!backend||(registration&&!intake);}
+  }finally{authPending=false;$('auth-submit').disabled=!backend||(registration&&!registrationEnabled);}
 }));
 $('forgot').addEventListener('click',()=>{if(!backend){notice('Password reset is available when the customer backend is connected.',true);return;}const email=$('auth-form').elements.email.value;$('reset-request-form').elements.email.value=email;$('auth-form').classList.add('hidden');$('reset-request-form').classList.remove('hidden');$('reset-request-form').elements.email.focus();});
 $('reset-request-back').addEventListener('click',()=>{$('reset-request-form').classList.add('hidden');$('auth-form').classList.remove('hidden');});
@@ -129,10 +129,9 @@ async function init(){
   const startupMessage='Checking your saved session. The free server may take about a minute to wake up.';
   notice(startupMessage);
   try{
-    const s=await api('status');intake=s.intake_enabled;
-    $('connection-status').textContent=intake?'Pre-launch portal connected · no active broadband sales':'Portal connected · customer intake is closed';
+    const s=await api('bootstrap');intake=s.intake_enabled;registrationEnabled=s.registration_enabled===true;
+    $('connection-status').textContent=registrationEnabled?'Accounts open · broadband orders and payments closed':'Portal connected · account registration is closed';
     if(s.legal_entity && s.business_contact && s.privacy_contact)$('legal-identity').textContent=`Operator: ${s.legal_entity}. Business contact: ${s.business_contact}. Privacy contact: ${s.privacy_contact}. Pre-launch only.`;
-    await api('csrf');
     $('toggle-auth').disabled=false;
     $('retry-connection').classList.add('hidden');
     const hash=location.hash;
@@ -141,20 +140,21 @@ async function init(){
       const token=decodeURIComponent(hash.slice(7));
       history.replaceState(null,'','#signin');routeAccount();resetToken=token;
       $('auth-form').classList.add('hidden');$('reset-form').classList.remove('hidden');
-      backend=true;$('auth-submit').disabled=registration&&!intake;
+      backend=true;$('auth-submit').disabled=registration&&!registrationEnabled;
       $('forgot').disabled=false;
       $('google-signin').parentElement.classList.remove('hidden');setupGoogleSignIn();
       notice('Choose a new password using your reset link.');
       return;
     }
-    try{await refresh();if(location.hash==='#portal')$('portal').scrollIntoView({block:'start'}); if(!location.hash){window.scrollTo(0,0);}}catch(error){
+    if(!s.account && !$('dashboard').classList.contains('hidden'))showSignedOut();
+    try{if(s.account)await refresh(s.account);if(location.hash==='#portal')$('portal').scrollIntoView({block:'start'}); if(!location.hash){window.scrollTo(0,0);}}catch(error){
       if(error.status!==401)throw error;
       updateAccountNavigation(false);$('dashboard').classList.add('hidden');$('auth-area').classList.remove('hidden');$('signed-in-bar').classList.add('hidden');
     }
-    backend=true;$('auth-submit').disabled=registration&&!intake;
+    backend=true;$('auth-submit').disabled=registration&&!registrationEnabled;
     $('forgot').disabled=false;
     $('google-signin').parentElement.classList.remove('hidden');setupGoogleSignIn();
-    if($('notice').textContent===startupMessage)notice($('dashboard').classList.contains('hidden')?(registration&&!intake?'Email registration is closed during pre-launch. Existing users can return to sign in.':'Ready to sign in.'): 'Your saved account is signed in.');
+    if($('notice').textContent===startupMessage)notice($('dashboard').classList.contains('hidden')?(registration&&!registrationEnabled?'Email registration is closed during pre-launch. Existing users can return to sign in.':'Ready to sign in.'): 'Your saved account is signed in.');
   }catch{ backend=false;$('retry-connection').classList.remove('hidden'); notice('KiwiKind could not connect. The server may be waking up. Retry the connection shortly.',true);$('connection-status').textContent='Customer backend temporarily unavailable';$('auth-submit').disabled=true;$('toggle-auth').disabled=true;$('forgot').disabled=true; }
   finally{initInFlight=false;restoringSession=false;$('retry-connection').disabled=false;if(backend&&!resetToken)routeAccount();}
 }
@@ -188,7 +188,7 @@ function selectAccountForm(signUp){
   if(registration!==signUp)$('toggle-auth').click();
   document.body.classList.toggle('signup-view',signUp);
   $('back-to-login').classList.toggle('hidden',!signUp);
-  if(backend&&signUp&&!intake)notice('Email registration is closed during pre-launch. Existing users can return to sign in.');
+  if(backend&&signUp&&!registrationEnabled)notice('Email registration is closed during pre-launch. Existing users can return to sign in.');
   else if(backend&&$('notice').textContent.startsWith('Email registration is closed'))notice('Ready to sign in.');
 }
 function routeAccount(){

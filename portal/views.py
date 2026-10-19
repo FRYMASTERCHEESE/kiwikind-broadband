@@ -24,13 +24,14 @@ from .security import limited
 User = get_user_model()
 CONSENT = 'prelaunch-2026-10-16'
 
-def endpoint(methods, authenticated=False, throttle=None, intake=False):
+def endpoint(methods, authenticated=False, throttle=None, intake=False, registration=False):
     def decorate(fn):
         @wraps(fn)
         def call(request, *args, **kwargs):
             if request.method not in methods: return JsonResponse({'error':'Method not allowed'},status=405)
             if authenticated and not request.user.is_authenticated: return JsonResponse({'error':'Sign in first'},status=401)
             if intake and not settings.INTAKE_ENABLED: return JsonResponse({'error':'Customer intake is not open yet'},status=503)
+            if registration and not settings.REGISTRATION_ENABLED: return JsonResponse({'error':'Account registration is not open yet'},status=503)
             if throttle and limited(request,throttle): return JsonResponse({'error':'Too many attempts. Try again in 15 minutes.'},status=429)
             try:
                 if request.method == 'POST':
@@ -84,11 +85,14 @@ def account_deletion_info(request): return FileResponse(open(settings.BASE_DIR/'
 @require_GET
 def health(request): return JsonResponse({'status':'ok','service':'kiwikind-broadband'})
 
+def capabilities():
+    return {'mode':'prelaunch','intake_enabled':settings.INTAKE_ENABLED,'registration_enabled':settings.REGISTRATION_ENABLED,'live_services':False,
+      'availability':'unverified','billing_enabled':False,'legal_entity':settings.LEGAL_ENTITY,
+      'business_contact':settings.BUSINESS_CONTACT,'privacy_contact':settings.PRIVACY_CONTACT,'consent_version':CONSENT}
+
 @endpoint(['GET'])
 def status(request):
-    return JsonResponse({'mode':'prelaunch','intake_enabled':settings.INTAKE_ENABLED,'live_services':False,
-      'availability':'unverified','billing_enabled':False,'legal_entity':settings.LEGAL_ENTITY,
-      'business_contact':settings.BUSINESS_CONTACT,'privacy_contact':settings.PRIVACY_CONTACT,'consent_version':CONSENT})
+    return JsonResponse(capabilities())
 
 @endpoint(['GET'])
 def csrf(request): return JsonResponse({'csrfToken':get_token(request)})
@@ -98,8 +102,7 @@ def account_json(user):
 
 @endpoint(['GET'])
 def bootstrap(request):
-    return JsonResponse({'csrfToken':get_token(request), 'intake_enabled':settings.INTAKE_ENABLED,
-        'billing_enabled':False, 'live_services':False,
+    return JsonResponse({**capabilities(), 'csrfToken':get_token(request),
         'account':account_json(request.user) if request.user.is_authenticated else None})
 
 def attach_referral(user, code):
@@ -109,7 +112,7 @@ def attach_referral(user, code):
     if not owner or owner.user_id == user.pk: raise ValueError('Invalid referral code')
     Referral.objects.create(referrer=owner.user, invitee=user)
 
-@endpoint(['POST'],throttle='register',intake=True)
+@endpoint(['POST'],throttle='register',registration=True)
 def register(request):
     email=text(request.data,'email',254).lower(); validate_email(email)
     password=text(request.data,'password',128,12)
@@ -121,16 +124,30 @@ def register(request):
         if not ReferralCode.objects.filter(code=referral,user__is_active=True).exists(): raise ValueError('Invalid referral code')
     if request.data.get('consent_version') != CONSENT: raise ValueError('Accept current pre-launch privacy and terms')
     validate_password(password,User(username=email,email=email))
-    # Generic response avoids disclosing registered addresses.
-    if not User.objects.filter(username=email).exists():
-        try:
-            with transaction.atomic():
-                user=User.objects.create_user(username=email,email=email,password=password,is_active=False)
-                attach_referral(user,referral)
-                token=signing.dumps({'id':user.pk},salt='verify')
-                url=f'{settings.PUBLIC_ORIGIN}/#verify={token}'
-                send_mail('Verify your KiwiKind Broadband account',f'Confirm your email within 24 hours: {url}\nThis does not order broadband.',settings.DEFAULT_FROM_EMAIL,[email])
-        except IntegrityError: pass
+    # Preflight before account lookup: an outage must not reveal existing users.
+    connection = get_connection()
+    try:
+        if settings.RESET_EMAIL_UNAVAILABLE:
+            raise OSError('Account email unavailable')
+        connection.open()
+    except (OSError, SMTPException, ImproperlyConfigured):
+        return JsonResponse({'error':'Account email is temporarily unavailable. Try again later or use Google sign-in.'},status=503)
+    try:
+        if not User.objects.filter(username=email).exists():
+            try:
+                with transaction.atomic():
+                    user=User.objects.create_user(username=email,email=email,password=password,is_active=False)
+                    attach_referral(user,referral)
+                    token=signing.dumps({'id':user.pk},salt='verify')
+                    url=f'{settings.PUBLIC_ORIGIN}/#verify={token}'
+                    sent=send_mail('Verify your KiwiKind Broadband account',f'Confirm your email within 24 hours: {url}\nThis does not order broadband.',settings.DEFAULT_FROM_EMAIL,[email],connection=connection)
+                    if sent != 1: raise OSError('Verification email not accepted')
+            except IntegrityError: pass
+            except (OSError, SMTPException, ImproperlyConfigured):
+                # Roll back incomplete registration. Do not expose recipient-specific failures.
+                logging.getLogger(__name__).warning('Registration email not accepted')
+    finally:
+        connection.close()
     return JsonResponse({'message':'If eligible, a verification email has been sent.'},status=202)
 
 @endpoint(['POST'],throttle='verify')
@@ -148,7 +165,7 @@ def signin(request):
     user=authenticate(request,username=text(request.data,'email',254).lower(),password=text(request.data,'password',128))
     if user is None: return JsonResponse({'error':'Invalid credentials or email not verified'},status=401)
     login(request,user); audit(request,'login')
-    return JsonResponse({**account_json(user),'csrfToken':get_token(request),'intake_enabled':settings.INTAKE_ENABLED})
+    return JsonResponse({**account_json(user),'csrfToken':get_token(request),'intake_enabled':settings.INTAKE_ENABLED,'registration_enabled':settings.REGISTRATION_ENABLED})
 
 @endpoint(['POST'],True)
 def signout(request): audit(request,'logout'); logout(request); return JsonResponse({'message':'Signed out'})
@@ -330,7 +347,7 @@ def _verified_google_signin(request, token):
                 # Existing password identities are NEVER automatically linked by email.
                 if User.objects.filter(username=email).exists():
                     return JsonResponse({'error': 'This email already has an account. Sign in with your password first to link Google.'}, status=409)
-                if not settings.INTAKE_ENABLED:
+                if not settings.REGISTRATION_ENABLED:
                     return JsonResponse({'error':'New account registration is closed during prelaunch. Existing linked Google accounts can still sign in.'},status=503)
                 user = User.objects.create_user(username=email, email=email, password=None, is_active=True)
                 GoogleIdentity.objects.create(user=user, subject=subject)
@@ -345,7 +362,7 @@ def _verified_google_signin(request, token):
         return JsonResponse({'error': 'Account unavailable'}, status=403)
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
     audit(request, 'google_login')
-    return JsonResponse({**account_json(user), 'csrfToken': get_token(request),'intake_enabled':settings.INTAKE_ENABLED})
+    return JsonResponse({**account_json(user), 'csrfToken': get_token(request),'intake_enabled':settings.INTAKE_ENABLED,'registration_enabled':settings.REGISTRATION_ENABLED})
 
 
 @endpoint(['POST'], throttle='google-login')

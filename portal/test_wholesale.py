@@ -15,7 +15,7 @@ from .suppliers import SupplierNotConfigured
 from .wholesale import price_breakdown, VettaManualSupplier, transition
 
 
-@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=False, INTAKE_ENABLED=False)
+@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=False, INTAKE_ENABLED=False, REGISTRATION_ENABLED=False)
 class WholesaleTests(TestCase):
     @classmethod
     def setUpTestData(cls):

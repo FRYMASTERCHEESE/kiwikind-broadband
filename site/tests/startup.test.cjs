@@ -10,7 +10,7 @@ function boot(hash='',fail=false){
  el('google-signin').parentElement=el('google-shell');
  const state={fail,authenticated:false,expiredDetails:false};
  const ctx={document:{getElementById:el,body:el('body'),head:el('head'),hidden:false,addEventListener(){},querySelector(){return null;},createElement(){return el('new');}},location:{hash,pathname:'/',search:'',origin:'https://example.invalid'},history:{replaceState(){}},window:{addEventListener(){},scrollTo(){}},console,URL,Blob,Date,FormData,
- fetch:async url=>{if(state.fail)throw Error('offline');const path=url.slice(5);if(state.respond)return state.respond(path);const unauthorized=(path==='me'&&!state.authenticated)||(state.expiredDetails&&path==='tickets');return {ok:!unauthorized,status:unauthorized?401:200,json:async()=>unauthorized?{error:'Sign in first'}:path==='status'?{intake_enabled:false}:path==='csrf'?{csrfToken:'token'}:path==='me'?{email:'synthetic@example.invalid'}:{}};}};
+ fetch:async url=>{if(state.fail)throw Error('offline');const path=url.slice(5);if(state.respond)return state.respond(path);const unauthorized=(path==='me'&&!state.authenticated)||(state.expiredDetails&&path==='tickets');return {ok:!unauthorized,status:unauthorized?401:200,json:async()=>unauthorized?{error:'Sign in first'}:path==='bootstrap'?{intake_enabled:false,registration_enabled:false,csrfToken:'token',account:state.authenticated?{email:'synthetic@example.invalid'}:null}:path==='csrf'?{csrfToken:'token'}:path==='me'?{email:'synthetic@example.invalid'}:{}};}};
  vm.createContext(ctx);vm.runInContext(source,ctx);
  return {ctx,el,state,run:s=>vm.runInContext(s,ctx)};
 }
@@ -21,17 +21,17 @@ function deferred(){let resolve;const promise=new Promise(r=>{resolve=r;});retur
 test('startup waits for saved identity before enabling another sign-in',async()=>{
  const a=boot('#signin');await settle();const pending=deferred();let scripts=0;
  a.ctx.document.head.append=()=>scripts++;
- a.state.respond=path=>path==='me'?pending.promise:reply(path==='status'?{intake_enabled:false}:{});
+ a.state.respond=path=>path==='bootstrap'?pending.promise:reply(path==='bootstrap'?{intake_enabled:false,registration_enabled:false,csrfToken:'token',account:state.authenticated?{email:'synthetic@example.invalid'}:null}:{});
  const init=a.run('init()');await settle();
  assert.equal(a.el('auth-submit').disabled,true);assert.equal(a.el('forgot').disabled,true);
  assert.equal(a.el('google-shell').classList.contains('hidden'),true);assert.equal(scripts,0);
- pending.resolve(reply({email:'synthetic@example.invalid'}));await init;
+ pending.resolve(reply({account:{email:'synthetic@example.invalid'}}));await init;
  assert.equal(a.el('dashboard').classList.contains('hidden'),false);
  assert.equal(a.el('notice').textContent,'Your saved account is signed in.');
 });
 test('startup session network error keeps sign-in paused and offers retry',async()=>{
  const a=boot('#signin');await settle();
- a.state.respond=path=>path==='me'?Promise.reject(Error('offline')):reply({});
+ a.state.respond=path=>path==='bootstrap'?Promise.reject(Error('offline')):reply({});
  await a.run('init()');assert.equal(a.el('auth-submit').disabled,true);
  assert.equal(a.el('retry-connection').classList.contains('hidden'),false);
  assert.equal(a.el('google-shell').classList.contains('hidden'),true);
@@ -48,7 +48,7 @@ test('startup closed registration remains disabled and explained',async()=>{
 
 test('startup keeps partial account loading warnings visible',async()=>{
  const a=boot();await settle();
- a.state.respond=path=>path==='tickets'?Promise.reject(Error('offline')):reply(path==='me'?{email:'synthetic@example.invalid'}:{});
+ a.state.respond=path=>path==='tickets'?Promise.reject(Error('offline')):reply(path==='bootstrap'?{account:{email:'synthetic@example.invalid'}}:path==='me'?{email:'synthetic@example.invalid'}:{});
  await a.run('init()');assert.match(a.el('notice').textContent,/some account details could not load/);
  assert.equal(a.el('dashboard').classList.contains('hidden'),false);
 });
@@ -61,7 +61,7 @@ test('reset startup preserves return-to-sign-in controls',async()=>{
 
 test('parallel startup retry cannot duplicate identity requests',async()=>{
  const a=boot();await settle();const pending=deferred();let count=0;
- a.state.respond=path=>{count++;return path==='status'?pending.promise:reply({error:'Sign in first'},401);};
+ a.state.respond=path=>{count++;return path==='bootstrap'?pending.promise:reply({error:'Sign in first'},401);};
  const first=a.run('init()');await a.run('init()');assert.equal(count,1);
  pending.resolve(reply({intake_enabled:false}));await first;
 });
@@ -72,7 +72,7 @@ test('interrupted writes never claim nothing was submitted',async()=>{
 test('duplicate password submits only send one login request',async()=>{
  const a=boot('#signin');await settle();const pending=deferred();let logins=0;
  a.ctx.FormData=class {constructor(){return [['email','synthetic@example.invalid'],['password','synthetic-only']];}};
- a.state.respond=path=>path==='login'?(logins++,pending.promise):reply(path==='me'?{email:'synthetic@example.invalid'}:{});
+ a.state.respond=path=>path==='login'?(logins++,pending.promise):reply(path==='bootstrap'?{account:{email:'synthetic@example.invalid'}}:path==='me'?{email:'synthetic@example.invalid'}:{});
  const submit=a.el('auth-form').listeners.submit;const event={preventDefault(){},target:{}};
  const first=submit(event);await submit(event);assert.equal(logins,1);assert.equal(a.el('auth-submit').disabled,true);
  pending.resolve(reply({csrfToken:'synthetic'}));await first;assert.equal(a.el('auth-submit').disabled,false);
@@ -83,4 +83,31 @@ test('account navigation explains closed registration and clears stale notice on
  assert.match(a.el('notice').textContent,/Email registration is closed/);
  assert.equal(a.el('auth-submit').disabled,true);
  a.run('selectAccountForm(false)');assert.equal(a.el('notice').textContent,'Ready to sign in.');
+});
+
+test('account-only launch enables signup while order submission stays disabled',async()=>{
+ const a=boot('#signup');await settle();const paths=[];
+ a.state.respond=path=>{paths.push(path);return reply({registration_enabled:true,intake_enabled:false,csrfToken:'fresh',account:null});};
+ await a.run('init()');
+ assert.equal(a.el('auth-submit').disabled,false);
+ assert.equal(a.run('registrationEnabled'),true);
+ assert.equal(a.run('intake'),false);
+ assert.deepEqual(paths,['bootstrap']);
+ assert.equal(a.run('csrfToken'),'fresh');
+});
+
+test('saved-account startup does not repeat identity or csrf requests',async()=>{
+ const a=boot();await settle();const paths=[];
+ a.state.respond=path=>{paths.push(path);return reply(path==='bootstrap'?{account:{email:'synthetic@example.invalid'},registration_enabled:true,intake_enabled:false,csrfToken:'fresh'}:{});};
+ await a.run('init()');
+ assert.deepEqual(paths,['bootstrap','orders','tickets','invoices']);
+ assert.equal(a.el('order-submit').disabled,true);
+ assert.equal(a.el('signed-in-email').textContent,'synthetic@example.invalid');
+});
+
+test('retry after server session expiry clears stale private account view',async()=>{
+ const a=boot();await settle();a.state.authenticated=true;await a.run('refresh()');
+ a.state.authenticated=false;await a.run('init()');
+ assert.equal(a.el('dashboard').classList.contains('hidden'),true);
+ assert.equal(a.el('account-email').textContent,'');
 });

@@ -6,7 +6,7 @@ from django.db import IntegrityError, transaction
 from .models import ReferralCode, Referral, AccountPreferences, PrivacyRequest, Order
 
 User=get_user_model()
-@override_settings(INTAKE_ENABLED=False,REFERRALS_ENABLED=False)
+@override_settings(INTAKE_ENABLED=False, REGISTRATION_ENABLED=False,REFERRALS_ENABLED=False)
 class ReadinessTests(TestCase):
     def setUp(self):
         self.a=User.objects.create_user('ready-a@example.invalid',email='ready-a@example.invalid',password='Synthetic-Kowhai-River-751!')
@@ -46,7 +46,7 @@ class ReadinessTests(TestCase):
         for path in ['register','orders']:
             self.assertEqual(self.post(self.web,path,{}).status_code,503)
         self.assertEqual(Order.objects.count(),0)
-    @override_settings(INTAKE_ENABLED=True,REFERRALS_ENABLED=True)
+    @override_settings(INTAKE_ENABLED=True, REGISTRATION_ENABLED=True,REFERRALS_ENABLED=True)
     def test_future_registration_verification_attribution_and_history(self):
         code=ReferralCode.objects.create(user=self.a)
         anonymous=Client(enforce_csrf_checks=True)
@@ -60,7 +60,7 @@ class ReadinessTests(TestCase):
         self.assertEqual(Referral.objects.count(),1)
         history=self.phone.get('/api/referrals').json()['history']
         self.assertEqual(history[0]['status'],'verified');self.assertNotIn('email',str(history));self.assertEqual(Order.objects.count(),0)
-    @override_settings(INTAKE_ENABLED=True,REFERRALS_ENABLED=True)
+    @override_settings(INTAKE_ENABLED=True, REGISTRATION_ENABLED=True,REFERRALS_ENABLED=True)
     def test_invalid_code_rolls_back_user_and_sends_no_mail(self):
         count=User.objects.count()
         self.assertEqual(self.post(Client(),'register',{'email':'badref@example.invalid','password':'Synthetic-Totara-Mountain-937!','consent_version':'prelaunch-2026-10-16','referral_code':'x'*24}).status_code,400)
@@ -84,4 +84,4 @@ class ReadinessTests(TestCase):
     def test_policy_asset_and_script_are_public_without_enabling_ads(self):
         response=self.client.get('/readiness.js');self.assertEqual(response.status_code,200)
         body=b''.join(self.client.get('/privacy/').streaming_content).decode()
-        self.assertIn('Referral preview',body);self.assertIn('not incorporated',body)
+        self.assertIn('Referral preview',body);self.assertIn('NZBN 9429054036550',body);self.assertIn('incorporated on 19 October 2026',body)

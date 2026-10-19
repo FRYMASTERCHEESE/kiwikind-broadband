@@ -13,7 +13,7 @@ const base='http://127.0.0.1:8765';
    await page.route('https://accounts.google.com/**',route=>route.abort());
    await page.route('**/api/**',route=>{
     const path=new URL(route.request().url()).pathname;
-    const data=path==='/api/status'?{intake_enabled:false}:path==='/api/csrf'?{csrfToken:'fixture'}:
+    const data=path==='/api/bootstrap'?{intake_enabled:false,registration_enabled:true,csrfToken:'fixture',account:{email:'synthetic@example.invalid'}}:path==='/api/csrf'?{csrfToken:'fixture'}:
       path==='/api/me'?{email:'synthetic@example.invalid'}:path==='/api/connection-progress'?
       {message:'Pre-launch only. Orders and payments are disabled.',orders:[{request_id:'synthetic-request',stage:'ready',updated_at:'2026-10-19T00:00:00Z'}],faults:[]}:{};
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(data)});

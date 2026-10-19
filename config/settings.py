@@ -101,11 +101,14 @@ LEGAL_ENTITY = os.getenv('LEGAL_ENTITY', '')
 BUSINESS_CONTACT = os.getenv('BUSINESS_CONTACT', '')
 PRIVACY_CONTACT = os.getenv('PRIVACY_CONTACT', '')
 INTAKE_ENABLED = os.getenv('INTAKE_ENABLED') == '1'
+REGISTRATION_ENABLED = os.getenv('REGISTRATION_ENABLED') == '1'
 REFERRALS_ENABLED = os.getenv('REFERRALS_ENABLED') == '1'
 ADMIN_ENABLED = os.getenv('ADMIN_ENABLED') == '1'
 OWNER_GOOGLE_ADMIN_ENABLED = os.getenv('OWNER_GOOGLE_ADMIN_ENABLED') == '1'
 GOOGLE_WEB_CLIENT_ID = os.getenv('GOOGLE_WEB_CLIENT_ID', '').strip()
 mail_configured = bool(BREVO_API_KEY) if EMAIL_BACKEND == 'portal.email_backend.BrevoEmailBackend' else bool(EMAIL_HOST)
+if not DEBUG and REGISTRATION_ENABLED and not all([LEGAL_ENTITY, BUSINESS_CONTACT, PRIVACY_CONTACT]):
+    raise ImproperlyConfigured('Account registration requires legal identity and contact details.')
 if not DEBUG and INTAKE_ENABLED and not all([LEGAL_ENTITY, BUSINESS_CONTACT, PRIVACY_CONTACT, mail_configured, DEFAULT_FROM_EMAIL]):
     raise ImproperlyConfigured('Public intake requires legal identity, contacts and email configuration.')
 if not DEBUG and ADMIN_ENABLED and OWNER_GOOGLE_ADMIN_ENABLED and not GOOGLE_WEB_CLIENT_ID:
