@@ -128,8 +128,11 @@ async function init(){
   $('google-signin').parentElement.classList.add('hidden');
   const startupMessage='Checking your saved session. The free server may take about a minute to wake up.';
   notice(startupMessage);
+  const initGeneration=accountGeneration;
   try{
-    const s=await api('bootstrap');intake=s.intake_enabled;registrationEnabled=s.registration_enabled===true;
+    const s=await api('bootstrap',undefined,initGeneration);
+    if(initGeneration!==accountGeneration)return;
+    intake=s.intake_enabled;registrationEnabled=s.registration_enabled===true;
     $('connection-status').textContent=registrationEnabled?'Accounts open · broadband orders and payments closed':'Portal connected · account registration is closed';
     if(s.legal_entity && s.business_contact && s.privacy_contact)$('legal-identity').textContent=`Operator: ${s.legal_entity}. Business contact: ${s.business_contact}. Privacy contact: ${s.privacy_contact}. Pre-launch only.`;
     $('toggle-auth').disabled=false;
