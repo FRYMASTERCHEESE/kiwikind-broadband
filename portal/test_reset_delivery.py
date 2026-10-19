@@ -5,7 +5,7 @@ from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.core import mail
 
-@override_settings(INTAKE_ENABLED=False, RESET_EMAIL_UNAVAILABLE=False)
+@override_settings(INTAKE_ENABLED=False, REGISTRATION_ENABLED=False, RESET_EMAIL_UNAVAILABLE=False)
 class ResetDeliveryTests(TestCase):
     def setUp(self):
         self.user=get_user_model().objects.create_user('reset@example.invalid',email='reset@example.invalid',password=None)

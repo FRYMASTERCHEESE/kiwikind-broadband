@@ -19,7 +19,7 @@ User = get_user_model()
 OLD = 'Synthetic-Kowhai-River-751!'
 NEW = 'Synthetic-Totara-Mountain-937!'
 
-@override_settings(INTAKE_ENABLED=False, ADMIN_ENABLED=False, RESET_EMAIL_UNAVAILABLE=False)
+@override_settings(INTAKE_ENABLED=False, REGISTRATION_ENABLED=False, ADMIN_ENABLED=False, RESET_EMAIL_UNAVAILABLE=False)
 class ExtendedJourneys(TestCase):
     def setUp(self):
         self.alice = User.objects.create_user('extended-a@example.invalid', email='extended-a@example.invalid', password=OLD)
@@ -160,7 +160,7 @@ class ConcurrentRateLimit(TransactionTestCase):
             limited(request, 'rollover')
         self.burst('rollover', 1000)
 
-@override_settings(INTAKE_ENABLED=False)
+@override_settings(INTAKE_ENABLED=False, REGISTRATION_ENABLED=False)
 class ConcurrentAccountActions(TransactionTestCase):
     def burst(self, action):
         if connection.vendor != 'postgresql':
@@ -192,7 +192,7 @@ class ConcurrentAccountActions(TransactionTestCase):
             statuses = self.burst(lambda c:self.post(c,'password-reset/confirm',{'token':token,'password':NEW}))
         self.assertEqual(sorted(statuses), [200,400,400,400])
 
-    @override_settings(INTAKE_ENABLED=True)
+    @override_settings(INTAKE_ENABLED=True, REGISTRATION_ENABLED=True)
     def test_google_first_login_race_does_not_duplicate_or_return_500(self):
         claims={'iss':'https://accounts.google.com','email_verified':True,'email':'parallel-google@example.invalid','sub':'parallel-synthetic-subject'}
         original = User.save

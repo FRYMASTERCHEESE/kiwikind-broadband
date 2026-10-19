@@ -1,0 +1,10 @@
+{% extends 'admin/base_site.html' %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'portal/wholesale.css' %}">{{ form.media }}{% endblock %}
+{% block content %}<div class="wholesale">
+<div class="wholesale-banner"><strong>{% if case.rehearsal %}PRACTICE — synthetic workflow only{% else %}PREPARATION — live supplier processing blocked{% endif %}</strong><p>No order, fault report, payment or customer message is sent by this form.</p></div>
+<p>{{ case }} · Current status: {{ case.get_state_display }}</p>
+<p>Review the address and current evidence, draft quote or first-line fault diagnostics. Record what you checked and a reference. Never paste credentials or private documents.</p>
+{% if has_next %}<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit" class="button default">Record internal status</button></form>{% else %}<p>This case has reached a final status.</p>{% endif %}
+<p><a href="{% url 'wholesale-dashboard' %}">Back to wholesale preparation</a></p>
+</div>{% endblock %}

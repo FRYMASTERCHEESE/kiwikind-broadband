@@ -30,7 +30,8 @@ public class MainActivity extends Activity {
     private LinearLayout content;
     private TextView feedback;
     private ProgressBar operationProgress;
-    private boolean intake=false, signedIn=false, busy=false;
+    private Button recoveryButton;
+    private boolean intake=false, registrationEnabled=false, signedIn=false, busy=false;
     private String exportData=null;
     private String orderKey=null;
     private long lastResumeCheck=0L;
@@ -55,6 +56,9 @@ public class MainActivity extends Activity {
         });
         feedback=new TextView(this);feedback.setTextSize(13);feedback.setTextColor(FOREST);feedback.setBackgroundColor(MINT);feedback.setPadding(dp(22),dp(10),dp(22),dp(10));feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
         operationProgress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);operationProgress.setIndeterminate(true);operationProgress.setContentDescription("Connecting securely to KiwiKind");operationProgress.setVisibility(android.view.View.GONE);root.addView(operationProgress,new LinearLayout.LayoutParams(-1,dp(4)));
+        recoveryButton=new Button(this);recoveryButton.setText("Reconnect / refresh safely");recoveryButton.setAllCaps(false);recoveryButton.setMinHeight(dp(48));recoveryButton.setVisibility(android.view.View.GONE);root.addView(recoveryButton);
+        // Retry only a read. Never replay a possibly completed order, message or payment.
+        recoveryButton.setOnClickListener(v->{if(!busy){if(signedIn){if(refreshScreen!=null)refreshScreen.run();else home();}else connectAccount();}});
         ScrollView scroll=new ScrollView(this){@Override protected void onSizeChanged(int w,int h,int oldw,int oldh){super.onSizeChanged(w,h,oldw,oldh);int side=Math.max(dp(22),(w-dp(680))/2);content.setPadding(side,dp(12),side,dp(24));}};scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(22),dp(12),dp(22),dp(24));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
         root.post(this::applySystemBarAppearance);
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
@@ -109,9 +113,9 @@ public class MainActivity extends Activity {
                 signedIn=false;auth(false);
                 message("Sign in to My KiwiKind. Customer intake remains closed.");
             }else if(r.isNull("account")){
-                intake=r.optBoolean("intake_enabled");api.clear();signedIn=false;auth(false);message("Sign in to My KiwiKind. Customer intake remains closed.");
+                intake=r.optBoolean("intake_enabled");registrationEnabled=r.optBoolean("registration_enabled");api.clear();signedIn=false;auth(false);message("Sign in to My KiwiKind. Customer intake remains closed.");
             }else{
-                intake=r.optBoolean("intake_enabled");signedIn=true;accountHome(r.getJSONObject("account"));message("Account restored from KiwiKind server.");
+                intake=r.optBoolean("intake_enabled");registrationEnabled=r.optBoolean("registration_enabled");signedIn=true;accountHome(r.getJSONObject("account"));message("Account restored from KiwiKind server.");
             }
         });
     }
@@ -192,9 +196,10 @@ public class MainActivity extends Activity {
     @android.annotation.SuppressLint("GestureBackNavigation")
     @Override public void onBackPressed(){backToAccount();}
     private JSONObject data(Object... pairs){JSONObject d=new JSONObject();try{for(int i=0;i<pairs.length;i+=2)d.put((String)pairs[i],pairs[i+1]);}catch(JSONException ignored){}return d;}
-    private void run(Task task,Done done){if(busy)return;busy=true;operationProgress.setVisibility(android.view.View.VISIBLE);message("Connecting securely… The free server may take a minute to wake up.");worker.submit(()->{try{JSONObject result=task.run();runOnUiThread(()->{busy=false;operationProgress.setVisibility(android.view.View.GONE);if(isFinishing()||isDestroyed())return;message("Ready.");try{done.accept(result);}catch(Exception e){message("Could not display the result. Refresh and try again.");}});}catch(Exception e){runOnUiThread(()->{busy=false;operationProgress.setVisibility(android.view.View.GONE);if(!isFinishing()&&!isDestroyed()){
+    private void run(Task task,Done done){if(busy)return;busy=true;recoveryButton.setVisibility(android.view.View.GONE);operationProgress.setVisibility(android.view.View.VISIBLE);message("Connecting securely… The free server may take a minute to wake up.");worker.submit(()->{try{JSONObject result=task.run();runOnUiThread(()->{busy=false;operationProgress.setVisibility(android.view.View.GONE);if(isFinishing()||isDestroyed())return;message("Ready.");try{done.accept(result);}catch(Exception e){message("Could not display the result. Refresh and try again.");recoveryButton.setVisibility(android.view.View.VISIBLE);}});}catch(Exception e){runOnUiThread(()->{busy=false;operationProgress.setVisibility(android.view.View.GONE);if(!isFinishing()&&!isDestroyed()){
             if(e instanceof Api.SessionExpiredException){api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);}
             message(e.getMessage()==null?"Connection failed. Try again.":e.getMessage());
+            recoveryButton.setVisibility(android.view.View.VISIBLE);
         }});}});}
     private void legal(String hash){policyScreen(hash.equals("terms")?"terms":"privacy");}
     private void privacyPage(String path){
@@ -202,7 +207,7 @@ public class MainActivity extends Activity {
     }
     private void auth(boolean register){
         refreshScreen=null;
-        content.removeAllViews();title(register?"Create your account":"A kinder connection.");landscape();paragraph("My KiwiKind · Pre-launch\nSign in to your existing account. Broadband requests and payments remain closed.");
+        content.removeAllViews();title(register?"Create your account":"A kinder connection.");landscape();paragraph("My KiwiKind · Pre-launch\nCreate a free account or sign in. Your account and support messages are shared with the website. Broadband orders and payments remain closed.");
         EditText email=field("Email",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         EditText password=field("Password (at least 12 characters)",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
         EditText referral=register?field("Referral code (optional; programme not open yet)",1):null;
@@ -211,14 +216,14 @@ public class MainActivity extends Activity {
             if(register&&!consent.isChecked()){message("Please read and accept the pre-launch terms.");return;}
             String e=email.getText().toString().trim(),p=password.getText().toString();password.setText("");
             run(()->api.call(register?"register":"login",data("email",e,"password",p,"consent_version",CONSENT,"referral_code",referral==null?"":referral.getText().toString().trim())),r->{if(register){message(r.optString("message"));}else{acceptLogin(r);}});
-        }).setEnabled(api.configured()&&(!register||intake));
+        }).setEnabled(api.configured()&&(!register||registrationEnabled));
         Button googleButton=button("Sign in with Google",this::googleSignIn);
         googleButton.setEnabled(api.configured());
         googleButton.setTextColor(Color.WHITE);
         googleButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(FOREST));
         googleButton.setAllCaps(false);
         googleButton.setMinHeight((int)(52*getResources().getDisplayMetrics().density));
-        if(register&&!intake)paragraph("Email registration remains closed during pre-launch.");
+        if(register&&!registrationEnabled)paragraph("Email registration remains closed during pre-launch.");
         button(register?"Back to sign in":"Create an account",()->auth(!register));
         button("Retry account connection",this::connectAccount).setEnabled(api.configured());
         button("Discover our vision ↗",()->publicPage("home"));
@@ -318,7 +323,7 @@ public class MainActivity extends Activity {
     private void settingsScreen(){run(()->api.call("preferences",null),r->{refreshScreen=this::settingsScreen;content.removeAllViews();title("Account settings & notifications");paragraph("Preferences use your shared KiwiKind account. Notification delivery and marketing are disabled; saving this preference does not enable push messages or emails.");
         CheckBox choice=new CheckBox(this);choice.setText("Account update notifications, when delivery becomes available");choice.setChecked(r.optBoolean("account_notifications"));content.addView(choice);
         button("Save preference",()->run(()->api.call("preferences",data("account_notifications",choice.isChecked())),s->message("Preference saved to your KiwiKind account. Delivery remains disabled.")));button("Review account details or request correction",this::correctionScreen);nav();});}
-    private void acceptLogin(JSONObject account){signedIn=true;intake=account.optBoolean("intake_enabled");accountHome(account);}
+    private void acceptLogin(JSONObject account){signedIn=true;intake=account.optBoolean("intake_enabled");registrationEnabled=account.optBoolean("registration_enabled");accountHome(account);}
     private void home(){
         if(api.configured()){run(()->api.call("me",null),this::accountHome);}else accountHome(new JSONObject());
     }
@@ -327,6 +332,7 @@ public class MainActivity extends Activity {
         content.removeAllViews();title("My KiwiKind");landscape();paragraph("Kia ora, welcome home. 💚");
         if(account.has("email"))paragraph(account.optString("email"));
         paragraph("Your account, requests, support conversations and preferences are shared securely with the KiwiKind website. Email registration remains closed during pre-launch.");
+        accountCard("Connection preparation","Launch preparation updates · No active service",this::connectionPreparation);
         accountCard("My connection","No active service · View requests",this::orders);accountCard("My support","Support & complaints",this::tickets);accountCard("Billing","Payments disabled",()->run(()->api.call("invoices",null),r->{refreshScreen=null;content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());nav();}));
         button("Refresh account from website",()->run(()->api.call("me",null),r->{signedIn=true;accountHome(r);message("Account refreshed from KiwiKind server.");}));
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
@@ -337,6 +343,19 @@ public class MainActivity extends Activity {
         button("Sign out",()->run(()->api.call("logout",data()),r->{api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);message("Signed out.");}));
         message("Account connected · Pre-launch only");
     }
+    private void connectionPreparation(){run(()->api.call("connection-progress",null),r->{
+        refreshScreen=this::connectionPreparation;content.removeAllViews();title("Connection preparation");
+        paragraph("KiwiKind is preparing for launch. Broadband orders and payments are closed. Availability, prices and installation dates are not confirmed.");
+        int count=0;
+        for(String group:new String[]{"orders","faults"}){
+            JSONArray records=r.optJSONArray(group);if(records==null)continue;
+            for(int i=0;i<records.length();i++){JSONObject item=records.getJSONObject(i);count++;
+                paragraph(PreparationStatus.label(item.optString("stage"))+"\n"+item.optString(group.equals("orders")?"request_id":"ticket_id")+"\nUpdated "+item.optString("updated_at"));
+            }
+        }
+        if(count==0)paragraph("No preparation updates yet.");
+        button("Refresh preparation",this::connectionPreparation);nav();
+    });}
     private void orders(){run(()->api.call("orders",null),r->{
         refreshScreen=this::orders;content.removeAllViews();title("Broadband requests");JSONArray a=r.getJSONArray("orders");if(a.length()==0)paragraph("No requests yet.");
         for(int i=0;i<a.length();i++){JSONObject o=a.getJSONObject(i);paragraph(o.getString("address")+"\n"+o.getString("status")+"\n"+o.getString("id"));if(!o.getString("status").equals("cancelled"))button("Cancel this request",()->new AlertDialog.Builder(this).setMessage("Cancel this pending request?").setPositiveButton("Cancel request",(d,w)->run(()->api.call("orders/"+o.optString("id")+"/cancel",data()),x->orders())).setNegativeButton("Keep request",null).show());}

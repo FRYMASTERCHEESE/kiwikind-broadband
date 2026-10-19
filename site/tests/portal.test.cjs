@@ -10,7 +10,7 @@ function boot(hash='',fail=false){
  el('google-signin').parentElement=el('google-shell');
  const state={fail,authenticated:false,expiredDetails:false};
  const ctx={document:{getElementById:el,body:el('body'),head:el('head'),hidden:false,addEventListener(){},querySelector(){return null;},createElement(){return el('new');}},location:{hash,pathname:'/',search:'',origin:'https://example.invalid'},history:{replaceState(){}},window:{addEventListener(){},scrollTo(){}},console,URL,Blob,Date,FormData,
- fetch:async url=>{if(state.fail)throw Error('offline');const path=url.slice(5);if(state.respond)return state.respond(path);const unauthorized=(path==='me'&&!state.authenticated)||(state.expiredDetails&&path==='tickets');return {ok:!unauthorized,status:unauthorized?401:200,json:async()=>unauthorized?{error:'Sign in first'}:path==='status'?{intake_enabled:false}:path==='csrf'?{csrfToken:'token'}:path==='me'?{email:'synthetic@example.invalid'}:{}};}};
+ fetch:async url=>{if(state.fail)throw Error('offline');const path=url.slice(5);if(state.respond)return state.respond(path);const unauthorized=(path==='me'&&!state.authenticated)||(state.expiredDetails&&path==='tickets');return {ok:!unauthorized,status:unauthorized?401:200,json:async()=>unauthorized?{error:'Sign in first'}:path==='bootstrap'?{intake_enabled:false,registration_enabled:false,csrfToken:'token',account:state.authenticated?{email:'synthetic@example.invalid'}:null}:path==='csrf'?{csrfToken:'token'}:path==='me'?{email:'synthetic@example.invalid'}:{}};}};
  vm.createContext(ctx);vm.runInContext(source,ctx);
  return {ctx,el,state,run:s=>vm.runInContext(s,ctx)};
 }
@@ -44,6 +44,27 @@ test('Google button fits a narrow viewport even when account form starts hidden'
 
 function deferred(){let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};}
 function reply(data,status=200){return {ok:status===200,status,json:async()=>data};}
+test('preparation updates arriving after sign-out cannot restore private records',async()=>{
+ const a=boot();await settle();const pending=deferred();
+ a.state.respond=()=>pending.promise;
+ a.el('connection-progress').replaceChildren=function(){this.textContent='';};
+ a.el('connection-progress').append=()=>assert.fail('Stale private preparation must not render');
+ const loading=a.run('loadConnectionProgress()');a.run('showSignedOut()');
+ pending.resolve(reply({message:'Private update',orders:[{stage:'draft',request_id:'private'}]}));await loading;
+ assert.equal(a.el('connection-progress').textContent,'');
+ assert.equal(a.el('load-connection-progress').disabled,false);
+});
+test('preparation connection failure retains identity and re-enables retry',async()=>{
+ const a=boot();await settle();a.state.authenticated=true;await a.run('refresh()');a.state.fail=true;
+ await a.run('loadConnectionProgress()');
+ assert.equal(a.el('signed-in-email').textContent,'synthetic@example.invalid');
+ assert.equal(a.el('load-connection-progress').disabled,false);
+});
+test('unknown and practice statuses never claim a live connection',async()=>{
+ const a=boot();await settle();
+ for(const stage of ['active','submitted','<script>'])assert.equal(a.run(`preparationLabel('${stage}')`),'Awaiting an update from KiwiKind');
+ assert.equal(a.run("preparationLabel('ready')"),'Prepared — awaiting launch approval');
+});
 test('identity response arriving after sign-out cannot reopen dashboard',async()=>{
  const a=boot();await settle();const pending=deferred();
  a.state.respond=()=>pending.promise;

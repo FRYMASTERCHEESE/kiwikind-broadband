@@ -112,3 +112,7 @@ class Provider(models.Model):
     class Meta:
         ordering = ['name']
     def __str__(self): return self.name
+
+
+# Additive onboarding tables; existing account/customer tables are unchanged.
+from .wholesale_models import DraftPlan, AvailabilityEvidence, WholesaleOrder, WholesaleFault, WholesaleEvent  # noqa: E402,F401

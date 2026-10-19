@@ -4,7 +4,7 @@ from django.test import TestCase, Client, override_settings
 from django.contrib.auth import get_user_model
 
 
-@override_settings(INTAKE_ENABLED=False)
+@override_settings(INTAKE_ENABLED=False, REGISTRATION_ENABLED=False)
 class SharedAccountTests(TestCase):
     def test_independent_sessions_share_support_and_preserve_gates(self):
         user=get_user_model().objects.create_user('shared@example.invalid', email='shared@example.invalid', password='Test-Kowhai-River-651!')

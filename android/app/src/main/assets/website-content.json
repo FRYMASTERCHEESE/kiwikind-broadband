@@ -75,7 +75,7 @@
         },
         {
           "kind": "p",
-          "text": "Your existing KiwiKind account uses the same customer portal and account system as the Android app. Sign in through our secure portal. Email registration remains closed during pre-launch."
+          "text": "Your existing KiwiKind account uses the same customer portal and account system as the Android app. Sign in through our secure portal. Create a free account or sign in. Broadband orders and payments remain closed."
         },
         {
           "kind": "card",
@@ -137,7 +137,7 @@
         },
         {
           "kind": "p",
-          "text": "Account pages open on our secure Render customer portal. Sign up opens the existing registration page, but email registration is disabled while customer intake is closed. If the free server is waking up, allow a moment for the page to connect."
+          "text": "Account pages open on our secure Render customer portal. Sign up opens free account registration. Your account and support conversations are shared with the Android app. Broadband orders and payments remain closed. If the free server is waking up, allow a moment for the page to connect."
         }
       ]
     },

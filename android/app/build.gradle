@@ -24,8 +24,8 @@ android {
         applicationId 'nz.kiwikind.broadband'
         minSdk 26
         targetSdk 36
-        versionCode 9
-        versionName '0.2.7-prelaunch'
+        versionCode 10
+        versionName '0.2.8-prelaunch'
         buildConfigField 'String', 'ADMOB_BANNER_ID', '"ca-app-pub-4051392846058327/4480562173"'
         buildConfigField 'String', 'AD_TEST_DEVICE_IDS', '"' + testDeviceIds + '"'
         buildConfigField 'String', 'API_ORIGIN', '"' + apiOrigin + '"'

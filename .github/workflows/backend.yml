@@ -6,6 +6,44 @@ concurrency:
 permissions:
   contents: read
 jobs:
+  wholesale-visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SECRET_KEY: ci-test-only-key-never-deploy-012345678901234567890123456789
+      DEBUG: '1'
+      ADMIN_ENABLED: '1'
+      OWNER_GOOGLE_ADMIN_ENABLED: '0'
+      INTAKE_ENABLED: '0'
+      DATABASE_PATH: test-results/visual.sqlite3
+      KIWIKIND_LOCAL_SESSION_FILE: test-results/local-session.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: pip install -r requirements.txt
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - run: python scripts/prepare_wholesale_visual.py
+      - name: Verify phone and desktop layouts with synthetic accounts
+        run: |
+          python manage.py runserver 127.0.0.1:8765 --noreload > test-results/visual-server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8765/healthz >/dev/null; then break; fi
+            sleep 1
+          done
+          node site/tests/wholesale-visual.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wholesale-phone-desktop-review
+          path: test-results/wholesale-visual/*.png
+          retention-days: 7
+
   test:
     runs-on: ubuntu-latest
     env:

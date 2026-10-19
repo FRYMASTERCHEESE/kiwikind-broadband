@@ -4,6 +4,8 @@ A separate pre-launch NZ broadband retail-provider platform. **Not an operating 
 
 ## Built
 
+- Private Vetta onboarding dashboard, draft plan/GST calculations, verified manual availability evidence, and audited order/fault preparation. Real supplier processing remains disabled. See [Vetta onboarding](docs/VETTA_ONBOARDING.md).
+
 - Django 5.2 LTS backend and database shared by responsive website and native Android client.
 - Email verification, password login/reset, expiring server sessions, CSRF checks, password hashing and database-backed request throttles.
 - Owned customer request records, idempotent submission/cancellation, support/complaint/privacy tickets and replies.
@@ -40,7 +42,7 @@ Test settings use an isolated test database and local email outbox. Do not deplo
 
 ## Architecture / separation
 
-`config/` + `portal/` serve both clients. SQLite is the initial single-instance database. `site/dist/` is the website source served directly by Django; a Sites deployment of these same assets is a **private disconnected design preview**, not the backend. Customer records never live in browser local storage. The Android app uses HTTPS JSON and its own in-memory session cookies. Restarting the app signs out. Browser and Android use separate sessions for the same customer account and fetch shared records on refresh; there is no real-time/offline synchronization.
+`config/` + `portal/` serve both clients. A dedicated PostgreSQL database is configured by the backend host; local tests use an isolated database. `site/dist/` is the website source served directly by Django; a Sites deployment of these same assets is a **private disconnected design preview**, not the backend. Customer records never live in browser local storage. Android uses HTTPS JSON and encrypted session-cookie persistence in Android Keystore, then verifies the saved session with the backend. Browser and Android use separate sessions for the same customer account and fetch shared records on refresh; there is no real-time/offline synchronization.
 
 The private GitHub repo, Sites project, database path and Android package are separate from MoneyMate NZ/Bebo/PumpLite. No connections to those systems are implemented. Do not reuse their database, keys, OAuth clients, signing keys, package names or hosting project.
 

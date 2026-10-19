@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase, override_settings
 
-@override_settings(INTAKE_ENABLED=False, ADMIN_ENABLED=False)
+@override_settings(INTAKE_ENABLED=False, REGISTRATION_ENABLED=False, ADMIN_ENABLED=False)
 class PublicPolicyTests(SimpleTestCase):
     def page(self,path):
         response=self.client.get(path)
