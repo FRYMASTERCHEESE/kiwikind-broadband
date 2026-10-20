@@ -8,11 +8,15 @@ class SafetyMiddleware:
         if request.path.startswith('/admin/'):
             if not settings.ADMIN_ENABLED:
                 return JsonResponse({'error':'Administration disabled'}, status=404)
+            if request.user.is_authenticated:
+                from .admin_site import is_owner
+                if not is_owner(request.user):
+                    return JsonResponse({'error':'Not found'}, status=404)
             if request.method == 'POST' and request.path == '/admin/login/' and limited(request,'admin'):
                 return JsonResponse({'error':'Try again later'},status=429)
         response = self.get_response(request)
         response['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         response['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
-        if request.path.startswith('/api/'):
+        if request.path.startswith(('/api/', '/admin/')):
             response['Cache-Control'] = 'no-store'
         return response

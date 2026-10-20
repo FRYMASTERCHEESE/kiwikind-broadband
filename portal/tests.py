@@ -97,19 +97,25 @@ class PlatformTests(TestCase):
     def test_logout_revokes_session(self):
         self.assertEqual(self.post('logout',{}).status_code,200);self.assertEqual(self.client.get('/api/me').status_code,401)
     def test_admin_permissions_and_ledger_protection(self):
-        self.assertEqual(self.client.get('/admin/portal/order/').status_code,302)
+        self.assertEqual(self.client.get('/admin/portal/order/').status_code,404)
         staff=User.objects.create_user('support@example.invalid',password='Staff-Kowhai-Planet-123!',is_staff=True)
         self.client.force_login(staff)
-        self.assertEqual(self.client.get('/admin/portal/order/').status_code,403)
+        self.assertEqual(self.client.get('/admin/portal/order/').status_code,404)
         superuser=User.objects.create_superuser('operator@example.invalid','operator@example.invalid','Staff-Kowhai-Planet-123!')
         self.client.force_login(superuser)
-        self.assertEqual(self.client.get('/admin/portal/invoice/add/').status_code,403)
-        self.assertEqual(self.client.get('/admin/portal/auditevent/add/').status_code,403)
+        self.assertEqual(self.client.get('/admin/portal/invoice/add/').status_code,404)
+        self.assertEqual(self.client.get('/admin/portal/auditevent/add/').status_code,404)
     def test_admin_support_reply_and_audit(self):
         t=Ticket.objects.create(user=self.alice,subject='Synthetic complaint',category='complaint')
         original=Message.objects.create(ticket=t,author=self.alice,body='Please help')
-        operator=User.objects.create_superuser('operator@example.invalid','operator@example.invalid','Staff-Kowhai-Planet-123!')
+        from .models import EmailVerification
+        from django_otp.plugins.otp_totp.models import TOTPDevice
+        operator=User.objects.create_superuser('kiwikindbroadband@gmail.com','kiwikindbroadband@gmail.com','Staff-Kowhai-Planet-123!')
+        EmailVerification.objects.create(user=operator,email=operator.email)
+        self.enterContext(override_settings(OWNER_USER_ID=str(operator.pk)))
         self.client.force_login(operator)
+        device=TOTPDevice.objects.create(user=operator,name='test',confirmed=True)
+        session=self.client.session;session['otp_device_id']=device.persistent_id;session.save()
         r=self.client.post(f'/admin/portal/ticket/{t.pk}/change/',{
             'status':'open','messages-TOTAL_FORMS':'2','messages-INITIAL_FORMS':'1',
             'messages-MIN_NUM_FORMS':'0','messages-MAX_NUM_FORMS':'1000',

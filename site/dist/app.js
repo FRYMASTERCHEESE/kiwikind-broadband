@@ -40,7 +40,20 @@ async function refresh() {
     }));
   }
   empty('invoices','No invoices.');
-  for(const i of invoices.invoices) record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.status} · Due ${i.due_date}`);
+  for(const i of invoices.invoices) { const el=record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.sandbox?'TEST · ':''}${i.status} · Due ${i.due_date} · Refunded NZ$${((i.refunded_cents||0)/100).toFixed(2)}`); if(i.sandbox && i.status==='unpaid' && invoices.stripe_test_checkout_enabled) el.append(button('Test card checkout',async()=>{const result=await api('billing/stripe/test-checkout',{invoice_id:i.id}); if(!result.url.startsWith('https://checkout.stripe.com/')) throw new Error('Invalid checkout URL'); window.location.assign(result.url);})); }
+  const billing=await api('billing/agreements');
+  for(const a of billing.agreements){
+    const el=record($('invoices'),'Synthetic recurring billing',`TEST · NZ$${(a.monthly_cents/100).toFixed(2)}/month · NZ$${(a.setup_cents/100).toFixed(2)} setup · ${a.status}`);
+    if(billing.test_enabled && a.synthetic_reviewed && a.status==='pending') el.append(button('Start test subscription',async()=>{
+      if(!window.confirm('Start synthetic monthly recurring card billing in Stripe test mode? No real funds or service activation.')) return;
+      const result=await api('billing/stripe/test-subscribe',{agreement_id:a.id,accept_test_recurring:true});
+      if(!result.url.startsWith('https://checkout.stripe.com/'))throw new Error('Invalid checkout URL');
+      window.location.assign(result.url);
+    }));
+    if(billing.test_enabled && ['active','trialing','past_due'].includes(a.status)) el.append(button('Cancel test renewal',async()=>{
+      if(window.confirm('Cancel this synthetic subscription at the end of its current test period?'))notice((await api('billing/stripe/test-cancel',{agreement_id:a.id})).message);
+    }));
+  }
   $('order-submit').disabled=!intake;
 }
 $('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account ↗':'Sign in ↗';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
@@ -53,6 +66,11 @@ $('ticket-form').addEventListener('submit',safeAction(async e=>{const r=await ap
 $('deletion-form').addEventListener('submit',safeAction(async e=>{notice((await api('privacy/deletion',formData(e.target))).message);e.target.reset();}));
 $('export').addEventListener('click',safeAction(async()=>{const data=await api('privacy/export');const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='kiwikind-data.json';a.click();URL.revokeObjectURL(url);notice('Your data export is ready.');}));
 async function init(){
+  try {
+    const catalogue=await api('plans');
+    if(catalogue.plans.length) $('public-plans').replaceChildren();
+    for(const p of catalogue.plans) record($('public-plans'),p.name,`${p.download_mbps}/${p.upload_mbps} Mbps · NZ$${(p.retail_monthly_cents/100).toFixed(2)}/month · NZ$${(p.retail_setup_cents/100).toFixed(2)} setup incl GST · valid to ${p.valid_until} · availability unverified`);
+  } catch { $('public-plans').textContent='Plans are temporarily unavailable. No price or availability is confirmed.'; }
   try{
     const s=await api('status');backend=true;intake=s.intake_enabled;
     $('connection-status').textContent=intake?'Pre-launch portal connected · no active broadband sales':'Portal connected · customer intake is closed';

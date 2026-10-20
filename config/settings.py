@@ -9,12 +9,13 @@ if len(SECRET_KEY) < 50:
     raise ImproperlyConfigured('Set a unique SECRET_KEY of at least 50 characters.')
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 CSRF_TRUSTED_ORIGINS = [v for v in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if v]
-INSTALLED_APPS = ['django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
-                  'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles', 'portal']
+INSTALLED_APPS = ['portal.admin_config.OwnerAdminConfig', 'django.contrib.auth', 'django.contrib.contenttypes',
+                  'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles',
+                  'django_otp', 'django_otp.plugins.otp_totp', 'portal']
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware', 'whitenoise.middleware.WhiteNoiseMiddleware',
               'django.contrib.sessions.middleware.SessionMiddleware', 'django.middleware.common.CommonMiddleware',
               'django.middleware.csrf.CsrfViewMiddleware', 'django.contrib.auth.middleware.AuthenticationMiddleware',
-              'portal.middleware.SafetyMiddleware', 'django.contrib.messages.middleware.MessageMiddleware',
+              'django_otp.middleware.OTPMiddleware', 'portal.middleware.SafetyMiddleware', 'django.contrib.messages.middleware.MessageMiddleware',
               'django.middleware.clickjacking.XFrameOptionsMiddleware']
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
@@ -73,6 +74,9 @@ BUSINESS_CONTACT = os.getenv('BUSINESS_CONTACT', '')
 PRIVACY_CONTACT = os.getenv('PRIVACY_CONTACT', '')
 INTAKE_ENABLED = os.getenv('INTAKE_ENABLED') == '1'
 ADMIN_ENABLED = os.getenv('ADMIN_ENABLED') == '1'
+# Bind to an existing, independently verified database identity; email alone grants nothing.
+OWNER_USER_ID = os.getenv('OWNER_USER_ID', '')
+PLAN_PUBLICATION_ENABLED = os.getenv('PLAN_PUBLICATION_ENABLED') == '1'
 if not DEBUG and INTAKE_ENABLED and not all([LEGAL_ENTITY, BUSINESS_CONTACT, PRIVACY_CONTACT, EMAIL_HOST, DEFAULT_FROM_EMAIL]):
     raise ImproperlyConfigured('Public intake requires legal identity, contacts and SMTP configuration.')
 if not DEBUG and ADMIN_ENABLED and os.getenv('ADMIN_MFA_PERIMETER_CONFIRMED') != '1':
