@@ -82,6 +82,14 @@
     },
     {
       "kind": "h2",
+      "text": "Optional private payment testing"
+    },
+    {
+      "kind": "p",
+      "text": "Live payments remain disabled. Only accounts explicitly selected by the owner for testing can start a sandbox checkout. After explicit consent, the backend sends the account email, an internal test reference and the agreed test amounts to Stripe. Stripe hosts the test payment form; use only test payment details, never a real card. KiwiKind stores test agreement, invoice, payment-status, refund and dispute references so the website and app can show the same results. These records do not activate broadband and are separate from ordinary invoices. Account exports include your test records. Deletion reviews include these records and any corresponding Stripe test data; deletion is not automatic. Test status changes come from verified provider notifications, not from a browser return page. Contact us for access, correction or deletion."
+    },
+    {
+      "kind": "h2",
       "text": "Security"
     },
     {

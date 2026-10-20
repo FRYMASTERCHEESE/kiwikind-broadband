@@ -172,14 +172,18 @@ def reconcile(api, kind, obj):
     elif kind == 'charge.refunded' or kind.startswith('charge.dispute.'):
         charge_id = obj.get('charge') if kind.startswith('charge.dispute.') else obj['id']
         charge = test_object(api.v1.charges.retrieve(charge_id), 'charge', charge_id)
-        ledger = TestInvoice.objects.select_for_update().select_related('agreement').filter(payment_intent=charge.get('payment_intent')).first()
+        intent = charge.get('payment_intent')
+        if not intent:
+            return
+        ledger = TestInvoice.objects.select_for_update().filter(payment_intent=intent).select_related('agreement').first()
         if not ledger:
-            raise ReconciliationError('Payment ledger not ready; retry')
+            # A refund/dispute may precede invoice.paid. Retry instead of losing it.
+            raise ReconciliationError('Payment not reconciled yet')
         if (charge.get('currency') != 'nzd' or charge.get('amount') != ledger.amount_cents
                 or charge.get('customer') != ledger.agreement.customer_id):
             raise ReconciliationError('Charge binding mismatch')
-        amount = charge.get('amount_refunded',0)
-        if not isinstance(amount,int) or not 0 <= amount <= ledger.amount_cents:
+        amount = charge.get('amount_refunded')
+        if type(amount) is not int or not 0 <= amount <= ledger.amount_cents:
             raise ReconciliationError('Invalid refund total')
         ledger.refunded_cents = amount
         if kind.startswith('charge.dispute.'):
