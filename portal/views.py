@@ -179,7 +179,8 @@ def messages(request,pk):
 
 @endpoint(['GET'],True)
 def invoices(request):
-    return JsonResponse({'billing_enabled':False,'invoices':list(Invoice.objects.filter(user=request.user).values('id','amount_cents','currency','due_date','status'))})
+    from .stripe_staging import configured
+    return JsonResponse({'billing_enabled':False,'stripe_test_checkout_enabled':configured(),'invoices':list(Invoice.objects.filter(user=request.user).values('id','amount_cents','currency','due_date','status'))})
 
 @endpoint(['GET'],True)
 def export(request):
