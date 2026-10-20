@@ -20,7 +20,7 @@
     const response = await fetch('/api/billing/'+path, {method:data?'POST':'GET', credentials:'same-origin', cache:'no-store',
       headers:data?{'Content-Type':'application/json','X-CSRFToken':token}:{}, body:data?JSON.stringify(data):undefined,
       signal:AbortSignal.timeout(75000)});
-    if(response.status===401 || response.status===403) { clear(); throw new Error('Sign in again from My KiwiKind before continuing.'); }
+    if(response.status===401 || response.status===403) { clear(); feedback.textContent='Sign in again from My KiwiKind before continuing.'; throw new Error(feedback.textContent); }
     const result=await response.json();
     if(!response.ok)throw new Error(result.error || 'Billing is unavailable. Refresh before retrying.');
     return result;

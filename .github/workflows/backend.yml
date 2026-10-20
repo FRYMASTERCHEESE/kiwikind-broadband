@@ -37,6 +37,7 @@ jobs:
             sleep 1
           done
           node site/tests/wholesale-visual.cjs
+          node site/tests/billing-visual.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -60,6 +61,7 @@ jobs:
         run: python manage.py collectstatic --noinput
       - run: python manage.py test --settings=config.test_settings
       - run: node --check site/dist/app.js
+      - run: node --check payments/static/payments/billing.js
       - run: node --test site/tests/*.test.cjs
       - run: python manage.py check --deploy --fail-level WARNING
         env:
@@ -72,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
