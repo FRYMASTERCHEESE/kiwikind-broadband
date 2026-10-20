@@ -40,7 +40,7 @@ async function refresh() {
     }));
   }
   empty('invoices','No invoices.');
-  for(const i of invoices.invoices) record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.status} · Due ${i.due_date}`);
+  for(const i of invoices.invoices) { const el=record($('invoices'),new Intl.NumberFormat('en-NZ',{style:'currency',currency:i.currency}).format(i.amount_cents/100),`${i.status} · Due ${i.due_date}`); if(i.status==='unpaid' && invoices.stripe_test_checkout_enabled) el.append(button('Test card checkout',async()=>{const result=await api('billing/stripe/test-checkout',{invoice_id:i.id}); if(!result.url.startsWith('https://checkout.stripe.com/')) throw new Error('Invalid checkout URL'); window.location.assign(result.url);})); }
   $('order-submit').disabled=!intake;
 }
 $('toggle-auth').addEventListener('click',()=>{registration=!registration;$('auth-title').textContent=registration?'Create your account':'Welcome back';$('auth-submit').textContent=registration?'Create account ↗':'Sign in ↗';$('register-consent').classList.toggle('hidden',!registration);$('auth-form').elements.password.autocomplete=registration?'new-password':'current-password';$('auth-submit').disabled=!backend || (registration&&!intake);});
