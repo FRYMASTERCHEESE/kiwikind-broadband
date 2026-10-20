@@ -1,8 +1,11 @@
 from django.contrib import admin
 from django.urls import path
-from portal import views, stripe_staging
+from portal import views, stripe_staging, catalogue, billing
 
-urlpatterns = [path('', views.home), path('styles.css', views.styles), path('app.js', views.script), path('api/csrf', views.csrf), path('api/status', views.status),
+urlpatterns = [path('', views.home), path('styles.css', views.styles), path('app.js', views.script), path('api/plans',catalogue.plans), path('api/csrf', views.csrf), path('api/status', views.status),
+ path('api/billing/agreements',billing.agreements), path('api/billing/stripe/test-subscribe',billing.subscribe),
+ path('api/billing/stripe/test-cancel',billing.cancel_subscription),
+ path('api/billing/stripe/webhook',billing.webhook), path('api/admin/billing/test-refund',billing.refund),
  path('api/register', views.register), path('api/verify', views.verify), path('api/login', views.signin),
  path('api/logout', views.signout), path('api/password-reset', views.reset_start),
  path('api/password-reset/confirm', views.reset_confirm), path('api/me', views.me),

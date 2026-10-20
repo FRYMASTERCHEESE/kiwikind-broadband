@@ -91,8 +91,13 @@ def verify(request):
     try: payload=signing.loads(text(request.data,'token',1000),salt='verify',max_age=86400)
     except signing.BadSignature: raise ValueError('Invalid or expired verification link')
     user=get_object_or_404(User,pk=payload['id'])
-    if user.is_active: raise ValueError('This verification link has already been used')
+    if payload.get('email',user.email) != user.email: raise ValueError('Email changed; request a fresh verification')
+    if user.is_active and not payload.get('owner_verification'): raise ValueError('This verification link has already been used')
+    from .models import EmailVerification
+    if payload.get('owner_verification') and EmailVerification.objects.filter(user=user,email=user.email).exists():
+        raise ValueError('This verification link has already been used')
     user.is_active=True; user.save(update_fields=['is_active'])
+    EmailVerification.objects.update_or_create(user=user, defaults={'email':user.email})
     return JsonResponse({'message':'Email verified. You can sign in.'})
 
 @endpoint(['POST'],throttle='login')
@@ -162,7 +167,7 @@ def tickets(request):
         return JsonResponse({'tickets':list(Ticket.objects.filter(user=request.user).order_by('-created_at').values('id','subject','category','status','created_at')[:100])})
     if limited(request,'tickets',30,3600): return JsonResponse({'error':'Ticket limit reached'},status=429)
     category=text(request.data,'category',20)
-    if category not in ['support','complaint','privacy']: raise ValueError('Choose support, complaint or privacy')
+    if category not in ['support','fault','complaint','privacy']: raise ValueError('Choose support, fault, complaint or privacy')
     with transaction.atomic():
         ticket=Ticket.objects.create(user=request.user,subject=text(request.data,'subject',150),category=category)
         Message.objects.create(ticket=ticket,author=request.user,body=text(request.data,'body',4000))
@@ -180,7 +185,13 @@ def messages(request,pk):
 @endpoint(['GET'],True)
 def invoices(request):
     from .stripe_staging import configured
-    return JsonResponse({'billing_enabled':False,'stripe_test_checkout_enabled':configured(),'invoices':list(Invoice.objects.filter(user=request.user).values('id','amount_cents','currency','due_date','status'))})
+    rows=[]
+    for invoice in Invoice.objects.filter(user=request.user):
+        payment=getattr(invoice,'stripepayment',None)
+        rows.append({'id':str(invoice.id),'amount_cents':invoice.amount_cents,'currency':invoice.currency,
+            'due_date':invoice.due_date,'status':invoice.status,'sandbox':invoice.sandbox,
+            'refunded_cents':payment.refunded_cents if payment else 0})
+    return JsonResponse({'billing_enabled':False,'stripe_test_checkout_enabled':configured(),'invoices':rows})
 
 @endpoint(['GET'],True)
 def export(request):

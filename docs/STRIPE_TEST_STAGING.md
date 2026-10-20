@@ -1,5 +1,7 @@
 # Stripe checkout staging — NOT live billing
 
+**Superseded implementation details:** this branch extends the original PR #35 staging. Use [owner and billing readiness](OWNER_AND_BILLING_READINESS.md) for current MFA, synthetic ledger restrictions, required webhook secret, recurring billing, refunds and remaining production gates. Historical limitations below describe the original PR. Live billing remains disabled.
+
 This branch introduces a **disabled-by-default test-only** hosted Stripe Checkout action for *existing, staff-created unpaid NZD ledger invoices*. It does not issue invoices, create subscriptions, update paid status, provision Vetta services, or collect live payments. The existing website and Android accounts remain unchanged. Android clients can eventually call the same authenticated backend endpoint after native UX and CSRF/session checks.
 
 ## Gates
