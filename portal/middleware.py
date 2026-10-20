@@ -16,6 +16,10 @@ class SafetyMiddleware:
             "connect-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; "
             "frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
         response['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
-        if request.path.startswith('/api/'):
+        if request.path.startswith(('/api/', '/admin/')):
             response['Cache-Control'] = 'no-store'
+        if request.path == '/admin/mfa/':
+            response['Referrer-Policy'] = 'same-origin'
+            response['Content-Security-Policy'] = ("default-src 'self'; script-src 'self'; style-src 'self'; "
+                "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
         return response

@@ -18,6 +18,13 @@ class OwnerAdminChallenge(models.Model):
     expires_at = models.DateTimeField()
     used = models.BooleanField(default=False)
 
+class OwnerIdentity(models.Model):
+    """Private allowlist, bound only after Google's signed owner proof."""
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    subject = models.CharField(max_length=255, unique=True)
+    verified_email = models.EmailField()
+    verified_at = models.DateTimeField(auto_now_add=True)
+
 class Order(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)

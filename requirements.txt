@@ -4,3 +4,4 @@ whitenoise==6.12.0
 psycopg[binary]==3.2.12
 google-auth==2.35.0
 requests==2.33.1
+django-otp==1.7.5

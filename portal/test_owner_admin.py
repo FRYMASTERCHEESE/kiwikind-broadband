@@ -8,6 +8,8 @@ from django.utils import timezone
 
 from .models import AuditEvent, OwnerAdminChallenge
 from .owner_admin import OWNER_EMAIL, OWNER_USERNAME
+from django_otp.oath import totp
+from django_otp.plugins.otp_totp.models import TOTPDevice
 
 
 @override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=True,
@@ -15,6 +17,7 @@ from .owner_admin import OWNER_EMAIL, OWNER_USERNAME
 class OwnerAdminTests(TestCase):
     def challenge(self, client=None):
         client = client or self.client
+        client.logout()
         response = client.get('/admin/login/')
         self.assertEqual(response.status_code, 200)
         return client.session['owner_admin_nonce']
@@ -28,6 +31,14 @@ class OwnerAdminTests(TestCase):
         with patch('portal.owner_admin.id_token.verify_oauth2_token', return_value=claims) as verify:
             response = self.client.post('/admin/owner-signin/', {'credential': 'synthetic-token-not-real'})
             self.assertEqual(verify.call_args.args[2], 'test-client.apps.googleusercontent.com')
+        if response.status_code == 200:
+            self.client.get('/admin/mfa/')
+            device = TOTPDevice.objects.get()
+            # Repeated sign-ins in this synthetic fixture need a fresh time step.
+            device.last_t = -1
+            device.save(update_fields=['last_t'])
+            code = f'{totp(device.bin_key):06d}'
+            self.client.post('/admin/mfa/', {'code': code})
         return response, claims
 
     def test_owner_can_login_without_modifying_customer_account(self):
@@ -109,8 +120,8 @@ class OwnerAdminTests(TestCase):
             response = client.post('/api/google-callback', {
                 'credential': 'synthetic-token-not-real', 'state': 'kiwikind-owner-admin',
                 'g_csrf_token': 'synthetic-double-submit'})
-        self.assertRedirects(response, '/admin/')
-        self.assertEqual(client.get('/admin/').status_code, 200)
+        self.assertRedirects(response, '/admin/mfa/')
+        self.assertEqual(client.get('/admin/').status_code, 302)
 
     def test_redirect_rejects_missing_or_forged_cookie_and_google_csrf(self):
         self.challenge()

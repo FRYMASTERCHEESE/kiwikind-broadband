@@ -23,7 +23,8 @@ User = get_user_model()
 if User.objects.exists():
     raise SystemExit('Use a fresh visual fixture database; existing accounts are never changed.')
 user = User.objects.create_user('kiwikind-owner-admin', 'kiwikindbroadband@gmail.com', is_staff=True, is_superuser=True)
-client = Client(); client.force_login(user)
+from portal.testing import owner_fixture
+client = Client(); owner_fixture(client, user)
 target = expected.parent / 'local-session.json'
 target.write_text(json.dumps({'sessionid': client.cookies['sessionid'].value}), encoding='utf-8')
 print('Synthetic local visual fixture prepared.')

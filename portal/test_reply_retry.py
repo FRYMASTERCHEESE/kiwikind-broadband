@@ -1,17 +1,18 @@
+from .testing import owner_fixture, owner_request
 import uuid
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from .models import Ticket, Message, AuditEvent
 
 
-@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=False)
+@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=True)
 class ReplyRetryTests(TestCase):
     def setUp(self):
         owner = User.objects.create_superuser('operator', 'kiwikindbroadband@gmail.com', 'synthetic-password')
         customer = User.objects.create_user('customer@example.invalid')
         self.ticket = Ticket.objects.create(user=customer, subject='Practice', category='support')
         self.original = Message.objects.create(ticket=self.ticket, author=customer, body='Test question')
-        self.client.force_login(owner)
+        owner_fixture(self.client, owner)
         self.url = f'/admin/portal/ticket/{self.ticket.pk}/change/'
         self.payload = {'status': 'open', 'reply_submission_key': str(uuid.uuid4()),
             'messages-TOTAL_FORMS': '2', 'messages-INITIAL_FORMS': '1',

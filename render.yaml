@@ -24,6 +24,12 @@ services:
         value: '0'
       - key: ADMIN_ENABLED
         value: '0'
+      - key: PLAN_PUBLICATION_ENABLED
+        value: '0'
+      - key: STRIPE_TEST_CHECKOUT_ENABLED
+        value: '0'
+      - key: STRIPE_TEST_PRICE_REVIEWED
+        value: '0'
       - key: PUBLIC_ORIGIN
         sync: false
       - key: ALLOWED_HOSTS

@@ -1,0 +1,25 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'admin/css/login.css' %}">{% endblock %}
+{% block bodyclass %}{{ block.super }} login{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block content %}
+<div id="content-main">
+  {% if setup_key %}
+  <p>Your Google account has been verified. Add an account in your authenticator app and choose “Enter a setup key”.</p>
+  <p>Account: <strong>KiwiKind Broadband</strong><br>Type: <strong>Time based</strong></p>
+  <p>Private setup key: <code>{{ setup_key }}</code></p>
+  <p>Keep this key private. Do not send it in chat or email. Access opens only after you enter a valid code below.</p>
+  {% else %}
+  <p>Enter the six-digit KiwiKind Broadband code from your authenticator.</p>
+  {% endif %}
+  {% if error %}<p class="errornote" role="alert">{{ error }}</p>{% endif %}
+  <form method="post">{% csrf_token %}
+    <div class="form-row"><label for="id_code">Authenticator code</label>
+      <input id="id_code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required autofocus></div>
+    <div class="submit-row"><input type="submit" value="Verify and open admin"></div>
+  </form>
+  <p>If you lose your authenticator, recovery requires the trusted server operator. There is no email-only bypass.</p>
+</div>
+{% endblock %}
