@@ -24,7 +24,7 @@ jobs:
           git archive --format=tar.gz --output=review-bundle/backend-source.tar.gz HEAD
           git rev-parse HEAD > review-bundle/SOURCE-COMMIT.txt
           python -m pip download --only-binary=:all: -r requirements.txt --dest review-bundle/wheels
-          python -m pip download --only-binary=:all: 'stripe==13.0.1' --dest review-bundle/wheels
+          python -m pip download --only-binary=:all: 'stripe==16.0.0' --dest review-bundle/wheels
       - uses: actions/upload-artifact@v4
         with:
           name: kiwikind-integration-review-source
