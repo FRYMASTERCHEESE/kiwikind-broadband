@@ -1,12 +1,12 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from portal import views
 from portal import owner_admin, owner_mfa, catalogue
 from portal import wholesale_admin, wholesale_views
 
 # Shared native/web account APIs; all account-specific routes enforce sessions.
 
-urlpatterns = [path('api/connection-progress', wholesale_views.connection_progress),
+urlpatterns = [path('', include('payments.urls')), path('api/connection-progress', wholesale_views.connection_progress),
  path('api/plans', catalogue.plans),
  path('admin/mfa/', owner_mfa.challenge),
  path('admin/wholesale/', admin.site.admin_view(wholesale_admin.dashboard), name='wholesale-dashboard'),

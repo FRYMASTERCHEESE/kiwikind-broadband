@@ -297,6 +297,11 @@ def export(request):
       'privacy_requests':list(PrivacyRequest.objects.filter(user=request.user).values('status','created_at'))})
     # Never include invited people's addresses or identity details in this export.
     data=json.loads(response.content)
+    from payments.models import TestAgreement, TestInvoice
+    data['sandbox_billing_agreements']=list(TestAgreement.objects.filter(user=request.user).values(
+        'id','label','monthly_cents','setup_cents','reviewed','status','cancel_at_period_end','checkout_started_at','created_at'))
+    data['sandbox_billing_invoices']=list(TestInvoice.objects.filter(agreement__user=request.user).values(
+        'id','agreement_id','amount_cents','status','refunded_cents','dispute_status','created_at'))
     data['referrals']=list(Referral.objects.filter(referrer=request.user).values('id','status','created_at'))
     data['account_preferences']={'account_notifications':AccountPreferences.objects.filter(user=request.user,account_notifications=True).exists()}
     response=JsonResponse(data)

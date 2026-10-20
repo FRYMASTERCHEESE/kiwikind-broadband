@@ -333,7 +333,7 @@ public class MainActivity extends Activity {
         if(account.has("email"))paragraph(account.optString("email"));
         paragraph("Your account, requests, support conversations and preferences are shared securely with the KiwiKind website. Email registration remains closed during pre-launch.");
         accountCard("Connection preparation","Launch preparation updates · No active service",this::connectionPreparation);
-        accountCard("My connection","No active service · View requests",this::orders);accountCard("My support","Support & complaints",this::tickets);accountCard("Billing","Payments disabled",()->run(()->api.call("invoices",null),r->{refreshScreen=null;content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());nav();}));
+        accountCard("My connection","No active service · View requests",this::orders);accountCard("My support","Support & complaints",this::tickets);accountCard("Billing","Payments disabled",()->run(()->api.call("invoices",null),r->{refreshScreen=null;content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());button("Billing status / private payment testing",this::billingScreen);nav();}));
         button("Refresh account from website",()->run(()->api.call("me",null),r->{signedIn=true;accountHome(r);message("Account refreshed from KiwiKind server.");}));
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
         button("Request account deletion",()->deletionScreen(account.optBoolean("has_password",true)));
@@ -343,6 +343,47 @@ public class MainActivity extends Activity {
         button("Sign out",()->run(()->api.call("logout",data()),r->{api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);message("Signed out.");}));
         message("Account connected · Pre-launch only");
     }
+    private String billingMoney(long cents){return "NZ$"+java.math.BigDecimal.valueOf(cents,2).toPlainString();}
+    private void billingScreen(){run(()->api.call("billing/summary",null),r->{
+        refreshScreen=this::billingScreen;content.removeAllViews();title("Billing status");
+        paragraph("TEST ONLY. Live payments and broadband orders remain disabled. Use only Stripe test payment details. Your account email, test reference and agreed amounts are sent to Stripe only after confirmation. A successful test does not connect broadband.");
+        if(!"sandbox_only".equals(r.optString("mode"))||r.optBoolean("live_payments_enabled",true)){
+            paragraph("Unexpected billing mode. Nothing was submitted.");nav();return;
+        }
+        JSONArray agreements=r.optJSONArray("agreements");
+        if(agreements==null||agreements.length()==0)paragraph("No reviewed test agreements are assigned to this account.");
+        else for(int i=0;i<agreements.length();i++){
+            JSONObject a=agreements.getJSONObject(i);String id=a.getString("id"),version=a.getString("terms_version");
+            String monthly=billingMoney(a.getLong("monthly_cents")),setup=billingMoney(a.getLong("setup_cents"));
+            String total=billingMoney(a.getLong("monthly_cents")+a.getLong("setup_cents"));
+            String status=a.getString("status");
+            paragraph(a.getString("label")+"\n"+monthly+" per month, plus "+setup+" once. Initial test total: "+total+".\nTest status: "+status+(a.optBoolean("cancel_at_period_end")?" (cancellation at period end requested)":""));
+            if(r.optBoolean("test_enabled")&&"pending".equals(status))button("Open Stripe test checkout",()->{
+                new AlertDialog.Builder(this).setTitle("Confirm test recurring billing")
+                    .setMessage("I agree to test "+monthly+" each month plus "+setup+" once, using test payment details only. No actual broadband service is ordered.")
+                    .setNegativeButton("Back",null).setPositiveButton("Agree and test",(dialog,which)->run(
+                        ()->api.call("billing/checkout",data("agreement_id",id,"terms_version",version,"accept_test_recurring",true)),reply->{
+                            String url=reply.optString("url");
+                            if(!reply.optBoolean("test_only")||!BillingUrls.isTestCheckout(url)){message("Unrecognised test checkout address. Nothing opened.");return;}
+                            startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));
+                            message("Stripe test checkout opened. Refresh billing after returning; returning alone is not proof of payment.");
+                        })).show();
+            });
+            if(r.optBoolean("test_enabled")&&!a.optBoolean("cancel_at_period_end")&&!java.util.Arrays.asList("pending","canceled","incomplete_expired").contains(status))button("Cancel test subscription",()->{
+                new AlertDialog.Builder(this).setTitle("Cancel test subscription?")
+                    .setMessage("Request cancellation at the current period end. This does not cancel any actual broadband service.")
+                    .setNegativeButton("Keep test",null).setPositiveButton("Cancel test",(dialog,which)->run(
+                        ()->api.call("billing/cancel",data("agreement_id",id,"accept_test_cancel",true)),reply->{message(reply.optString("message"));billingScreen();})).show();
+            });
+            JSONArray invoices=a.optJSONArray("invoices");
+            if(invoices!=null)for(int j=0;j<invoices.length();j++){
+                JSONObject invoice=invoices.getJSONObject(j);
+                paragraph("TEST invoice "+billingMoney(invoice.getLong("amount_cents"))+" · "+invoice.getString("status")+"\nRefunded: "+billingMoney(invoice.getLong("refunded_cents"))+(invoice.optString("dispute_status").isEmpty()?"":" · Dispute: "+invoice.optString("dispute_status")));
+            }
+        }
+        if(!r.optBoolean("test_enabled"))paragraph("Payment testing is not enabled for this account. No payment is due here.");
+        button("Refresh billing status",this::billingScreen);nav();
+    });}
     private void connectionPreparation(){run(()->api.call("connection-progress",null),r->{
         refreshScreen=this::connectionPreparation;content.removeAllViews();title("Connection preparation");
         paragraph("KiwiKind is preparing for launch. Broadband orders and payments are closed. Availability, prices and installation dates are not confirmed.");

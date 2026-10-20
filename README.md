@@ -9,8 +9,8 @@ A separate pre-launch NZ broadband retail-provider platform. **Not an operating 
 - Django 5.2 LTS backend and database shared by responsive website and native Android client.
 - Email verification, password login/reset, expiring server sessions, CSRF checks, password hashing and database-backed request throttles.
 - Owned customer request records, idempotent submission/cancellation, support/complaint/privacy tickets and replies.
-- Read-only billing ledger foundation (no invoice creation, card collection or payment integration).
-- Staff operations via Django admin (off by default; production requires an MFA access perimeter). Staff groups/permissions can limit access. Audit events record key changes without message content.
+- Existing customer invoice ledger is preserved. A separate Stripe sandbox integration adds reviewed test agreements, recurring Checkout, verified webhooks and isolated test invoices/refunds. No live payments; see docs/STRIPE_CURRENT_STACK.md.
+- Dedicated owner administration requires verified Google identity plus application-enforced authenticator MFA on privileged requests. Other staff identities cannot access it. Audit events record key changes without message content.
 - Account export and password-confirmed deletion **request**. Human review and fulfilment are still needed.
 - Supplier interface and unconfigured implementation that cannot provision anything.
 - Draft pre-launch privacy/terms, compliance and operating checklists.
