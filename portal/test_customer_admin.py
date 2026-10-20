@@ -1,14 +1,15 @@
+from .testing import owner_fixture, owner_request
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from .models import AuditEvent, GoogleIdentity
 
 
-@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=False)
+@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=True)
 class CustomerAdminTests(TestCase):
     def setUp(self):
         self.owner = User.objects.create_superuser('operator', 'kiwikindbroadband@gmail.com', 'synthetic-password')
         self.customer = User.objects.create_user('customer@example.invalid', 'customer@example.invalid', 'synthetic-password')
-        self.client.force_login(self.owner)
+        self.device = owner_fixture(self.client, self.owner)
         self.url = f'/admin/portal/customer/{self.customer.pk}/change/'
 
     def test_directory_search_and_owner_exclusion(self):

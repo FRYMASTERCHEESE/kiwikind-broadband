@@ -14,6 +14,16 @@ class DraftPlan(models.Model):
     wholesale_ex_gst = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
     retail_ex_gst = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
     setup_ex_gst = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
+    wholesale_inc_gst = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
+    setup_inc_gst = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
+    retail_setup_ex_gst = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
+    network = models.CharField(max_length=100, blank=True, help_text='Verified network/LFC, not inferred from speed.')
+    address_specific = models.BooleanField(default=True, help_text='Keep enabled for a quote for one address; these cannot be published as general plans.')
+    valid_until = models.DateField(null=True, blank=True)
+    review_status = models.CharField(max_length=16, default='draft', choices=[
+        ('draft', 'Draft — private'), ('review', 'Needs owner review'), ('approved', 'Owner approved')])
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, editable=False)
+    approved_at = models.DateTimeField(null=True, blank=True, editable=False)
     source_reference = models.CharField(max_length=160, blank=True, help_text='Private quote/document reference, never credentials or a signed URL.')
     verified_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(max_length=2000, blank=True)
@@ -21,14 +31,30 @@ class DraftPlan(models.Model):
 
     class Meta:
         ordering = ['name']
+        verbose_name = 'Price catalogue plan'
+        verbose_name_plural = 'Price catalogue'
         constraints = [models.CheckConstraint(condition=models.Q(**{f'{field}__gte': 0}) | models.Q(**{f'{field}__isnull': True}), name=f'draft_{field}_nonnegative') for field in ['wholesale_ex_gst', 'retail_ex_gst', 'setup_ex_gst']]
 
     def clean(self):
+        from .wholesale import price_breakdown
+        from decimal import Decimal
         if self.verified_at and (not self.source_reference.strip() or self.verified_at > timezone.now()):
             raise ValidationError('A verified quote needs a source reference and a date that is not in the future.')
+        for net, gross in [(self.wholesale_ex_gst, self.wholesale_inc_gst), (self.setup_ex_gst, self.setup_inc_gst)]:
+            if net is not None and gross is not None and net >= 0 and gross != Decimal(price_breakdown(net)['inc_gst']):
+                raise ValidationError('Wholesale prices including GST must match the quoted exclusive price plus 15% GST.')
+        if self.review_status == 'approved':
+            required = [self.download_mbps, self.upload_mbps, self.network.strip(),
+                        self.source_reference.strip(), self.verified_at, self.valid_until]
+            prices = [self.wholesale_ex_gst, self.wholesale_inc_gst, self.setup_ex_gst,
+                      self.setup_inc_gst, self.retail_ex_gst, self.retail_setup_ex_gst]
+            if self.address_specific or not all(required) or any(p is None for p in prices):
+                raise ValidationError('Approval requires a verified general offer, network, speed, source, validity and all wholesale/retail prices.')
+            if self.valid_until < timezone.localdate():
+                raise ValidationError('Expired prices cannot be approved.')
 
     def __str__(self):
-        return f'{self.name} (draft only)'
+        return f'{self.name} ({self.get_review_status_display()})'
 
 
 class AvailabilityEvidence(models.Model):

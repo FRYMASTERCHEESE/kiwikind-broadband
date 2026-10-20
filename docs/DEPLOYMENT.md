@@ -1,5 +1,7 @@
 # Dedicated backend deployment
 
+For the existing KiwiKind service, use [the catalogue/MFA deployment runbook](CATALOGUE_MFA_DEPLOYMENT.md). It documents the confirmed deployed branch and mandatory Google + authenticator flow. The historical perimeter setup below is superseded for that service.
+
 The private Sites preview hosts static assets only. Sites Workers cannot run this Python server. A separate Python/Docker host is required for the shared customer backend. No existing app's host or database is authorised for reuse.
 
 1. Select a dedicated host with HTTPS and a persistent encrypted volume; validate NZ privacy and offshore-processing arrangements. Do not buy a plan automatically. Start with a single process and SQLite for low-volume pre-launch testing. Ephemeral free disks lose data and are unsuitable for customers.

@@ -10,11 +10,12 @@ if len(SECRET_KEY) < 50:
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 CSRF_TRUSTED_ORIGINS = [v for v in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if v]
 INSTALLED_APPS = ['django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
-                  'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles', 'portal']
+                  'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles',
+                  'django_otp', 'django_otp.plugins.otp_totp', 'portal']
 MIDDLEWARE = ['django.middleware.security.SecurityMiddleware', 'whitenoise.middleware.WhiteNoiseMiddleware',
               'django.contrib.sessions.middleware.SessionMiddleware', 'django.middleware.common.CommonMiddleware',
               'django.middleware.csrf.CsrfViewMiddleware', 'django.contrib.auth.middleware.AuthenticationMiddleware',
-              'portal.middleware.SafetyMiddleware', 'django.contrib.messages.middleware.MessageMiddleware',
+              'django_otp.middleware.OTPMiddleware', 'portal.middleware.SafetyMiddleware', 'django.contrib.messages.middleware.MessageMiddleware',
               'django.middleware.clickjacking.XFrameOptionsMiddleware']
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
@@ -105,6 +106,9 @@ REGISTRATION_ENABLED = os.getenv('REGISTRATION_ENABLED') == '1'
 REFERRALS_ENABLED = os.getenv('REFERRALS_ENABLED') == '1'
 ADMIN_ENABLED = os.getenv('ADMIN_ENABLED') == '1'
 OWNER_GOOGLE_ADMIN_ENABLED = os.getenv('OWNER_GOOGLE_ADMIN_ENABLED') == '1'
+OTP_TOTP_ISSUER = 'KiwiKind Broadband'
+OTP_TOTP_THROTTLE_FACTOR = 2
+PLAN_PUBLICATION_ENABLED = os.getenv('PLAN_PUBLICATION_ENABLED') == '1'
 GOOGLE_WEB_CLIENT_ID = os.getenv('GOOGLE_WEB_CLIENT_ID', '').strip()
 mail_configured = bool(BREVO_API_KEY) if EMAIL_BACKEND == 'portal.email_backend.BrevoEmailBackend' else bool(EMAIL_HOST)
 if not DEBUG and REGISTRATION_ENABLED and not all([LEGAL_ENTITY, BUSINESS_CONTACT, PRIVACY_CONTACT]):
@@ -113,7 +117,7 @@ if not DEBUG and INTAKE_ENABLED and not all([LEGAL_ENTITY, BUSINESS_CONTACT, PRI
     raise ImproperlyConfigured('Public intake requires legal identity, contacts and email configuration.')
 if not DEBUG and ADMIN_ENABLED and OWNER_GOOGLE_ADMIN_ENABLED and not GOOGLE_WEB_CLIENT_ID:
     raise ImproperlyConfigured('Owner administration requires Google sign-in configuration.')
-if not DEBUG and ADMIN_ENABLED and not OWNER_GOOGLE_ADMIN_ENABLED and os.getenv('ADMIN_MFA_PERIMETER_CONFIRMED') != '1':
-    raise ImproperlyConfigured('Admin requires an independently configured MFA access perimeter.')
+if not DEBUG and ADMIN_ENABLED and not OWNER_GOOGLE_ADMIN_ENABLED:
+    raise ImproperlyConfigured('Admin requires verified owner Google sign-in and authenticator MFA.')
 if not DEBUG and not PUBLIC_ORIGIN.startswith('https://'):
     raise ImproperlyConfigured('Production requires HTTPS PUBLIC_ORIGIN.')

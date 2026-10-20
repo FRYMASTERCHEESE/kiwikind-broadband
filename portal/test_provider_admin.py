@@ -1,13 +1,14 @@
+from .testing import owner_fixture, owner_request
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from .models import Provider, AuditEvent
 
 
-@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=False)
+@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=True)
 class ProviderAdminTests(TestCase):
     def setUp(self):
         self.owner = User.objects.create_superuser('operator', 'kiwikindbroadband@gmail.com', 'synthetic-password')
-        self.client.force_login(self.owner)
+        self.device = owner_fixture(self.client, self.owner)
 
     def test_shortlist_and_instructions_present(self):
         self.assertEqual(Provider.objects.count(), 4)

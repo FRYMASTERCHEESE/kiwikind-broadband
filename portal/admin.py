@@ -18,21 +18,21 @@ def owner_only_admin_permission(request):
     return (_original_has_permission(request)
             and request.user.is_superuser
             and request.user.email.strip().casefold() == ADMIN_OWNER_EMAIL
-            and (not settings.OWNER_GOOGLE_ADMIN_ENABLED or owner_session(request)))
+            and owner_session(request))
 
 admin.site.has_permission = owner_only_admin_permission
 _original_login = admin.site.login
 
 def owner_admin_login(request, extra_context=None):
-    if settings.OWNER_GOOGLE_ADMIN_ENABLED:
-        from .owner_admin import owner_login
-        return owner_login(request, extra_context)
-    return _original_login(request, extra_context)
+    from .owner_admin import owner_login
+    return owner_login(request, extra_context)
 
 admin.site.login = owner_admin_login
 
 admin.site.unregister(User)
 admin.site.unregister(Group)
+from django_otp.plugins.otp_totp.models import TOTPDevice
+admin.site.unregister(TOTPDevice)
 
 
 @admin.register(Customer)

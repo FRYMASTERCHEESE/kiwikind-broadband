@@ -17,7 +17,7 @@ from django.views.decorators.http import require_POST
 from google.auth.transport.requests import Request
 from google.oauth2 import id_token
 
-from .models import AuditEvent, OwnerAdminChallenge
+from .models import AuditEvent, OwnerAdminChallenge, OwnerIdentity
 from .security import limited
 
 OWNER_EMAIL = 'kiwikindbroadband@gmail.com'
@@ -29,11 +29,24 @@ def enabled():
     return settings.ADMIN_ENABLED and settings.OWNER_GOOGLE_ADMIN_ENABLED
 
 
-def owner_session(request):
+def owner_identity_session(request):
     verified = request.session.get('owner_admin_verified_at', 0)
-    return (request.user.username == OWNER_USERNAME
+    user = request.user
+    return (enabled() and user.is_authenticated and user.is_active
+            and user.is_staff and user.is_superuser and not user.has_usable_password()
+            and user.username == OWNER_USERNAME and user.email == OWNER_EMAIL
             and isinstance(verified, (int, float))
-            and 0 <= time.time() - verified < PROOF_SECONDS)
+            and 0 <= time.time() - verified < PROOF_SECONDS
+            and OwnerIdentity.objects.filter(user=user, verified_email=OWNER_EMAIL,
+                subject=request.session.get('owner_google_subject', '')).exists())
+
+
+def owner_session(request):
+    return (owner_identity_session(request)
+            and callable(getattr(request.user, 'is_verified', None))
+            and request.user.is_verified()
+            and request.user.otp_device.confirmed
+            and request.user.otp_device.user_id == request.user.pk)
 
 
 @never_cache
@@ -42,6 +55,8 @@ def owner_login(request, extra_context=None):
         return HttpResponse(status=404)
     if admin.site.has_permission(request):
         return HttpResponseRedirect('/admin/')
+    if owner_identity_session(request):
+        return HttpResponseRedirect('/admin/mfa/')
     if request.method != 'GET':
         return HttpResponse(status=405)
     if not settings.GOOGLE_WEB_CLIENT_ID:
@@ -82,7 +97,7 @@ def owner_redirect_signin(request):
                                       salt='owner-admin-redirect', max_age=300)
     response = complete_owner_signin(request, nonce)
     if response.status_code == 200:
-        response = HttpResponseRedirect('/admin/')
+        response = HttpResponseRedirect('/admin/mfa/')
     response.delete_cookie('owner_admin_challenge', path='/api/google-callback', samesite='None')
     response['Cache-Control'] = 'no-store'
     return response
@@ -122,14 +137,23 @@ def complete_owner_signin(request, nonce):
             'is_active': True, 'password': '!',
         })
         if (not user.is_active or not user.is_staff or not user.is_superuser
-                or user.email.casefold() != OWNER_EMAIL or user.has_usable_password()):
+                or user.email != OWNER_EMAIL or user.has_usable_password()):
             return JsonResponse({'error': 'Owner administration is unavailable.'}, status=403)
+        # Serialize first binding and refuse a changed Google subject thereafter.
+        user = User.objects.select_for_update().get(pk=user.pk)
+        identity, _ = OwnerIdentity.objects.get_or_create(user=user, defaults={
+            'subject': claims['sub'], 'verified_email': OWNER_EMAIL})
+        if identity.subject != claims['sub'] or identity.verified_email != OWNER_EMAIL:
+            return JsonResponse({'error': 'Owner identity does not match its binding.'}, status=403)
         AuditEvent.objects.create(actor=user, action='owner_google_admin_login', reference='admin')
+    # Even reauthentication by the same user must perform a fresh second factor.
+    request.session.pop('otp_device_id', None)
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
     request.session.pop('owner_admin_nonce', None)
     request.session['owner_admin_verified_at'] = time.time()
+    request.session['owner_google_subject'] = claims['sub']
     request.session.set_expiry(PROOF_SECONDS)
-    return JsonResponse({'redirect': '/admin/'})
+    return JsonResponse({'redirect': '/admin/mfa/'})
 
 
 @never_cache

@@ -39,16 +39,33 @@ class PrivateRecords(admin.ModelAdmin):
 
 @admin.register(DraftPlan)
 class Plans(PrivateRecords):
-    list_display = ['name', 'download_mbps', 'upload_mbps', 'wholesale_ex_gst', 'retail_ex_gst', 'gst_illustration']
-    readonly_fields = ['gst_illustration', 'estimated_margin', 'updated_at']
+    list_display = ['name', 'review_status', 'address_specific', 'network', 'download_mbps', 'upload_mbps', 'wholesale_ex_gst', 'retail_ex_gst', 'valid_until']
+    list_filter = ['review_status', 'address_specific', 'network']
+    readonly_fields = ['gst_illustration', 'estimated_margin', 'updated_at', 'approved_by', 'approved_at']
     search_fields = ['name']
+    fieldsets = [
+        ('Quote and source', {'fields': ['name', 'source_reference', 'network', 'download_mbps',
+            'upload_mbps', 'verified_at', 'valid_until', 'address_specific', 'notes']}),
+        ('Wholesale costs', {'fields': ['wholesale_ex_gst', 'wholesale_inc_gst', 'setup_ex_gst', 'setup_inc_gst']}),
+        ('Retail prices', {'fields': ['retail_ex_gst', 'retail_setup_ex_gst', 'gst_illustration', 'estimated_margin'],
+            'description': 'Owner approval and a separate publication release are required. Saving does not charge anyone.'}),
+        ('Owner review', {'fields': ['review_status', 'approved_by', 'approved_at', 'updated_at']}),
+    ]
+
+    def save_model(self, request, obj, form, change):
+        from django.utils import timezone
+        obj.approved_by = request.user if obj.review_status == 'approved' else None
+        obj.approved_at = timezone.now() if obj.review_status == 'approved' else None
+        super().save_model(request, obj, form, change)
+        AuditEvent.objects.create(actor=request.user, action='catalogue_' + obj.review_status,
+                                  reference=f'plan:{obj.pk}')
 
     @admin.display(description='Draft NZD calculation — GST treatment must be approved')
     def gst_illustration(self, obj):
         values = price_breakdown(obj.retail_ex_gst)
         if values is None:
             return 'Not priced. No public plan or charge.'
-        setup = price_breakdown(obj.setup_ex_gst)
+        setup = price_breakdown(obj.retail_setup_ex_gst)
         return f"Monthly: ${values['ex_gst']} + ${values['gst']} GST (15%) = ${values['inc_gst']}. Setup incl. GST: {('$' + setup['inc_gst']) if setup else 'not priced'}. Draft only; not a bill."
 
     @admin.display(description='Monthly difference before other costs, excluding GST')

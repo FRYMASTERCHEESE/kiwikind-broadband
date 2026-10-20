@@ -1,3 +1,4 @@
+from .testing import owner_fixture, owner_request
 """Disposable test-database checks: migration preservation and competing operators."""
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -28,7 +29,7 @@ class WholesaleMigrationTests(TransactionTestCase):
             browser.force_login(get_user_model().objects.get(pk=user.pk))
         finally:
             executor = MigrationExecutor(connection)
-            executor.migrate([('portal', '0009_wholesale_preparation')])
+            executor.migrate(executor.loader.graph.leaf_nodes())
         from .models import GoogleIdentity, Order
         restored = get_user_model().objects.get(pk=user.pk)
         self.assertEqual(restored.password, original_password)
@@ -39,18 +40,20 @@ class WholesaleMigrationTests(TransactionTestCase):
         self.assertEqual(browser.get('/api/bootstrap').json()['account']['email'], 'fixture@example.invalid')
 
 
-@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=False)
+@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=True)
 class WholesaleConcurrencyTests(TransactionTestCase):
     @skipUnlessDBFeature('has_select_for_update')
     def test_competing_operators_cannot_both_advance_same_revision(self):
         owner = get_user_model().objects.create_user('kiwikind-owner-admin', 'kiwikindbroadband@gmail.com', is_staff=True, is_superuser=True)
+        client = Client()
+        device = owner_fixture(client, owner)
         case = WholesaleOrder.objects.create(address='1 Synthetic Test Road', postcode='3400', created_by=owner)
         barrier = Barrier(2)
 
         def update():
             request = RequestFactory().post('/admin/wholesale/')
             request.user = get_user_model().objects.get(pk=owner.pk)
-            request.session = {}
+            owner_request(request, client, request.user, device)
             barrier.wait(timeout=15)
             try:
                 transition(request, WholesaleOrder, case.pk, target='availability_review', revision=0,

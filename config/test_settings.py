@@ -9,3 +9,6 @@ ADMIN_ENABLED = True
 EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 DEFAULT_FROM_EMAIL = 'test@example.invalid'
 PASSWORD_HASHERS = ['django.contrib.auth.hashers.PBKDF2PasswordHasher']
+
+OWNER_GOOGLE_ADMIN_ENABLED = True
+GOOGLE_WEB_CLIENT_ID = 'synthetic-test-client'

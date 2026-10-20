@@ -1,3 +1,4 @@
+from .testing import owner_fixture, owner_request
 import json
 import uuid
 from datetime import timedelta
@@ -15,7 +16,7 @@ from .suppliers import SupplierNotConfigured
 from .wholesale import price_breakdown, VettaManualSupplier, transition
 
 
-@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=False, INTAKE_ENABLED=False, REGISTRATION_ENABLED=False)
+@override_settings(ADMIN_ENABLED=True, OWNER_GOOGLE_ADMIN_ENABLED=True, INTAKE_ENABLED=False, REGISTRATION_ENABLED=False)
 class WholesaleTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -24,10 +25,10 @@ class WholesaleTests(TestCase):
         cls.other = get_user_model().objects.create_user('other', 'other@example.invalid')
 
     def setUp(self):
-        self.client.force_login(self.owner)
+        self.device = owner_fixture(self.client, self.owner)
         self.request = RequestFactory().post('/admin/wholesale/')
         self.request.user = self.owner
-        self.request.session = {}
+        owner_request(self.request, self.client, self.owner, self.device)
 
     def evidence(self, **overrides):
         values = dict(address='1 Synthetic Test Road', postcode='3400', result='available',
@@ -97,7 +98,7 @@ class WholesaleTests(TestCase):
                 transition(self.request, WholesaleOrder, uuid.uuid4(), target='submitted', revision=0, submission_key=uuid.uuid4(), note='not authorised')
 
     def test_expired_google_owner_proof_cannot_use_wholesale_tools(self):
-        with override_settings(OWNER_GOOGLE_ADMIN_ENABLED=True):
+        with override_settings(OWNER_GOOGLE_ADMIN_ENABLED=False):
             self.assertEqual(self.client.get('/admin/wholesale/').status_code, 302)
             with self.assertRaises(PermissionDenied): self.advance(self.case(), 'availability_review')
 

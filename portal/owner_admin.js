@@ -11,7 +11,7 @@ window.kiwiKindOwnerSignIn = async function (response) {
       headers: {'X-CSRFToken': body.get('csrfmiddlewaretoken')}
     });
     const data = await result.json();
-    if (result.ok && data.redirect === '/admin/') window.location.assign('/admin/');
+    if (result.ok && data.redirect === '/admin/mfa/') window.location.assign('/admin/mfa/');
     else error.textContent = data.error || 'Sign-in failed. Reload this page and try again.';
   } catch (_) {
     error.textContent = 'Could not connect. Reload this page and try again.';

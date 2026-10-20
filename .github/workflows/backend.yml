@@ -13,7 +13,7 @@ jobs:
       SECRET_KEY: ci-test-only-key-never-deploy-012345678901234567890123456789
       DEBUG: '1'
       ADMIN_ENABLED: '1'
-      OWNER_GOOGLE_ADMIN_ENABLED: '0'
+      OWNER_GOOGLE_ADMIN_ENABLED: '1'
       INTAKE_ENABLED: '0'
       DATABASE_PATH: test-results/visual.sqlite3
       KIWIKIND_LOCAL_SESSION_FILE: test-results/local-session.json

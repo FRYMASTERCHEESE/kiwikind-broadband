@@ -1,3 +1,4 @@
+from .testing import owner_fixture
 import json
 import uuid
 from django.test import TestCase, Client, override_settings
@@ -103,13 +104,13 @@ class PlatformTests(TestCase):
         self.assertEqual(self.client.get('/admin/portal/order/').status_code,302)  # Django redirects unauthorized staff to admin login
         superuser=User.objects.create_superuser('operator@example.invalid','kiwikindbroadband@gmail.com','Staff-Kowhai-Planet-123!')
         self.client.force_login(superuser)
-        self.assertEqual(self.client.get('/admin/portal/invoice/add/').status_code,403)
-        self.assertEqual(self.client.get('/admin/portal/auditevent/add/').status_code,403)
+        self.assertEqual(self.client.get('/admin/portal/invoice/add/').status_code,302)
+        self.assertEqual(self.client.get('/admin/portal/auditevent/add/').status_code,302)
     def test_admin_support_reply_and_audit(self):
         t=Ticket.objects.create(user=self.alice,subject='Synthetic complaint',category='complaint')
         original=Message.objects.create(ticket=t,author=self.alice,body='Please help')
         operator=User.objects.create_superuser('operator@example.invalid','kiwikindbroadband@gmail.com','Staff-Kowhai-Planet-123!')
-        self.client.force_login(operator)
+        owner_fixture(self.client, operator)
         r=self.client.post(f'/admin/portal/ticket/{t.pk}/change/',{
             'status':'open','reply_submission_key':'64d0fb32-bb4f-4bf8-b313-81c6ff80cf34','messages-TOTAL_FORMS':'2','messages-INITIAL_FORMS':'1',
             'messages-MIN_NUM_FORMS':'0','messages-MAX_NUM_FORMS':'1000',
