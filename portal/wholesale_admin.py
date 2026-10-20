@@ -10,6 +10,7 @@ from django.utils.html import format_html
 
 from .models import DraftPlan, AvailabilityEvidence, WholesaleOrder, WholesaleFault, WholesaleEvent, AuditEvent
 from .wholesale import LAUNCH_BLOCKERS, ORDER_TRANSITIONS, FAULT_TRANSITIONS, price_breakdown, require_operator, transition
+from .catalogue_forms import CataloguePlanForm, catalogue_readiness
 
 
 def dashboard(request):
@@ -39,17 +40,20 @@ class PrivateRecords(admin.ModelAdmin):
 
 @admin.register(DraftPlan)
 class Plans(PrivateRecords):
-    list_display = ['name', 'review_status', 'address_specific', 'network', 'download_mbps', 'upload_mbps', 'wholesale_ex_gst', 'retail_ex_gst', 'valid_until']
+    form = CataloguePlanForm
+    list_display = ['name', 'review_status', 'address_specific', 'network', 'download_mbps', 'upload_mbps', 'wholesale_ex_gst', 'wholesale_inc_gst', 'setup_inc_gst', 'retail_ex_gst', 'valid_until']
     list_filter = ['review_status', 'address_specific', 'network']
-    readonly_fields = ['gst_illustration', 'estimated_margin', 'updated_at', 'approved_by', 'approved_at']
-    search_fields = ['name']
+    readonly_fields = ['publication_checklist', 'gst_illustration', 'estimated_margin', 'updated_at', 'approved_by', 'approved_at']
+    search_fields = ['name', 'source_reference']
     fieldsets = [
+        ('Private catalogue safety', {'fields': ['publication_checklist', 'expected_updated_at'],
+            'description': 'Evidence and wholesale costs stay in the owner-only admin. Saving does not publish a plan, charge a customer or order a service.'}),
         ('Quote and source', {'fields': ['name', 'source_reference', 'network', 'download_mbps',
             'upload_mbps', 'verified_at', 'valid_until', 'address_specific', 'notes']}),
         ('Wholesale costs', {'fields': ['wholesale_ex_gst', 'wholesale_inc_gst', 'setup_ex_gst', 'setup_inc_gst']}),
         ('Retail prices', {'fields': ['retail_ex_gst', 'retail_setup_ex_gst', 'gst_illustration', 'estimated_margin'],
             'description': 'Owner approval and a separate publication release are required. Saving does not charge anyone.'}),
-        ('Owner review', {'fields': ['review_status', 'approved_by', 'approved_at', 'updated_at']}),
+        ('Owner review', {'fields': ['review_status', 'confirm_current_approval', 'approved_by', 'approved_at', 'updated_at']}),
     ]
 
     def save_model(self, request, obj, form, change):
@@ -59,6 +63,10 @@ class Plans(PrivateRecords):
         super().save_model(request, obj, form, change)
         AuditEvent.objects.create(actor=request.user, action='catalogue_' + obj.review_status,
                                   reference=f'plan:{obj.pk}')
+
+    @admin.display(description='Publication blockers and evidence checklist')
+    def publication_checklist(self, obj):
+        return catalogue_readiness(obj)
 
     @admin.display(description='Draft NZD calculation — GST treatment must be approved')
     def gst_illustration(self, obj):
