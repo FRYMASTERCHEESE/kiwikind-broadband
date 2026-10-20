@@ -61,12 +61,44 @@ public class MainActivity extends Activity {
     private void nav(){button("Back to account",this::home);}
     private void home(){
         content.removeAllViews();title("My KiwiKind");paragraph("Your connection, in one place. 💚");paragraph("PRE-LAUNCH · No active broadband service. Your website and app are designed to use the same customer backend.");
-        button("My broadband requests",this::orders);button("Support & complaints",this::tickets);button("Billing",()->run(()->api.call("invoices",null),r->{content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());nav();}));
+        button("My broadband requests",this::orders);button("Support & complaints",this::tickets);button("Billing",this::billing);
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
         button("Request account deletion",()->{content.removeAllViews();title("Request deletion");paragraph("We will review lawful retention needs. This is not instant deletion. Request corrections using a privacy support ticket.");EditText p=field("Current password",129);button("Submit deletion request",()->{String password=p.getText().toString();p.setText("");run(()->api.call("privacy/deletion",data("password",password)),r->message(r.optString("message")));});nav();});
         button("Privacy & account correction",()->legal("privacy"));
         button("Sign out",()->run(()->api.call("logout",data()),r->{api.clear();signedIn=false;orderKey=null;auth(false);message("Signed out.");}));
         message("Account connected · Pre-launch only");
+    }
+    private void billing(){
+        run(()->api.call("invoices",null),r->{
+            content.removeAllViews();title("Billing");
+            boolean test=r.optBoolean("stripe_test_checkout_enabled",false);
+            paragraph(test?"Stripe TEST checkout only. No real payments or broadband activation.":"Payments are not enabled. No charges are being taken.");
+            JSONArray invoices=r.optJSONArray("invoices");
+            if(invoices==null||invoices.length()==0)paragraph("No invoices.");
+            else for(int i=0;i<invoices.length();i++){
+                JSONObject invoice=invoices.getJSONObject(i);
+                String id=invoice.optString("id");
+                paragraph("Invoice "+id+" · NZ$"+String.format(java.util.Locale.US,"%.2f",invoice.optInt("amount_cents")/100.0)+" · "+invoice.optString("status"));
+                if(test && "unpaid".equals(invoice.optString("status"))){
+                    button("Test card checkout",()->new AlertDialog.Builder(this)
+                        .setTitle("Stripe test checkout")
+                        .setMessage("Test mode only. No real card payment or broadband activation. Continue in your browser?")
+                        .setNegativeButton("Cancel",null)
+                        .setPositiveButton("Continue",(dialog,which)->run(
+                            ()->api.call("billing/stripe/test-checkout",data("invoice_id",id)),
+                            result->{
+                                String url=result.optString("url","");
+                                Uri uri=Uri.parse(url);
+                                if(!"https".equals(uri.getScheme())||!"checkout.stripe.com".equals(uri.getHost())){
+                                    message("Invalid Stripe checkout address.");return;
+                                }
+                                startActivity(new Intent(Intent.ACTION_VIEW,uri));
+                                message("Stripe test checkout opened. Returning does not confirm payment.");
+                            })).show());
+                }
+            }
+            nav();
+        });
     }
     private void orders(){run(()->api.call("orders",null),r->{
         content.removeAllViews();title("Broadband requests");JSONArray a=r.getJSONArray("orders");if(a.length()==0)paragraph("No requests yet.");
