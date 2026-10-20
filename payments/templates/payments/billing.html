@@ -1,0 +1,12 @@
+{% load static %}
+<!doctype html><html lang="en-NZ"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Billing · KiwiKind Broadband</title><link rel="stylesheet" href="{% static 'payments/billing.css' %}">
+<script src="{% static 'payments/billing.js' %}" defer></script></head><body><header><a href="/">KiwiKind Broadband</a></header>
+<main><a class="back" href="/#dashboard">← Back to my account</a><h1>Billing</h1>
+<p class="notice"><strong>Payment testing only.</strong> Live payments and broadband orders are disabled. These test subscriptions do not connect a service. Use only Stripe test payment details.</p>
+<p>After you confirm a test, your account email, test reference and agreed amounts are sent to Stripe. <a href="/privacy/">Privacy details</a></p>
+<p id="feedback" role="status" aria-live="polite">Checking your account…</p>
+<form id="csrf-holder" hidden>{% csrf_token %}</form><button id="refresh" type="button">Refresh billing status</button>
+<section id="agreements" aria-label="Your test billing agreements"></section>
+<p>Your account’s ordinary invoices remain in <a href="/#dashboard">My KiwiKind</a>. Returning from Checkout is not proof of payment; only verified Stripe updates change the records here.</p>
+</main></body></html>
