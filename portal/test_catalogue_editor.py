@@ -108,6 +108,9 @@ class CatalogueEditorTests(TestCase):
         version = plan.updated_at.isoformat()
         plan.notes = 'Newer private evidence'
         plan.save()
+        # Model distinct versions without relying on OS clock resolution.
+        DraftPlan.objects.filter(pk=plan.pk).update(updated_at=plan.updated_at + timedelta(seconds=1))
+        plan.refresh_from_db()
         form = CataloguePlanForm(self.data(name=plan.name, expected_updated_at=version), instance=plan)
         self.assertFalse(form.is_valid())
         plan.refresh_from_db()
@@ -138,6 +141,9 @@ class CatalogueEditorTests(TestCase):
         version = plan.updated_at.isoformat()
         plan.notes = 'Keep newer note'
         plan.save()
+        # Model distinct versions without relying on OS clock resolution.
+        DraftPlan.objects.filter(pk=plan.pk).update(updated_at=plan.updated_at + timedelta(seconds=1))
+        plan.refresh_from_db()
         before = AuditEvent.objects.count()
         response = self.client.post(f'/admin/portal/draftplan/{plan.pk}/change/',
             self.data(name=plan.name, expected_updated_at=version))
