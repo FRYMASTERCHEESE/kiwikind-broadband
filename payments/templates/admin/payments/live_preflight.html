@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Stripe live account readiness</h1>
+<p><strong>Owner-only read-only diagnostics.</strong> Your completed identity
+verification does not need repeating here. This page checks whether the
+live-mode API configuration is present and, when you request it, whether
+Stripe currently reports that the account can accept real charges and payouts.
+It cannot activate Stripe or create any charge.</p>
+
+<h2>Private Render configuration</h2>
+<ul>
+<li>Live API key: <strong>{% if config.live_api_key_present %}present{% else %}not configured{% endif %}</strong></li>
+<li>Live account ID: <strong>{% if config.live_account_id_present %}present{% else %}not configured{% endif %}</strong></li>
+<li>Live webhook signing secret: <strong>{% if config.live_webhook_secret_present %}present{% else %}not configured{% endif %}</strong></li>
+</ul>
+<p><strong>Actual customer billing implementation: NOT RELEASED.</strong>
+No live Checkout, invoice, subscription, or refund route is enabled by
+these checks. Your existing sandbox payment system continues unchanged.</p>
+
+{% if provider %}
+<h2>Read-only Stripe result</h2>
+{% if not provider.checked %}
+<p role="status">A live-mode account check is waiting for the live secret API key and account ID
+to be saved privately in Render.</p>
+{% elif provider.account_matches_live_mode %}
+<p role="status"><strong>Live account and key match.</strong></p>
+<ul>
+<li>Live charges enabled by Stripe: <strong>{% if provider.charges_enabled %}Yes{% else %}Not confirmed{% endif %}</strong></li>
+<li>Live payouts enabled by Stripe: <strong>{% if provider.payouts_enabled %}Yes{% else %}Not confirmed{% endif %}</strong></li>
+<li>Account details submitted: <strong>{% if provider.details_submitted %}Yes{% else %}Not confirmed{% endif %}</strong></li>
+</ul>
+{% else %}
+<p role="alert">Stripe's read-only live account check could not verify account
+and mode. Review credentials and permissions privately in Stripe/Render.
+This does not imply your personal identity verification failed.</p>
+{% endif %}
+{% endif %}
+
+<p><a class="button" href="?verify=1">Check live account status without charging</a></p>
+<h2>What's required before accepting real payments?</h2>
+<p>Complete and test the separate production billing implementation, with
+reviewed customer contract/price, server-held live credentials, live signed
+webhook reconciliation, confirmed service/billing start, refund and
+cancellation handling, and explicit owner release approval. The unfinished
+live billing draft PR must not be deployed as-is.</p>
+<p>Store API secrets <strong>only in Render's private environment editor</strong>,
+never in GitHub, this admin form or chat.</p>
+<p><a href="https://dashboard.render.com/web/srv-db8qqgks728c73ao7lm0">
+Open KiwiKind private Render service</a> ·
+<a href="{% url 'private-launch-readiness' %}">Back to launch readiness</a></p>
+{% endblock %}
