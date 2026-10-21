@@ -45,8 +45,23 @@ public class LayoutVerification extends Instrumentation {
         verify(activity,"portrait",false);
         EditText field=input(activity.findViewById(android.R.id.content));require(field!=null,"No sign-in input");
         final Activity portrait=activity;
-        runOnMainSync(()->{field.requestFocus();((InputMethodManager)portrait.getSystemService(Activity.INPUT_METHOD_SERVICE)).showSoftInput(field,InputMethodManager.SHOW_IMPLICIT);});
-        SystemClock.sleep(1800);verify(activity,"portrait-keyboard",true);
+        long keyboardDeadline=SystemClock.elapsedRealtime()+15000;
+        boolean keyboardVisible=false;
+        while(SystemClock.elapsedRealtime()<keyboardDeadline){
+            runOnMainSync(()->{
+                field.requestFocus();
+                field.requestRectangleOnScreen(new android.graphics.Rect(0,0,field.getWidth(),field.getHeight()));
+                if(portrait.hasWindowFocus()){
+                    ((InputMethodManager)portrait.getSystemService(Activity.INPUT_METHOD_SERVICE)).showSoftInput(field,InputMethodManager.SHOW_IMPLICIT);
+                    if(android.os.Build.VERSION.SDK_INT>=30)portrait.getWindow().getInsetsController().show(WindowInsets.Type.ime());
+                }
+            });
+            waitForIdleSync();SystemClock.sleep(300);
+            WindowInsets current=field.getRootWindowInsets();
+            if(android.os.Build.VERSION.SDK_INT>=30&&current!=null&&current.isVisible(WindowInsets.Type.ime())){keyboardVisible=true;break;}
+        }
+        require(keyboardVisible,"Keyboard did not become visible within 15 seconds");
+        verify(activity,"portrait-keyboard",true);
         runOnMainSync(()->((InputMethodManager)portrait.getSystemService(Activity.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(field.getWindowToken(),0));
         SystemClock.sleep(500);
         ActivityMonitor monitor=addMonitor(MainActivity.class.getName(),null,false);
