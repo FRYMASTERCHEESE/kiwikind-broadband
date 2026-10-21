@@ -402,7 +402,7 @@ class BillingTests(TestCase):
             parent={'subscription_details':{'subscription':'sub_synthetic'}},
             billing_reason='subscription_cycle',total=1000,amount_paid=0,
             currency='nzd',customer='cus_synthetic',status='open')
-        self.api.v1.invoices.retrieve.return_value=renewal
+        self.api.v1.invoices.retrieve.side_effect=lambda *args,**kwargs:dict(renewal)
         self.sub['status']='past_due'
         self.assertEqual(self.hook(self.event('invoice.payment_failed',renewal)).status_code,200)
         current=TestInvoice.objects.get(provider_id='in_test_renewal')
