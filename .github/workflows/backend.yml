@@ -84,6 +84,11 @@ jobs:
       - name: Run Android tests and build prelaunch debug APK
         working-directory: android
         run: gradle --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug -PKIWIKIND_API_ORIGIN=https://kiwikind-backend.onrender.com
+      - name: Compile ad diagnostic instrumentation without signing secrets
+        run: |
+          cp scripts/android/AdPlacementVerification.java android/app/src/androidTest/java/nz/kiwikind/broadband/
+          cd android
+          gradle --no-daemon :app:assembleDebugAndroidTest
       - name: Reject unsigned release builds
         working-directory: android
         shell: bash

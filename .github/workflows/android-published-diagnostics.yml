@@ -1,0 +1,73 @@
+name: Android published V12 diagnostics
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  published-v12:
+    runs-on: ubuntu-latest
+    environment: android-release
+    timeout-minutes: 25
+    env:
+      KIWIKIND_STORE_PASSWORD: ${{ secrets.KIWIKIND_STORE_PASSWORD }}
+      KIWIKIND_KEY_ALIAS: ${{ secrets.KIWIKIND_KEY_ALIAS }}
+      KIWIKIND_KEY_PASSWORD: ${{ secrets.KIWIKIND_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+      - name: Download and verify the already published V12 APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git diff --exit-code 446f0f20bd7ad8e35ef31857c80ae31650b2c0c9 -- android/app/src/main android/app/build.gradle android/build.gradle
+          gh run download 39595472121 --repo "$GITHUB_REPOSITORY" --name KiwiKind-signed-prelaunch-446f0f20bd7ad8e35ef31857c80ae31650b2c0c9 --dir published-v12
+          APK=published-v12/android/app/build/outputs/apk/release/app-release.apk
+          echo "d64e4d40a08860a21218e577027071b83388c47343718210bad824cf13634b6c $APK" | sha256sum --check
+      - name: Prepare same-signer instrumentation only
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KIWIKIND_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/diagnostic-upload.jks"
+          cp scripts/android/AdPlacementVerification.java android/app/src/androidTest/java/nz/kiwikind/broadband/
+          sed -i 's/nz.kiwikind.broadband.VisualCapture/nz.kiwikind.broadband.AdPlacementVerification/' android/app/src/androidTest/AndroidManifest.xml
+          cd android
+          gradle --no-daemon assembleDebugAndroidTest
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          "$APKSIGNER" sign --ks "$RUNNER_TEMP/diagnostic-upload.jks" --ks-key-alias "$KIWIKIND_KEY_ALIAS" --ks-pass env:KIWIKIND_STORE_PASSWORD --key-pass env:KIWIKIND_KEY_PASSWORD --out "$RUNNER_TEMP/diagnostic-tests.apk" app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test published APK in OTHER and EEA consent geographies
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          script: bash scripts/android/verify_published_v12.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: published-v12-diagnostics
+          path: diagnostic-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Remove temporary signing material
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/diagnostic-upload.jks"
