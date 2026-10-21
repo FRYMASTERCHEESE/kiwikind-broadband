@@ -32,6 +32,15 @@ const base='http://127.0.0.1:8765';
    await page.getByText('Synthetic reconciliation warning; no provider call was made.').waitFor();
    assert.equal(posts,1);assert.equal(await page.getByRole('checkbox').isChecked(),false);
    assert.equal(await checkout.isDisabled(),true);
+   // Mirror the real owner's finished refund: show final state, not a new purchase.
+   const refunded={...agreement,status:'active',cancel_at_period_end:true,
+     invoices:[{amount_cents:100,status:'paid',refunded_cents:100,dispute_status:''}]};
+   await page.route('**/api/billing/summary',route=>route.fulfill({status:200,contentType:'application/json',
+     body:JSON.stringify({mode:'sandbox_only',live_payments_enabled:false,test_enabled:true,agreements:[refunded]})}));
+   await page.getByRole('button',{name:'Refresh billing status'}).click();
+   await page.getByText('TEST invoice $1.00 · paid · fully refunded $1.00').waitFor();
+   assert.equal(await page.getByRole('button',{name:'Open Stripe test checkout'}).count(),0);
+   await page.screenshot({path:`test-results/wholesale-visual/${name}-refund.png`,fullPage:true});
    await page.route('**/api/billing/summary',route=>route.fulfill({status:401,contentType:'application/json',body:'{"error":"Sign in first"}'}));
    await page.getByRole('button',{name:'Refresh billing status'}).click();
    await page.getByText('Sign in again from My KiwiKind before continuing.').waitFor();

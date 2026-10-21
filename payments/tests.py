@@ -296,9 +296,139 @@ class BillingTests(TestCase):
         self.charge['amount_refunded']=1200
         self.assertEqual(self.hook(self.event('charge.refunded',self.charge)).status_code,200)
         ledger.refresh_from_db();self.assertEqual(ledger.refunded_cents,1200)
-        self.assertEqual(self.post('refund',invoice_id=str(ledger.pk),accept_test_refund=True).status_code,409)
+        retry=self.post('refund',invoice_id=str(ledger.pk),accept_test_refund=True)
+        self.assertEqual(retry.status_code,200)
+        self.assertTrue(retry.json()['already_refunded'])
+        self.api.v1.refunds.create.assert_called_once()
         session=self.client.session;session.pop('otp_device_id');session.save()
         self.assertEqual(self.post('refund',invoice_id=str(ledger.pk),accept_test_refund=True).status_code,404)
+
+
+    def test_refunded_invoice_page_hides_second_button_and_is_repeat_safe(self):
+        self.paid()
+        self.hook(self.event('invoice.paid',self.invoice))
+        ledger=TestInvoice.objects.get()
+        owner_fixture(self.client,self.owner)
+        self.api.v1.refunds.create.return_value=dict(
+            id='re_synthetic',object='refund',amount=1200,currency='nzd',
+            payment_intent='pi_synthetic',status='pending')
+        url=f'/admin/payments/testinvoice/{ledger.pk}/refund/'
+        self.assertContains(self.client.get(url),'Request full TEST refund')
+        first=self.client.post(url,{'confirm':'on'})
+        self.assertContains(first,'Test refund requested')
+        self.charge['amount_refunded']=1200
+        self.assertEqual(self.hook(self.event('charge.refunded',self.charge)).status_code,200)
+        current=self.client.get(url)
+        self.assertContains(current,'Already fully refunded in Stripe TEST mode')
+        self.assertContains(current,'NZ$12.00')
+        self.assertNotContains(current,'<button type="submit">Request full TEST refund</button>')
+        again=self.client.post(url,{'confirm':'on'})
+        self.assertContains(again,'already fully refunded')
+        self.api.v1.refunds.create.assert_called_once()
+        self.assertEqual(AuditEvent.objects.filter(action='sandbox_refund_requested').count(),1)
+
+    def test_confirmed_refund_replay_does_not_need_provider_to_be_available(self):
+        self.paid();self.hook(self.event('invoice.paid',self.invoice))
+        ledger=TestInvoice.objects.get()
+        ledger.refunded_cents=ledger.amount_cents
+        ledger.save(update_fields=['refunded_cents'])
+        owner_fixture(self.client,self.owner)
+        with patch('payments.gateway.client',side_effect=gateway.BillingUnavailable()):
+            response=self.post('refund',invoice_id=str(ledger.pk),accept_test_refund=True)
+        self.assertEqual(response.status_code,200)
+        self.assertTrue(response.json()['already_refunded'])
+        self.assertFalse(AuditEvent.objects.filter(action='sandbox_refund_requested').exists())
+
+    def test_partial_test_refund_and_dispute_block_additional_refund(self):
+        self.paid();self.hook(self.event('invoice.paid',self.invoice))
+        ledger=TestInvoice.objects.get()
+        owner_fixture(self.client,self.owner)
+        ledger.refunded_cents=100
+        ledger.save(update_fields=['refunded_cents'])
+        self.assertEqual(self.post('refund',invoice_id=str(ledger.pk),accept_test_refund=True).status_code,409)
+        ledger.refunded_cents=0
+        ledger.dispute_status='needs_response'
+        ledger.save(update_fields=['refunded_cents','dispute_status'])
+        self.assertEqual(self.post('refund',invoice_id=str(ledger.pk),accept_test_refund=True).status_code,409)
+        self.api.v1.refunds.create.assert_not_called()
+
+    def test_readiness_tracks_realistic_checkout_refund_cancellation_webhooks(self):
+        self.paid()
+        self.assertEqual(self.hook(self.event('invoice.paid',self.invoice)).status_code,200)
+        owner_fixture(self.client,self.owner)
+        start=self.client.get('/admin/billing-readiness/')
+        self.assertEqual(start.status_code,200)
+        self.assertTrue(start.json()['sandbox_payment_verified'])
+        self.assertTrue(start.json()['provider_tested'])
+        self.assertFalse(start.json()['sandbox_refund_verified'])
+        self.assertFalse(start.json()['sandbox_cancellation_verified'])
+        self.charge['amount_refunded']=1200
+        self.assertEqual(self.hook(self.event('charge.refunded',self.charge)).status_code,200)
+        self.sub['cancel_at_period_end']=True
+        self.assertEqual(self.hook(self.event('customer.subscription.updated',self.sub)).status_code,200)
+        done=self.client.get('/admin/billing-readiness/').json()
+        self.assertTrue(done['sandbox_payment_verified'])
+        self.assertTrue(done['sandbox_refund_verified'])
+        self.assertTrue(done['sandbox_cancellation_verified'])
+        self.assertFalse(done['live_payments_enabled'])
+        self.assertIn('Signed Android', ' '.join(done['blockers']))
+        self.assertNotIn(TEST_ENV['STRIPE_TEST_SECRET_KEY'],str(done))
+
+    def test_failed_and_authentication_required_test_invoices_are_not_credited(self):
+        self.started()
+        self.sub['status']='incomplete'
+        unpaid=dict(id='in_test_requires_action',object='invoice',livemode=False,
+            parent={'subscription_details':{'subscription':'sub_synthetic'}},
+            billing_reason='subscription_create',total=1200,amount_paid=0,
+            currency='nzd',customer='cus_synthetic',status='open')
+        self.api.v1.invoices.retrieve.return_value=unpaid
+        self.assertEqual(self.hook(self.event('invoice.finalized',unpaid)).status_code,200)
+        ledger=TestInvoice.objects.get()
+        self.assertEqual(ledger.status,'open')
+        self.assertFalse(ledger.payment_intent)
+        self.assertEqual(self.a.user.invoice_set.count(),0)
+        self.sub['status']='past_due'
+        self.assertEqual(self.hook(self.event('invoice.payment_failed',unpaid)).status_code,200)
+        ledger.refresh_from_db()
+        self.a.refresh_from_db()
+        self.assertEqual(ledger.status,'open')
+        self.assertEqual(self.a.status,'past_due')
+        self.assertEqual(ledger.refunded_cents,0)
+
+    def test_failed_sandbox_renewal_cannot_become_paid_until_verified(self):
+        self.paid()
+        self.assertEqual(self.hook(self.event('invoice.paid',self.invoice)).status_code,200)
+        renewal=dict(id='in_test_renewal',object='invoice',livemode=False,
+            parent={'subscription_details':{'subscription':'sub_synthetic'}},
+            billing_reason='subscription_cycle',total=1000,amount_paid=0,
+            currency='nzd',customer='cus_synthetic',status='open')
+        self.api.v1.invoices.retrieve.side_effect=lambda *args,**kwargs:dict(renewal)
+        self.sub['status']='past_due'
+        self.assertEqual(self.hook(self.event('invoice.payment_failed',renewal)).status_code,200)
+        current=TestInvoice.objects.get(provider_id='in_test_renewal')
+        self.assertEqual(current.status,'open')
+        self.assertFalse(current.payment_intent)
+        self.assertEqual(current.amount_cents,1000) # no one-off setup on renewals
+        self.api.v1.invoice_payments.list.assert_called_once() # first invoice only
+        # An eventual real provider payment must be validated again before credit.
+        renewal['status']='paid'
+        renewal['amount_paid']=1000
+        self.sub['status']='active'
+        self.api.v1.invoice_payments.list.return_value={'data':[dict(
+            object='invoice_payment',livemode=False,invoice='in_test_renewal',
+            amount_paid=1000,currency='nzd',payment={'payment_intent':'pi_test_renewal'})],
+            'has_more':False}
+        # paid() installed a side_effect fixture; replace it, not return_value.
+        self.api.v1.payment_intents.retrieve.side_effect=lambda *args,**kwargs:dict(
+            id='pi_test_renewal',object='payment_intent',livemode=False,
+            amount_received=1000,currency='nzd',customer='cus_synthetic',
+            status='succeeded')
+        self.assertEqual(self.hook(self.event('invoice.paid',renewal)).status_code,200)
+        current.refresh_from_db()
+        self.assertEqual(current.status,'paid')
+        self.assertEqual(current.payment_intent,'pi_test_renewal')
+        self.assertEqual(TestInvoice.objects.count(),2)
+        self.assertFalse(Order.objects.exists())
 
     def test_refund_and_dispute_reconcile_against_charge(self):
         self.paid();self.hook(self.event('invoice.paid',self.invoice))

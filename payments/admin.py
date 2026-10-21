@@ -70,4 +70,9 @@ class Invoices(ReadOnlyRecords):
     def refund_link(self,obj):
         if not obj or obj.status != 'paid':
             return 'Only a verified paid TEST invoice can be refunded.'
-        return format_html('<a href="{}">Review and confirm full TEST refund</a>',reverse('admin:sandbox-invoice-refund',args=[obj.pk]))
+        if obj.amount_cents > 0 and obj.refunded_cents == obj.amount_cents:
+            return 'Already fully refunded (TEST only). No second refund is possible.'
+        if obj.refunded_cents or obj.dispute_status or not obj.payment_intent:
+            return 'This TEST invoice needs reconciliation before any refund.'
+        return format_html('<a href="{}">Review and confirm full TEST refund</a>',
+                           reverse('admin:sandbox-invoice-refund',args=[obj.pk]))

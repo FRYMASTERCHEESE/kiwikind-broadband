@@ -44,3 +44,27 @@ This implementation reconciles synchronously. Before a live release, validate we
 Review the PR and require SQLite, PostgreSQL, web, Android and synthetic browser CI. Preserve a recoverable database checkpoint before applying the additive migration. No destructive migration or account rewrite is included. Existing backend startup applies migrations and collects static assets. Deploy only the reviewed commit onto the existing deployment branch; keep all new switches off. Verify health, empty public plans, owner-only admin and closed intake. Configuration is an independent private step; do not claim it was performed merely because code deployed.
 
 Rollback: disable `KIWIKIND_STRIPE_SANDBOX` and retain the new records for reconciliation. A previous code image can ignore these extra tables. Do not reverse migrations, drop test records or restore over newer customer activity to roll back UI changes.
+
+## October 21, 2026 observed sandbox evidence and limitations
+
+A single explicitly authorised owner TEST agreement completed an actual NZ$1 monthly
+Stripe Checkout. Signed webhook receipts reconciled the subscription and initial
+paid invoice. The owner requested cancellation at period end; its subscription.updated
+webhook was reconciled. A real full NZ$1 TEST refund was reconciled from
+charge.refunded. These facts are reflected on the MFA-only billing-readiness page,
+which reports whether the corresponding ledger records and event receipts exist.
+An invoice originally marked paid remains 'paid' after its payment is refunded; the
+app and Android now identify a **fully refunded** invoice explicitly.
+
+Repeated refund submissions after the verified full refund are read-only and report
+'already fully refunded', without a second Stripe API call or audit entry. Partial
+refunds and disputed invoices still fail closed for manual review. The initial
+refund operation continues to require verified owner Google + TOTP MFA, explicit
+confirmation, server-side validation and a stable per-invoice Stripe idempotency key.
+
+Separate live provider exercises for a declined/authentication-required payment,
+a subscription renewal (including test-clock timing), and a signed Android release
+**remain outstanding**; synthetic CI tests do not replace them. Nothing in this
+checkpoint enables live payments or public plan publication. The authoritative
+public website remains FRYMASTERCHEESE/kiwikind-broadband-website on GitHub Pages;
+Render is the private API/backend.
