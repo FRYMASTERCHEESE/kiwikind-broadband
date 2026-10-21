@@ -54,6 +54,18 @@ def checkout(user, agreement_id, expected_version, api):
             success_url=origin()+'/billing/?returned=1', cancel_url=origin()+'/billing/?cancelled=1',
             expires_at=int((a.checkout_started_at+timedelta(hours=1)).timestamp()),
             custom_text={'submit': {'message': 'TEST ONLY. No broadband service or real payment is supplied.'}})
+        from .models import OwnerSandboxRun
+        run=OwnerSandboxRun.objects.filter(agreement=a).first()
+        if run:
+            if (run.owner_id!=user.pk or not run.customer_id or not run.clock_id
+                    or a.monthly_cents!=100 or a.setup_cents!=0):
+                raise ReconciliationError('Invalid owner QA fixture')
+            params.pop('customer_email')
+            params['customer']=run.customer_id
+        from django.conf import settings
+        if settings.PAGES_ENABLED:
+            params['success_url']=settings.PAGES_URL+'account.html?returned=1'
+            params['cancel_url']=settings.PAGES_URL+'account.html?cancelled=1'
         obj = validate_session(a, api.v1.checkout.sessions.create(params,
             options={'idempotency_key': 'kiwikind-sandbox-checkout-'+str(a.pk)}))
     if obj.get('status') != 'open' or not safe_checkout(obj.get('url')):

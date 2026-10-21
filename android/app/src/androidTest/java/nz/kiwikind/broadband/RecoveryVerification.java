@@ -37,7 +37,11 @@ public class RecoveryVerification extends Instrumentation {
             require(!prefs.getString("cookies","").contains("synthetic-emulator-session-only"),"Session persisted in plaintext");
             Api reopened=new Api("https://127.0.0.1:1",context);
             require(((CookieManager)field(reopened,"cookies")).getCookieStore().getCookies().size()==1,"Encrypted session did not restore");
-            try{reopened.call("status",null);throw new IllegalStateException("Refused connection succeeded");}catch(java.io.IOException expected){}
+            try{reopened.call("status",null);throw new IllegalStateException("Refused connection succeeded");}
+            catch(Exception expected){
+                require(expected.getCause() instanceof java.io.IOException,"Refused connection did not retain its network cause");
+                require(RecoveryMessage.interrupted(false).equals(expected.getMessage()),"Offline recovery message changed");
+            }
             require(((CookieManager)field(reopened,"cookies")).getCookieStore().getCookies().size()==1,"Network failure discarded saved login");
             prefs.edit().putString("cookies","corrupt-fixture").commit();
             Api corrupted=new Api("https://127.0.0.1:1",context);
