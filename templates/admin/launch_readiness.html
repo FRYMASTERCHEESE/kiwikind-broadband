@@ -1,0 +1,68 @@
+{% extends "admin/base_site.html" %}
+{% block extrastyle %}{{ block.super }}
+<style>
+.launch-center{max-width:1100px;margin:0 auto;padding:0 0 30px}
+.launch-center .intro{background:#ecf5ee;color:#123c2f;border:1px solid #bfd0c3;border-radius:12px;padding:18px}
+.launch-center .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:14px;margin:20px 0}
+.launch-center .item{border:1px solid #cad9ce;padding:17px;border-radius:10px;background:var(--body-bg)}
+.launch-center .item h3{margin:0 0 7px}.launch-center .item p{margin:6px 0}
+.launch-center .ok{color:#157b47;font-weight:750}.launch-center .pending{color:#ad5217;font-weight:750}
+.launch-center .review{padding:20px;border:1px solid #b9cbb9;border-radius:10px}
+.launch-center .review label{display:flex;gap:12px;align-items:flex-start}
+.launch-center .review input{flex:none}
+.launch-center a{overflow-wrap:anywhere}
+@media(max-width:620px){.launch-center .cols{grid-template-columns:1fr}}
+</style>{% endblock %}
+{% block content %}
+<div class="launch-center">
+<h1>KiwiKind private launch readiness</h1>
+<div class="intro"><strong>Evidence and next steps, not a go-live approval.</strong>
+<p>The statuses below come from your protected business records and test ledger.
+Passing the Stripe sandbox or recording a framework document does not enable
+retail plans, customer payments or supplier orders.</p>
+{% if not public_sales_closed %}<p role="alert"><strong>WARNING:</strong> A sales/publication flag
+is enabled; review it before proceeding.</p>{% endif %}</div>
+<p><strong>{{ verified_count }} of {{ check_count }}</strong> internal preparation/evidence checks
+currently have supporting data. This is <strong>not</strong> a certified launch percentage.
+Private plans: {{ private_plans }}; verified current general-plan entries:
+{{ approved_plans }}; actual supplier orders: {{ live_supplier_orders }}.</p>
+<h2>What is verified — and what still blocks a release</h2>
+<div class="cols">
+{% for check in checks %}
+<section class="item"><h3>{{ check.label }}</h3>
+{% if check.done %}<p class="ok">✓ Verified/recorded</p>
+{% else %}<p class="pending">Needs verification</p>{% endif %}
+<p>{{ check.detail }}</p></section>
+{% endfor %}
+</div>
+<section class="review"><h2>Supplier framework review — owner only</h2>
+{% if framework_recorded %}
+<p role="status"><strong>Framework stage is already recorded.</strong>
+Product Terms, prices, account permissions and service orders are not yet approved.</p>
+{% elif not vetta_exists %}
+<p>The existing private Vetta supplier record was not found. Please check
+<a href="{% url 'admin:portal_provider_changelist' %}">Supplier records</a>.</p>
+{% else %}
+<p>Only use this after independently checking the signatures on the actual
+master framework document. It records a private stage only, never an order.</p>
+<form method="post" action="{% url 'record-framework-review' %}">
+{% csrf_token %}
+<label><input type="checkbox" name="ack_framework_review" value="yes" required>
+<span>I checked both signatures and authorise this framework record.
+I understand individual Product Terms, commercial permissions, prices,
+service activation and ordering are still separate approvals.</span></label>
+<p><button class="button default" type="submit">Record reviewed framework privately</button></p>
+</form>
+{% endif %}
+</section>
+<p><a href="{% url 'admin:portal_provider_changelist' %}">Supplier records</a> ·
+<a href="{% url 'private-catalogue-import' %}">Import private price CSV</a> ·
+<a href="{% url 'admin:portal_draftplan_changelist' %}">Private prices and GST</a> ·
+<a href="{% url 'admin:payments_testinvoice_changelist' %}">Test invoices</a> ·
+<a href="https://github.com/FRYMASTERCHEESE/kiwikind-broadband/actions/workflows/android-release.yml">Signed Android release workflow</a> ·
+<a href="{% url 'wholesale-dashboard' %}">Wholesale preparation</a> ·
+<a href="{% url 'admin:index' %}">Owner Admin</a></p>
+<p><small>Keep supplier pricing, signed contracts, API credentials and customer data
+out of public GitHub files. Nothing on this screen launches broadband or charges a card.</small></p>
+</div>
+{% endblock %}
