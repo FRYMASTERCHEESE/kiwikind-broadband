@@ -26,7 +26,7 @@ class Command(BaseCommand):
 
         # A time limit protects against accidental reruns after Stripe's 24-hour
         # idempotency window. The operator must disable the switch after the run.
-        if datetime.now(timezone.utc) >= EXPIRES:
+        if datetime.now(timezone.utc) >= EXPIRES - timedelta(minutes=35):
             self.stdout.write("Stripe provider Checkout: SKIPPED (test window expired).")
             return
 
@@ -55,7 +55,7 @@ class Command(BaseCommand):
                 "metadata": {"kiwikind_qa": "provider_api_smoke_no_customer"},
                 "success_url": gateway.origin() + "/billing/?qa_only=1",
                 "cancel_url": gateway.origin() + "/billing/?qa_cancel=1",
-                "expires_at": int((datetime.now(timezone.utc) + timedelta(minutes=45)).timestamp()),
+                "expires_at": int(EXPIRES.timestamp()),
             }
             obj = gateway.plain(api.v1.checkout.sessions.create(
                 params, options={"idempotency_key": IDEMPOTENCY}
