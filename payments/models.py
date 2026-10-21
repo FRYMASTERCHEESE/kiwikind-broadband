@@ -60,3 +60,17 @@ class TestEvent(models.Model):
 
     class Meta:
         verbose_name = 'Sandbox webhook receipt'
+
+
+class OwnerSandboxRun(models.Model):
+    """Isolated provider QA; not a customer agreement or permission to sell."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    agreement = models.OneToOneField(TestAgreement, on_delete=models.PROTECT)
+    scenario = models.CharField(max_length=20, choices=[('renewal','Renewal'),('decline-3ds','Decline and 3DS')])
+    clock_id = models.CharField(max_length=255, blank=True)
+    customer_id = models.CharField(max_length=255, blank=True)
+    advance_to = models.BigIntegerField(null=True, blank=True)
+    evidence = models.JSONField(default=dict, blank=True)
+    checked_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)

@@ -11,7 +11,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 
 from payments import gateway
-from payments.models import TestAgreement, TestEvent, TestInvoice
+from payments.models import TestAgreement, TestEvent, TestInvoice, OwnerSandboxRun
 from .models import AuditEvent, DraftPlan, Provider, WholesaleOrder
 from .owner_admin import owner_session
 
@@ -33,6 +33,10 @@ def evidence_snapshot():
                 approved_at__isnull=False,valid_until__gte=timezone.localdate()).count()
     private = DraftPlan.objects.count()
     closed = not settings.INTAKE_ENABLED and not settings.PLAN_PUBLICATION_ENABLED
+    scenarios=list(OwnerSandboxRun.objects.exclude(checked_at=None).values_list('evidence',flat=True))
+    renewal=any(x.get('renewal_paid') is True and x.get('ledger_synced') is True for x in scenarios)
+    decline=any(x.get('decline_seen') is True for x in scenarios)
+    authentication=any(x.get('authentication_requested') is True and x.get('authentication_completed') is True for x in scenarios)
     checks = [
       dict(label='Owner Google and authenticator MFA',done=True,
         detail='This report is visible only after the verified owner proof and MFA.'),
@@ -58,10 +62,10 @@ def evidence_snapshot():
         detail=f'{approved} reviewed general plan records. {private} total private records. No approval to publish is implied.'),
       dict(label='Supplier Product Terms and authenticated order integration',done=False,
         detail='Service-specific Product Terms, valid general price schedule, API documentation, address qualifications and real supplier order tests are not verified.'),
-      dict(label='Stripe real renewal, declined card and authentication challenge',done=False,
-        detail='Mock tests passed; these separate real sandbox lifecycle scenarios remain unverified.'),
+      dict(label='Stripe real renewal, declined card and authentication challenge',done=renewal and decline and authentication,
+        detail=f'Provider-checked TEST evidence: renewal={renewal}, declined card={decline}, 3DS challenge completed={authentication}. Signed webhook ledger required for paid invoices.'),
       dict(label='Signed Android release and Play test on device',done=False,
-        detail='Debug Android CI passed. A current signed APK/AAB and real-device test have not been independently verified.'),
+        detail='Signed APK/AAB and Android 36 emulator checks verified in GitHub run 39573886915 (source df1c1b7). Physical-device Google sign-in and Play internal testing remain unverified.'),
       dict(label='Consumer contracts, GST, support, recovery and launch sign-off',done=False,
         detail='Business decisions and evidence remain required before opening orders, plans or live billing.')
     ]

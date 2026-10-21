@@ -101,7 +101,7 @@ class OwnerLaunchReadinessTests(TestCase):
         self.assertContains(page,'Provider-bound TEST invoice and invoice.paid receipt recorded.')
         self.assertContains(page,'Fully refunded TEST invoice')
         self.assertContains(page,'Cancel-at-period-end and subscription.updated receipt')
-        self.assertContains(page,'these separate real sandbox lifecycle scenarios remain unverified')
+        self.assertContains(page,'Provider-checked TEST evidence: renewal=False, declined card=False, 3DS challenge completed=False')
 
     @override_settings(INTAKE_ENABLED=True,PLAN_PUBLICATION_ENABLED=True)
     def test_public_sales_switch_is_a_warning_not_a_pass(self):

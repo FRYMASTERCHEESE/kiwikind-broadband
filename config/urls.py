@@ -3,7 +3,8 @@ from django.urls import path, include
 from portal import views
 from portal import owner_admin, owner_mfa, catalogue, catalogue_import, launch_readiness
 from portal import wholesale_admin, wholesale_views
-from portal import pages
+from portal import pages, owner_ops
+from payments import owner_scenarios
 
 # Shared native/web account APIs; all account-specific routes enforce sessions.
 
@@ -11,6 +12,14 @@ urlpatterns = [path('', include('payments.urls')), path('api/connection-progress
  path('api/pages/cookie-probe', pages.cookie_probe),
  path('api/pages/session-probe', pages.session_probe),
  path('api/owner/state', pages.owner_state),
+ path('api/owner/sandbox-runs', owner_scenarios.runs),
+ path('api/owner/sandbox-runs/<uuid:pk>/advance', owner_scenarios.advance),
+ path('api/owner/sandbox-runs/<uuid:pk>/evidence', owner_scenarios.evidence),
+ path('api/owner/operations', owner_ops.index),
+ path('api/owner/operations/<str:kind>', owner_ops.collection),
+ path('api/owner/operations/<str:kind>/<str:pk>', owner_ops.record),
+ path('api/owner/tickets/<uuid:pk>/reply', owner_ops.reply),
+ path('api/owner/cases/<str:kind>/<uuid:pk>/transition', owner_ops.case_transition),
  path('api/owner/challenge', pages.owner_challenge),
  path('api/owner/signin', pages.owner_signin),
  path('api/owner/mfa', pages.owner_mfa),
