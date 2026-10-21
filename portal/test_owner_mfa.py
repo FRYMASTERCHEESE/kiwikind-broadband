@@ -61,10 +61,14 @@ class OwnerMFATests(TestCase):
         self.assertFalse(TOTPDevice.objects.exists())
 
     def test_invalid_codes_throttle_and_csrf_is_required(self):
-        self.client.get('/admin/mfa/')
-        for _ in range(10):
-            self.client.post('/admin/mfa/', {'code': 'invalid'})
-        self.assertEqual(self.client.post('/admin/mfa/', {'code': 'invalid'}).status_code, 429)
+        # RateBucket uses fixed 15-minute windows. A slow CI job can cross a
+        # boundary between attempts, correctly resetting the live limiter.
+        # Freeze only the clock during this deterministic boundary-free test.
+        with patch('portal.security.time.time', return_value=time.time()):
+            self.client.get('/admin/mfa/')
+            for _ in range(10):
+                self.client.post('/admin/mfa/', {'code': 'invalid'})
+            self.assertEqual(self.client.post('/admin/mfa/', {'code': 'invalid'}).status_code, 429)
         browser = Client(enforce_csrf_checks=True)
         browser.cookies = self.client.cookies
         self.assertEqual(browser.post('/admin/mfa/', {'code': '123456'}).status_code, 403)
