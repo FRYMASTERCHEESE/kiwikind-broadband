@@ -1,0 +1,35 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Private KiwiKind Stripe TEST checkout</h1>
+<p><strong>TEST MODE ONLY:</strong> this prepares a NZ$1.00 per month
+subscription trial for the currently signed-in verified owner account.
+No broadband service, supplier order, retail price or live payment is created.</p>
+<p>This page is available only after the existing owner Google sign-in and
+authenticator MFA. It does not create a separate customer, send an email,
+call Stripe or start a charge when you prepare the agreement.</p>
+
+{% if error %}<p role="alert" style="color:#a12622">{{ error }}</p>{% endif %}
+{% if not sandbox_ready %}
+<p role="status"><strong>Stripe TEST is not configured.</strong>
+No trial can start until the sandbox connection is restored.</p>
+{% elif agreement %}
+<p role="status"><strong>One owner test agreement is ready.</strong></p>
+<p>{{ agreement.label }} — NZ$1.00 per month, NZ$0.00 setup,
+status: {{ agreement.status }}.</p>
+<p>No second agreement will be created from this page. If the initial
+Checkout was interrupted, return to its original agreement; do not start
+another payment or remove the record.</p>
+<p><a class="button" href="/billing/">Open existing private TEST billing</a></p>
+{% else %}
+<form method="post">{% csrf_token %}
+  <p><label><input type="checkbox" name="ack_sandbox_only" value="yes" required>
+    I authorise one NZ$1/month recurring <strong>Stripe sandbox TEST</strong>
+    for my verified owner login. I will use test-card details only, and I
+    understand that subscriptions renew in Stripe's test environment until cancelled.
+    This does not order broadband or enable live payments.</label></p>
+  <button type="submit" class="button default">Prepare my NZ$1/month TEST agreement</button>
+</form>
+{% endif %}
+<p><a href="/admin/">Back to private owner admin</a> ·
+<a href="/admin/payments/testagreement/">Review existing sandbox agreements</a></p>
+{% endblock %}

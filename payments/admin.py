@@ -24,6 +24,7 @@ class TestAgreementForm(forms.ModelForm):
 
 @admin.register(TestAgreement)
 class Agreements(admin.ModelAdmin):
+    change_list_template = 'admin/payments/agreement_changelist.html'
     form = TestAgreementForm
     actions = None
     list_display = ['label','user','monthly_cents','setup_cents','reviewed','status']
