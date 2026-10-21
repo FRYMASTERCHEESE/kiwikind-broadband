@@ -16,6 +16,8 @@ jobs:
       KIWIKIND_KEY_PASSWORD: ${{ secrets.KIWIKIND_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -28,6 +30,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          git diff --exit-code 446f0f20bd7ad8e35ef31857c80ae31650b2c0c9 -- android/app/src/main android/app/build.gradle android/build.gradle
           gh run download 39595472121 --repo "$GITHUB_REPOSITORY" --name KiwiKind-signed-prelaunch-446f0f20bd7ad8e35ef31857c80ae31650b2c0c9 --dir published-v12
           APK=published-v12/android/app/build/outputs/apk/release/app-release.apk
           echo "d64e4d40a08860a21218e577027071b83388c47343718210bad824cf13634b6c $APK" | sha256sum --check

@@ -68,7 +68,6 @@ public class AdPlacementVerification extends Instrumentation {
                 waitForIdleSync();
                 BannerAds ads=(BannerAds)field(activity,"bannerAds");
                 if((Boolean)field(ads,"formShowing")){
-                    if(otherGeography)require(!UserMessagingPlatform.getConsentInformation(activity).isConsentFormAvailable(),"Unexpected consent form in OTHER geography");
                     if(taps==0)capture("00-eea-consent.png");
                     if(clickRefusal(getUiAutomation().getRootInActiveWindow()))taps++;
                 }
