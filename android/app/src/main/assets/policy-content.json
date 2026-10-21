@@ -38,7 +38,7 @@
     },
     {
       "kind": "p",
-      "text": "We use account data to authenticate you, maintain your account, show your own records across the website and Android app, respond to your messages, provide privacy controls and prevent abuse. A website session and Android session are separate; they access the same server-side account. Account and support records are not passed to advertising placements. Advertising SDK behavior in the V8 test build is described below; V6 and V7 are ad-free."
+      "text": "We use account data to authenticate you, maintain your account, show your own records across the website and Android app, respond to your messages, provide privacy controls and prevent abuse. A website session and Android session are separate; they access the same server-side account. Account and support records are not passed to advertising placements. Android advertising behavior by version is described below; V6 and V7 are ad-free."
     },
     {
       "kind": "h2",
@@ -58,11 +58,11 @@
     },
     {
       "kind": "h2",
-      "text": "Advertising preparation"
+      "text": "Android advertising"
     },
     {
       "kind": "p",
-      "text": "The approved public information website does not load advertising code. Android V6 and V7 are ad-free. The V8 test-ad build includes Google Mobile Ads SDK 25.5.0 and User Messaging Platform 4.0.0 in release-capable code, using KiwiKind’s own AdMob App ID and banner unit. Requests are limited to SDK-recognised test devices; other phones keep banners off. No live advertising is authorised. A banner is shown only on public Home, after Google’s consent checks permit a request. Sign-in, account, support, billing, privacy and deletion screens have no advertising placements."
+      "text": "The public information website does not load advertising code. Android V6 and V7 are ad-free; V8 through V11 restrict requests to SDK-recognised test devices. Version 0.2.10 (V12) permits live banner requests in the signed release, using KiwiKind’s own AdMob App ID and banner unit with Google Mobile Ads SDK 25.5.0 and User Messaging Platform 4.0.0. Google controls ad availability and may limit serving before app review is complete. SDK-recognised test devices and emulators continue to receive test ads; development builds remain test-only. A banner is shown only on public Home after Google’s consent checks permit a request. Sign-in, account, support, billing, privacy and deletion screens have no advertising placements. Advertising is separate from broadband services: live broadband payments, public retail plans and supplier orders remain disabled."
     },
     {
       "kind": "h2",
@@ -70,15 +70,15 @@
     },
     {
       "kind": "p",
-      "text": "The Google SDKs may process IP address and general location, app interactions, diagnostic information and device or installation identifiers for test-ad delivery, measurement and fraud prevention. Data may be transmitted to Google and its advertising technology providers, including processing overseas. Removing the Android Advertising ID permission does not eliminate all SDK data processing; the V8 build removes that permission and does not request precise device location. No KiwiKind email address, password, support message, billing record or referral record is included in an ad request."
+      "text": "The Google SDKs may process IP address and general location, app interactions, diagnostic information and device or installation identifiers for ad delivery, measurement and fraud prevention. Data may be transmitted to Google and its advertising technology providers, including processing overseas. Removing the Android Advertising ID permission does not eliminate all SDK data processing; current builds omit that permission and does not request precise device location. No KiwiKind email address, password, support message, billing record or referral record is included in an ad request."
     },
     {
       "kind": "p",
-      "text": "Google’s applicable consent message explains purposes and providers and offers Consent, Do not consent and Manage options. Refusing personalisation is distinct from preventing every permitted limited-ad request; this build still restricts every request to test devices. Use Advertising privacy choices on public Home or the native Privacy policy screen to revisit choices where Google requires an options form. Opening privacy choices removes the banner, and no automatic ad reload follows. If choices cannot load, ads remain off and essential account functions remain available."
+      "text": "Google’s applicable consent message explains purposes and providers and offers Consent, Do not consent and Manage options. Refusing personalisation is distinct from preventing every permitted limited-ad request. Requests are made only when Google’s consent system permits them; applicable privacy choices remain available. Use Advertising privacy choices on public Home or the native Privacy policy screen to revisit choices where Google requires an options form. Opening privacy choices removes the banner, and no automatic ad reload follows. If choices cannot load, ads remain off and essential account functions remain available."
     },
     {
       "kind": "p",
-      "text": "Google controls retention of its SDK data under Google’s Privacy Policy and advertising technology information. Consent preferences may be stored on the device. KiwiKind has no advertising-cookie script on the website; existing essential account cookies remain separate. Any future live advertising, website cookies or additional providers require reviewed disclosures, applicable consent, Google approval and explicit owner authorisation before activation."
+      "text": "Google controls retention of its SDK data under Google’s Privacy Policy and advertising technology information. Consent preferences may be stored on the device. KiwiKind has no advertising-cookie script on the website; existing essential account cookies remain separate. Website advertising cookies or additional providers require reviewed disclosures, applicable consent and explicit owner authorisation before activation. Google’s app review and serving limits are separate from your privacy choices."
     },
     {
       "kind": "h2",
