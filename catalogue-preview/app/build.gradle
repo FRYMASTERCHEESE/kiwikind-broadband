@@ -1,0 +1,15 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'nz.kiwikind.broadband.preview'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'nz.kiwikind.broadband.preview'
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName 'catalogue-preview-1'
+        testInstrumentationRunner 'nz.kiwikind.broadband.preview.PreviewVerification'
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+dependencies { implementation 'androidx.core:core:1.17.0' }

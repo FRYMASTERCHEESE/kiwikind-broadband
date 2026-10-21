@@ -1,0 +1,55 @@
+name: Private offline catalogue preview
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6.0'
+      - name: Create non-sensitive placeholder for the offline preview shell
+        run: |
+          set -euo pipefail
+          mkdir -p catalogue-preview/app/src/main/assets
+          printf '%s' '<html><body>Offline preview shell · incl. GST<article class="card">Preview</article><article class="card">Preview</article><article class="card">Preview</article><article class="card">Preview</article><button disabled>Preview</button><button disabled>Preview</button><button disabled>Preview</button><button disabled>Preview</button></body></html>' > catalogue-preview/app/src/main/assets/catalogue.html
+      - name: Build isolated offline preview and instrumentation
+        working-directory: catalogue-preview
+        run: gradle --no-daemon lintDebug assembleDebug assembleDebugAndroidTest
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            mkdir -p preview-proof
+            adb install catalogue-preview/app/build/outputs/apk/debug/app-debug.apk
+            adb install catalogue-preview/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb logcat -c
+            adb shell am instrument -w nz.kiwikind.broadband.preview.test/nz.kiwikind.broadband.preview.PreviewVerification | tee preview-proof/result.txt
+            adb pull /sdcard/Android/data/nz.kiwikind.broadband.preview/files/preview-proof preview-proof/screens
+            adb logcat -d -s AndroidRuntime:E > preview-proof/crashes.txt
+            grep -q CATALOGUE_PREVIEW_PASS preview-proof/result.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: KiwiKind-private-catalogue-preview
+          path: |
+            catalogue-preview/app/build/outputs/apk/debug/*.apk
+            preview-proof/
+          retention-days: 1
