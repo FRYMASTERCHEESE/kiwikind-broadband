@@ -12,7 +12,8 @@ CSRF_TRUSTED_ORIGINS = [v for v in os.getenv('CSRF_TRUSTED_ORIGINS', '').split('
 INSTALLED_APPS = ['django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
                   'django.contrib.sessions', 'django.contrib.messages', 'django.contrib.staticfiles',
                   'django_otp', 'django_otp.plugins.otp_totp', 'portal', 'payments']
-MIDDLEWARE = ['django.middleware.security.SecurityMiddleware', 'whitenoise.middleware.WhiteNoiseMiddleware',
+MIDDLEWARE = ['django.middleware.security.SecurityMiddleware', 'portal.pages_middleware.PagesMiddleware',
+              'whitenoise.middleware.WhiteNoiseMiddleware',
               'django.contrib.sessions.middleware.SessionMiddleware', 'django.middleware.common.CommonMiddleware',
               'django.middleware.csrf.CsrfViewMiddleware', 'django.contrib.auth.middleware.AuthenticationMiddleware',
               'django_otp.middleware.OTPMiddleware', 'portal.middleware.SafetyMiddleware', 'django.contrib.messages.middleware.MessageMiddleware',
@@ -98,6 +99,24 @@ EMAIL_TIMEOUT = 10
 RESET_EMAIL_UNAVAILABLE = os.getenv('RESET_EMAIL_UNAVAILABLE') == '1'
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'KiwiKind Broadband <kiwikindbroadband@gmail.com>')
 PUBLIC_ORIGIN = os.getenv('PUBLIC_ORIGIN', 'http://127.0.0.1:8000').rstrip('/')
+# The project path is part of the frontend URL, never part of a CORS origin.
+PAGES_ORIGIN = 'https://frymastercheese.github.io'
+PAGES_URL = PAGES_ORIGIN + '/kiwikind-broadband-website/'
+PAGES_ENABLED = os.getenv('PAGES_ENABLED') == '1'
+PAGES_API_ONLY = os.getenv('PAGES_API_ONLY') == '1'
+if PAGES_API_ONLY and not PAGES_ENABLED:
+    raise ImproperlyConfigured('API-only hosting requires PAGES_ENABLED.')
+if PAGES_ENABLED:
+    CSRF_TRUSTED_ORIGINS = list(set(CSRF_TRUSTED_ORIGINS + [PAGES_ORIGIN]))
+    SESSION_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    # Existing absolute verification/reset URLs must point to the Pages account UI.
+    ACCOUNT_URL = PAGES_URL + 'account.html'
+else:
+    ACCOUNT_URL = PUBLIC_ORIGIN + '/'
 LEGAL_ENTITY = os.getenv('LEGAL_ENTITY', '')
 BUSINESS_CONTACT = os.getenv('BUSINESS_CONTACT', '')
 PRIVACY_CONTACT = os.getenv('PRIVACY_CONTACT', '')
