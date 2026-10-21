@@ -1,0 +1,40 @@
+name: Temporary Stripe development source bundle
+on:
+  push:
+    branches: [integration/stripe-launch-payments]
+    paths: [.github/workflows/stripe-dev-export.yml]
+permissions:
+  contents: read
+jobs:
+  source-bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: backend
+      - uses: actions/checkout@v4
+        with:
+          repository: FRYMASTERCHEESE/kiwikind-broadband-website
+          ref: 3dc7acf013cc410620a961087a942332a8e1858c
+          persist-credentials: false
+          path: website
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Export only tracked public source and public dependency packages
+        run: |
+          mkdir -p bundle/wheels
+          git -C backend archive --format=tar HEAD > bundle/backend.tar
+          git -C website archive --format=tar HEAD > bundle/website.tar
+          python -m pip download --only-binary=:all: --dest bundle/wheels -r backend/requirements.txt
+          git -C backend rev-parse HEAD > bundle/backend-commit.txt
+          git -C website rev-parse HEAD > bundle/website-commit.txt
+          sha256sum bundle/*.tar > bundle/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kiwikind-stripe-isolated-development
+          path: bundle/
+          retention-days: 1
+          if-no-files-found: error
