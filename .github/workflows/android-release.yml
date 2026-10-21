@@ -81,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print android/app/build/outputs/apk/release/app-release.apk > release-evidence/MERGED-MANIFEST.xml
-          python scripts/verify_ad_release.py android/app/build/outputs/apk/release/app-release.apk release-evidence/MERGED-MANIFEST.xml | tee release-evidence/AD-RELEASE-VERIFICATION.txt
+          python scripts/verify_ad_release.py android/app/build/outputs/apk/release/app-release.apk release-evidence/MERGED-MANIFEST.xml android/app/build/outputs/mapping/release/mapping.txt | tee release-evidence/AD-RELEASE-VERIFICATION.txt
           grep -i 'd8c8cbf422ece5a38696f8ca199b0b3d31a7a1bbd646816a8af7c17e9bf0ed64' release-evidence/APK-CERTIFICATE.txt
       - name: Prepare same-signature ad instrumentation for the signed release
         if: inputs.verify_test_ads

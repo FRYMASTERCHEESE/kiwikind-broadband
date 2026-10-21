@@ -21,3 +21,12 @@
     void pause();
     void resume();
 }
+
+# This existing cross-APK consent test constructs the public UMP configuration API.
+# Preserve only these six named classes/interfaces; optimize all other SDK internals.
+-keep class com.google.android.ump.UserMessagingPlatform { public *; }
+-keep interface com.google.android.ump.ConsentInformation { public *; }
+-keep class com.google.android.ump.ConsentRequestParameters { public *; }
+-keep class com.google.android.ump.ConsentRequestParameters$Builder { public *; }
+-keep class com.google.android.ump.ConsentDebugSettings { public *; }
+-keep class com.google.android.ump.ConsentDebugSettings$Builder { public *; }
