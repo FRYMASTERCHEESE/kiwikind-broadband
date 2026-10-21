@@ -1,6 +1,10 @@
 package nz.kiwikind.broadband;
 
 import android.app.Activity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.credentials.CredentialManager;
 import androidx.credentials.GetCredentialRequest;
 import androidx.credentials.GetCredentialResponse;
@@ -39,11 +43,15 @@ public class MainActivity extends Activity {
     interface Task { JSONObject run() throws Exception; }
     interface Done { void accept(JSONObject data) throws Exception; }
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);bannerAds=new BannerAds(this);api=new Api(BuildConfig.API_ORIGIN,this);
+        super.onCreate(state);WindowCompat.enableEdgeToEdge(getWindow());bannerAds=new BannerAds(this);api=new Api(BuildConfig.API_ORIGIN,this);
         if(android.os.Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::backToAccount);
-        getWindow().getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|(android.os.Build.VERSION.SDK_INT>=27?android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR:0));
         LinearLayout root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(PAPER);
-        root.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});
+        ViewCompat.setOnApplyWindowInsetsListener(root,(v,insets)->{
+            Insets safe=insets.getInsets(WindowInsetsCompat.Type.systemBars()
+                |WindowInsetsCompat.Type.displayCutout()|WindowInsetsCompat.Type.ime());
+            v.setPadding(safe.left,safe.top,safe.right,safe.bottom);
+            return insets;
+        });
         LinearLayout header=new LinearLayout(this);header.setGravity(android.view.Gravity.CENTER_VERTICAL);header.setBackgroundColor(FOREST);header.setPadding(dp(18),dp(12),dp(18),dp(12));
         ImageView mark=new ImageView(this);mark.setImageResource(R.drawable.ic_launcher);mark.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO);header.addView(mark,new LinearLayout.LayoutParams(dp(44),dp(44)));
         TextView brand=new TextView(this);brand.setText("KiwiKind Broadband");brand.setTextSize(22);brand.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);brand.setTextColor(Color.WHITE);brand.setPadding(dp(10),0,0,0);header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));root.addView(header);
@@ -60,16 +68,16 @@ public class MainActivity extends Activity {
         // Retry only a read. Never replay a possibly completed order, message or payment.
         recoveryButton.setOnClickListener(v->{if(!busy){if(signedIn){if(refreshScreen!=null)refreshScreen.run();else home();}else connectAccount();}});
         ScrollView scroll=new ScrollView(this){@Override protected void onSizeChanged(int w,int h,int oldw,int oldh){super.onSizeChanged(w,h,oldw,oldh);int side=Math.max(dp(22),(w-dp(680))/2);content.setPadding(side,dp(12),side,dp(24));}};scroll.setFillViewport(true);content=new LinearLayout(this);content.setOrientation(LinearLayout.VERTICAL);content.setPadding(dp(22),dp(12),dp(22),dp(24));scroll.addView(content);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));setContentView(root);
-        root.post(this::applySystemBarAppearance);
+        root.post(()->{ViewCompat.requestApplyInsets(root);applySystemBarAppearance();});
         if(!api.configured()){message("The Android shell is ready for backend configuration. Customer intake is closed.");auth(false);}
         else if(api.hasSession())connectAccount();
         else {auth(false);message("Ready to sign in. The free server may need time to wake up when you connect.");}
     }
     private void applySystemBarAppearance(){
-        if(android.os.Build.VERSION.SDK_INT>=30){
-            android.view.WindowInsetsController controller=getWindow().getInsetsController();
-            if(controller!=null){int light=android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;controller.setSystemBarsAppearance(light,light);}
-        }
+        androidx.core.view.WindowInsetsControllerCompat controller=
+            WindowCompat.getInsetsController(getWindow(),getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(true);
+        controller.setAppearanceLightNavigationBars(true);
     }
     @Override public void onWindowFocusChanged(boolean hasFocus){super.onWindowFocusChanged(hasFocus);if(hasFocus)applySystemBarAppearance();}
     @Override protected void onResume(){

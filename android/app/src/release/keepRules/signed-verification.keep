@@ -1,0 +1,23 @@
+# Narrow reflection surface for existing same-signature release instrumentation.
+# SDK consumer rules handle Credentials/Google ID/Ads. Never keep entire packages.
+-keep,allowoptimization class nz.kiwikind.broadband.BannerAds
+-keepclassmembers class nz.kiwikind.broadband.MainActivity {
+    nz.kiwikind.broadband.BannerAds bannerAds;
+    android.widget.LinearLayout content;
+    void publicPage(java.lang.String);
+    void auth(boolean);
+    void policyScreen(java.lang.String);
+}
+-keepclassmembers class nz.kiwikind.broadband.BannerAds {
+    com.google.android.ump.ConsentRequestParameters parameters;
+    boolean formShowing;
+    boolean consentUpdated;
+    boolean loaded;
+    boolean foreground;
+    android.widget.TextView status;
+    android.widget.LinearLayout slot;
+    com.google.android.gms.ads.AdView banner;
+    void privacyChoices();
+    void pause();
+    void resume();
+}

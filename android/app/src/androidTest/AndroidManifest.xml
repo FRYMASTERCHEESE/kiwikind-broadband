@@ -1,3 +1,4 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <instrumentation android:name="nz.kiwikind.broadband.VisualCapture" android:targetPackage="nz.kiwikind.broadband" />
+  <instrumentation android:name="nz.kiwikind.broadband.LayoutVerification" android:targetPackage="nz.kiwikind.broadband" />
 </manifest>

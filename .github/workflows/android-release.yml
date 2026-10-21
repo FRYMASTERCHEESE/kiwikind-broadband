@@ -61,6 +61,7 @@ jobs:
       - name: Lint and build signed APK and bundle
         working-directory: android
         run: gradle --no-daemon lintRelease assembleRelease bundleRelease
+          test -s app/build/outputs/mapping/release/mapping.txt
       - name: Verify signatures and record public certificate and checksums
         shell: bash
         run: |
@@ -110,6 +111,10 @@ jobs:
           script: |
             adb install android/app/build/outputs/apk/release/app-release.apk
             adb install "$RUNNER_TEMP/kiwikind-ad-tests.apk"
+            adb shell settings put secure show_ime_with_hard_keyboard 1
+            adb shell am instrument -w nz.kiwikind.broadband.test/nz.kiwikind.broadband.LayoutVerification | tee release-evidence/layout-signed-emulator.txt
+            grep -q SIGNED_LAYOUT_PASS release-evidence/layout-signed-emulator.txt
+            adb pull /sdcard/Android/data/nz.kiwikind.broadband/files/layout-v11 release-evidence/layout-v11
             adb shell am instrument -w nz.kiwikind.broadband.test/nz.kiwikind.broadband.AdPlacementVerification | tee release-evidence/advertising-signed-emulator.txt
             adb pull /sdcard/Android/data/nz.kiwikind.broadband/files/advertising-v8 release-evidence/advertising-v8 || true
             adb logcat -d -s KiwiKindAds:W Ads:E UserMessagingPlatform:E '*:S' > release-evidence/ads-sdk-log.txt
@@ -143,6 +148,7 @@ jobs:
             android/app/build/outputs/bundle/release/app-release.aab
             release-evidence/
             android/app/build/reports/
+            android/app/build/outputs/mapping/release/
           if-no-files-found: error
           retention-days: 14
       - name: Remove signing material

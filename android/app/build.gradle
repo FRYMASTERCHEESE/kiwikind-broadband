@@ -24,8 +24,8 @@ android {
         applicationId 'nz.kiwikind.broadband'
         minSdk 26
         targetSdk 36
-        versionCode 10
-        versionName '0.2.8-prelaunch'
+        versionCode 11
+        versionName '0.2.9-prelaunch'
         buildConfigField 'String', 'ADMOB_BANNER_ID', '"ca-app-pub-4051392846058327/4480562173"'
         buildConfigField 'String', 'AD_TEST_DEVICE_IDS', '"' + testDeviceIds + '"'
         buildConfigField 'String', 'API_ORIGIN', '"' + apiOrigin + '"'
@@ -46,11 +46,12 @@ android {
     buildTypes {
         release {
             if (releaseSigningReady) signingConfig signingConfigs.release
-            minifyEnabled false
+            optimization { enable = true }
         }
     }
 }
 dependencies {
+    implementation 'androidx.core:core:1.17.0'
     implementation 'com.google.android.gms:play-services-ads:25.5.0'
     implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
     implementation 'androidx.credentials:credentials:1.5.0'
