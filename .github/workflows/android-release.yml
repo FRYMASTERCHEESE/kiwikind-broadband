@@ -60,7 +60,8 @@ jobs:
         run: gradle --no-daemon testDebugUnitTest
       - name: Lint and build signed APK and bundle
         working-directory: android
-        run: gradle --no-daemon lintRelease assembleRelease bundleRelease
+        run: |
+          gradle --no-daemon lintRelease assembleRelease bundleRelease
           test -s app/build/outputs/mapping/release/mapping.txt
       - name: Verify signatures and record public certificate and checksums
         shell: bash
