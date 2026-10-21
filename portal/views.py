@@ -139,7 +139,8 @@ def register(request):
                     user=User.objects.create_user(username=email,email=email,password=password,is_active=False)
                     attach_referral(user,referral)
                     token=signing.dumps({'id':user.pk},salt='verify')
-                    url=f'{settings.PUBLIC_ORIGIN}/#verify={token}'
+                    account_url = settings.ACCOUNT_URL if settings.PAGES_ENABLED else settings.PUBLIC_ORIGIN + '/'
+                    url=f'{account_url}#verify={token}'
                     sent=send_mail('Verify your KiwiKind Broadband account',f'Confirm your email within 24 hours: {url}\nThis does not order broadband.',settings.DEFAULT_FROM_EMAIL,[email],connection=connection)
                     if sent != 1: raise OSError('Verification email not accepted')
             except IntegrityError: pass
@@ -189,7 +190,8 @@ def reset_start(request):
             token=default_token_generator.make_token(user)
             payload=signing.dumps({'id':user.pk,'token':token},salt='reset')
             try:
-                sent=send_mail('Reset your KiwiKind password',f'{settings.PUBLIC_ORIGIN}/#reset={payload}',settings.DEFAULT_FROM_EMAIL,[email],connection=connection)
+                account_url = settings.ACCOUNT_URL if settings.PAGES_ENABLED else settings.PUBLIC_ORIGIN + '/'
+                sent=send_mail('Reset your KiwiKind password',f'{account_url}#reset={payload}',settings.DEFAULT_FROM_EMAIL,[email],connection=connection)
                 if sent != 1: logging.getLogger(__name__).warning('Password reset email not accepted')
             except (OSError, SMTPException, ImproperlyConfigured):
                 # Recipient-specific failures cannot produce a different public response.

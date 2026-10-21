@@ -3,10 +3,20 @@ from django.urls import path, include
 from portal import views
 from portal import owner_admin, owner_mfa, catalogue, catalogue_import, launch_readiness
 from portal import wholesale_admin, wholesale_views
+from portal import pages
 
 # Shared native/web account APIs; all account-specific routes enforce sessions.
 
 urlpatterns = [path('', include('payments.urls')), path('api/connection-progress', wholesale_views.connection_progress),
+ path('api/pages/cookie-probe', pages.cookie_probe),
+ path('api/pages/session-probe', pages.session_probe),
+ path('api/owner/state', pages.owner_state),
+ path('api/owner/challenge', pages.owner_challenge),
+ path('api/owner/signin', pages.owner_signin),
+ path('api/owner/mfa', pages.owner_mfa),
+ path('api/owner/readiness', pages.owner_readiness),
+ path('api/owner/stripe-evidence', pages.owner_stripe_evidence),
+ path('api/owner/catalogue', pages.owner_catalogue),
  path('api/plans', catalogue.plans),
  path('admin/mfa/', owner_mfa.challenge),
  path('admin/catalogue/import/', catalogue_import.private_catalogue_import, name='private-catalogue-import'),
