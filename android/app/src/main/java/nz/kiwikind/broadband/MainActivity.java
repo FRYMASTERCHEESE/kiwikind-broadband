@@ -262,10 +262,9 @@ public class MainActivity extends Activity {
                 }catch(Exception e){message("Could not verify the Google account. Try again.");}
             }
             @Override public void onError(GetCredentialException e){
-                String kind=e.getClass().getSimpleName();
-                if("GetCredentialCancellationException".equals(kind))message("Google account selection was cancelled. Tap Sign in with Google to try again.");
-                else if("NoCredentialException".equals(kind))retryGoogleWithExplicitButton();
-                else message("Android Google sign-in could not start ("+kind+"). Check the Android OAuth client package and signing SHA-1 in Google Cloud. Website sign-in is available below.");
+                if(e instanceof androidx.credentials.exceptions.GetCredentialCancellationException)message("Google account selection was cancelled. Tap Sign in with Google to try again.");
+                else if(e instanceof androidx.credentials.exceptions.NoCredentialException)retryGoogleWithExplicitButton();
+                else message("Android Google sign-in could not start. Check the Android OAuth client package and signing SHA-1 in Google Cloud. Website sign-in is available below.");
             }
         });
     }
@@ -290,9 +289,9 @@ public class MainActivity extends Activity {
                 }catch(Exception e){message("Google sign-in could not be completed. Your saved login was kept.");}
             }
             @Override public void onError(GetCredentialException e){
-                if("GetCredentialCancellationException".equals(e.getClass().getSimpleName()))
+                if(e instanceof androidx.credentials.exceptions.GetCredentialCancellationException)
                     message("Google sign-in cancelled. Your saved login was kept.");
-                else message("Google sign-in is unavailable ("+e.getClass().getSimpleName()+"). Check Google Play services and the app signing SHA-1; your saved login was kept.");
+                else message("Google sign-in is unavailable. Check Google Play services and the app signing SHA-1; your saved login was kept.");
             }
         });
     }
