@@ -418,9 +418,11 @@ class BillingTests(TestCase):
             object='invoice_payment',livemode=False,invoice='in_test_renewal',
             amount_paid=1000,currency='nzd',payment={'payment_intent':'pi_test_renewal'})],
             'has_more':False}
-        self.api.v1.payment_intents.retrieve.return_value=dict(id='pi_test_renewal',
-            object='payment_intent',livemode=False,amount_received=1000,
-            currency='nzd',customer='cus_synthetic',status='succeeded')
+        # paid() installed a side_effect fixture; replace it, not return_value.
+        self.api.v1.payment_intents.retrieve.side_effect=lambda *args,**kwargs:dict(
+            id='pi_test_renewal',object='payment_intent',livemode=False,
+            amount_received=1000,currency='nzd',customer='cus_synthetic',
+            status='succeeded')
         self.assertEqual(self.hook(self.event('invoice.paid',renewal)).status_code,200)
         current.refresh_from_db()
         self.assertEqual(current.status,'paid')
