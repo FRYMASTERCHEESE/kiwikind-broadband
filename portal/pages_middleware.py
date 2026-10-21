@@ -25,6 +25,8 @@ class PagesMiddleware:
         elif settings.PAGES_API_ONLY and not api and request.path != '/healthz':
             if request.method in ('GET', 'HEAD'):
                 target = 'owner.html' if request.path.startswith('/admin') else 'account.html'
+                target = {'/privacy/': 'privacy.html', '/account-deletion/': 'account-deletion.html',
+                          '/terms/': 'terms.html'}.get(request.path, target)
                 response = HttpResponseRedirect(settings.PAGES_URL + target)
             else:
                 response = JsonResponse({'error': 'Use the GitHub Pages application'}, status=404)
