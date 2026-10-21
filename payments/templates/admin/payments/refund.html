@@ -1,7 +1,24 @@
 {% extends "admin/base_site.html" %}
-{% block content %}<h1>Full TEST refund</h1>
-<p>Agreement: {{ invoice.agreement.label }}. Test invoice total: {{ invoice.amount_cents }} NZD cents.</p>
-<p>No live customer money is involved. A refund does not cancel a test subscription or a broadband service. Verified Stripe updates confirm its final state.</p>
+{% block content %}
+<h1>Stripe TEST refund</h1>
+<p>Agreement: {{ invoice.agreement.label }}.</p>
+<p>Original test invoice: <strong>NZ${{ amount_nzd }}</strong> · status: {{ invoice.status }}.</p>
+<p>Confirmed refunded amount: <strong>NZ${{ refunded_nzd }}</strong>.</p>
+<p>No real customer money or broadband service is involved. A refund does not cancel a subscription.</p>
 {% if notice %}<p role="status">{{ notice }}</p>{% endif %}
-<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Request full TEST refund</button></form>
-<p><a href="{% url 'admin:payments_testinvoice_changelist' %}">Back to test invoices</a></p>{% endblock %}
+{% if fully_refunded %}
+  <p role="status"><strong>Already fully refunded in Stripe TEST mode.</strong> The signed Stripe
+  refund webhook has updated KiwiKind's ledger. No second refund is needed or allowed.</p>
+{% elif can_request_refund %}
+  <p>This test refund uses a fixed Stripe idempotency key for the invoice. It may take a moment
+  for Stripe's signed notification to update the verified billing ledger.</p>
+  <form method="post">{% csrf_token %}{{ form.as_p }}
+    <button type="submit">Request full TEST refund</button>
+  </form>
+{% else %}
+  <p role="status">No refund action is available for this invoice. Check the billing record
+  or allow pending Stripe webhook reconciliation before trying again.</p>
+{% endif %}
+<p><a href="{% url 'admin:payments_testinvoice_changelist' %}">Back to test invoices</a> ·
+<a href="/billing/">View current sandbox billing status</a></p>
+{% endblock %}

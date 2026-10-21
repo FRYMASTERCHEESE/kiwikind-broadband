@@ -109,11 +109,17 @@ def refund(request):
 
 
 def request_refund(actor, identifier):
-    api = gateway.client()
     with transaction.atomic():
         invoice = TestInvoice.objects.select_for_update().select_related('agreement').filter(pk=identifier, status='paid').first()
+        if invoice and invoice.amount_cents > 0 and invoice.refunded_cents == invoice.amount_cents:
+            # A successfully reconciled Stripe refund is already final.
+            # Repeat submits must not make a new provider request, even when
+            # the provider is temporarily unavailable or sandbox is switched off.
+            return {'message': 'This TEST invoice is already fully refunded. No second refund was requested.',
+                    'status': 'succeeded', 'already_refunded': True}
         if not invoice or not invoice.payment_intent or invoice.refunded_cents or invoice.dispute_status:
             raise gateway.ReconciliationError('Test invoice is not eligible for a full refund')
+        api = gateway.client()
         pi = gateway.test_object(api.v1.payment_intents.retrieve(invoice.payment_intent), 'payment_intent', invoice.payment_intent)
         if (pi.get('amount_received') != invoice.amount_cents or pi.get('currency') != 'nzd'
                 or pi.get('customer') != invoice.agreement.customer_id or pi.get('status') != 'succeeded'):
@@ -172,11 +178,39 @@ def readiness(request):
         return JsonResponse({'error':'Not found'},status=404)
     if request.method != 'GET':
         return JsonResponse({'error':'Method not allowed'},status=405)
-    return JsonResponse({'live_payments_enabled':False, 'configuration':gateway.configuration(),
-        'api_version':gateway.API_VERSION,'webhook_path':'/api/billing/webhook',
-        'provider_tested':False,
-        'blockers':['Real Stripe sandbox exercises not completed','Approved retail product and terms required',
-            'Live-mode integration and release approval required','Supplier ordering remains manual']})
+    # Only owner+MFA gets these aggregate TEST-only facts. Provider evidence
+    # must be present in both the reconciled ledger and signed webhook receipts.
+    # These are not claims that renewals, failed payments or signed Android
+    # releases have been exercised.
+    from django.db.models import F
+    verified = TestAgreement.objects.filter(reviewed=True, subscription_id__isnull=False)
+    paid = (TestInvoice.objects.filter(agreement__in=verified, status='paid')
+            .exclude(payment_intent='').exists()
+            and TestEvent.objects.filter(kind='invoice.paid').exists())
+    refunded = (TestInvoice.objects.filter(agreement__in=verified, amount_cents__gt=0,
+                  refunded_cents=F('amount_cents')).exists()
+                and TestEvent.objects.filter(kind='charge.refunded').exists())
+    cancellation = (verified.filter(cancel_at_period_end=True).exists()
+                    and TestEvent.objects.filter(kind='customer.subscription.updated').exists())
+    blockers = []
+    if not paid:
+        blockers.append('An actual sandbox paid invoice and matching webhook remain unverified')
+    if not refunded:
+        blockers.append('An actual full sandbox refund webhook remains unverified')
+    if not cancellation:
+        blockers.append('A real sandbox cancellation update remains unverified')
+    blockers.extend([
+        'Sandbox renewal, failed card and authentication-required journeys are not yet exercised end to end',
+        'Signed Android release on device and Google Play testing require separate verification',
+        'Approved retail product, GST treatment, terms and supplier availability required',
+        'Live-mode integration, commercial approval and release review required',
+        'Supplier ordering remains manual pending verified partner integration'
+    ])
+    return JsonResponse({'live_payments_enabled': False, 'configuration': gateway.configuration(),
+        'api_version': gateway.API_VERSION, 'webhook_path': '/api/billing/webhook',
+        'provider_tested': paid, 'sandbox_payment_verified': paid,
+        'sandbox_refund_verified': refunded, 'sandbox_cancellation_verified': cancellation,
+        'blockers': blockers})
 
 
 @never_cache
@@ -188,6 +222,8 @@ def refund_page(request, invoice_id):
         return JsonResponse({'error':'Not found'}, status=404)
     class Confirmation(forms.Form):
         confirm = forms.BooleanField(label='Request a full TEST refund for this invoice. No actual customer money is refunded.')
+    if request.method not in ('GET', 'POST'):
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
     invoice = get_object_or_404(TestInvoice.objects.select_related('agreement'),pk=invoice_id)
     form = Confirmation(request.POST if request.method == 'POST' else None)
     notice = ''
@@ -195,9 +231,18 @@ def refund_page(request, invoice_id):
         try:
             notice = request_refund(request.user, invoice.pk)['message']
             form = Confirmation()
-        except (gateway.BillingUnavailable,gateway.ReconciliationError,stripe.StripeError):
-            form.add_error(None,'Test refund unavailable or pending reconciliation. No live refund was requested.')
-    elif request.method not in ('GET','POST'):
-        return JsonResponse({'error':'Method not allowed'},status=405)
+        except (gateway.BillingUnavailable, gateway.ReconciliationError, stripe.StripeError):
+            form.add_error(None, 'TEST refund not confirmed. Check the verified billing ledger before retrying; a request may already be processing.')
+    # A concurrent Stripe webhook can have updated the ledger while the user
+    # was submitting the form. Always show fresh state, not a stale invoice.
+    invoice.refresh_from_db()
+    fully_refunded = (invoice.status == 'paid' and invoice.amount_cents > 0
+                      and invoice.refunded_cents == invoice.amount_cents)
+    refundable = (invoice.status == 'paid' and bool(invoice.payment_intent)
+                  and not invoice.refunded_cents and not invoice.dispute_status)
     return TemplateResponse(request,'admin/payments/refund.html',{
-        **admin.site.each_context(request),'title':'Test-only full refund','form':form,'invoice':invoice,'notice':notice})
+        **admin.site.each_context(request), 'title': 'Test-only full refund',
+        'form': form, 'invoice': invoice, 'notice': notice,
+        'fully_refunded': fully_refunded, 'can_request_refund': refundable,
+        'amount_nzd': f'{invoice.amount_cents // 100}.{invoice.amount_cents % 100:02d}',
+        'refunded_nzd': f'{invoice.refunded_cents // 100}.{invoice.refunded_cents % 100:02d}'})

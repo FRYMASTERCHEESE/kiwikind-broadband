@@ -378,7 +378,9 @@ public class MainActivity extends Activity {
             JSONArray invoices=a.optJSONArray("invoices");
             if(invoices!=null)for(int j=0;j<invoices.length();j++){
                 JSONObject invoice=invoices.getJSONObject(j);
-                paragraph("TEST invoice "+billingMoney(invoice.getLong("amount_cents"))+" · "+invoice.getString("status")+"\nRefunded: "+billingMoney(invoice.getLong("refunded_cents"))+(invoice.optString("dispute_status").isEmpty()?"":" · Dispute: "+invoice.optString("dispute_status")));
+                paragraph(BillingDisplay.invoiceLabel(invoice.getString("status"),
+                    invoice.getLong("amount_cents"),invoice.getLong("refunded_cents"),
+                    invoice.optString("dispute_status")));
             }
         }
         if(!r.optBoolean("test_enabled"))paragraph("Payment testing is not enabled for this account. No payment is due here.");

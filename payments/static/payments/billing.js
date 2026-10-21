@@ -8,7 +8,15 @@
     catch (_) { return false; }
   }
   function money(cents) { return new Intl.NumberFormat('en-NZ', {style:'currency', currency:'NZD'}).format(cents / 100); }
-  if (typeof module !== 'undefined') module.exports = {safeCheckout, money};
+  function invoiceLabel(inv) {
+    const fullRefund = inv.status === 'paid' && inv.amount_cents > 0 &&
+      inv.refunded_cents === inv.amount_cents;
+    let text = 'TEST invoice ' + money(inv.amount_cents) + ' · ' + inv.status +
+      (fullRefund ? ' · fully refunded ' : ' · refunded ') + money(inv.refunded_cents);
+    if (inv.dispute_status) text += ' · dispute ' + inv.dispute_status;
+    return text;
+  }
+  if (typeof module !== 'undefined') module.exports = {safeCheckout, money, invoiceLabel};
   if (typeof document === 'undefined') return;
   const list = document.getElementById('agreements'), feedback = document.getElementById('feedback');
   const refresh = document.getElementById('refresh');
@@ -56,8 +64,7 @@
         if(result.test_enabled&&!['pending','canceled','incomplete_expired'].includes(a.status)&&!a.cancel_at_period_end)confirmButton(card,
           'Cancel this test subscription at the end of its current period. This does not cancel an actual broadband service.',
           'Cancel test subscription',()=>api('cancel',{agreement_id:a.id,accept_test_cancel:true}));
-        if(a.invoices.length){const invoices=element('ul','',card);for(const inv of a.invoices)element('li',
-          'TEST invoice '+money(inv.amount_cents)+' · '+inv.status+' · refunded '+money(inv.refunded_cents)+(inv.dispute_status?' · dispute '+inv.dispute_status:''),invoices);}
+        if(a.invoices.length){const invoices=element('ul','',card);for(const inv of a.invoices)element('li',invoiceLabel(inv),invoices);}
       }
     } catch(error){if(current===generation){list.replaceChildren();feedback.textContent=error.message||'Billing could not be loaded. Try refresh.';}}
     finally {if(current===generation)refresh.disabled=busy;}
