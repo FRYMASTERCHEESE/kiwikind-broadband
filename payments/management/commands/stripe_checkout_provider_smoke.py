@@ -11,9 +11,9 @@ from django.core.management.base import BaseCommand
 from payments import gateway
 
 FLAG = "KIWIKIND_STRIPE_PROVIDER_SMOKE_RUN"
-RUN = "2026-10-21-v1"
+RUN = "2026-10-21-v2"
 EXPIRES = datetime(2026, 10, 22, 0, 0, tzinfo=timezone.utc)
-IDEMPOTENCY = "kiwikind-provider-checkout-smoke-20261021-v1"
+IDEMPOTENCY = "kiwikind-provider-checkout-smoke-20261021-v2"
 
 
 class Command(BaseCommand):
@@ -42,7 +42,7 @@ class Command(BaseCommand):
             api = gateway.client()  # verifies pinned Stripe account AND test mode.
             params = {
                 "mode": "subscription",
-                "payment_method_types": ["card"],
+                "allowed_payment_method_types": ["card"],
                 "line_items": [{
                     "price_data": {
                         "currency": "nzd",

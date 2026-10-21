@@ -12,7 +12,7 @@ MODULE = "payments.management.commands.stripe_checkout_provider_smoke"
 
 
 class ProviderCheckoutSmokeTests(SimpleTestCase):
-    def run_smoke(self, client, flag="2026-10-21-v1", configured=True):
+    def run_smoke(self, client, flag="2026-10-21-v2", configured=True):
         out = StringIO()
         env = {"KIWIKIND_STRIPE_PROVIDER_SMOKE_RUN": flag}
         with patch.dict(os.environ, env), patch(MODULE + ".gateway.configured", return_value=configured), patch(
@@ -56,6 +56,8 @@ class ProviderCheckoutSmokeTests(SimpleTestCase):
         args, kwargs = client.v1.checkout.sessions.create.call_args
         self.assertEqual(args[0]["line_items"][0]["price_data"]["unit_amount"], 100)
         self.assertEqual(args[0]["mode"], "subscription")
+        self.assertEqual(args[0]["allowed_payment_method_types"], ["card"])
+        self.assertNotIn("payment_method_types", args[0])
         self.assertIn("idempotency_key", kwargs["options"])
         client.v1.checkout.sessions.expire.assert_called_once_with(
             "cs_test_synthetic_smoke"
@@ -101,7 +103,7 @@ class ProviderCheckoutSmokeTests(SimpleTestCase):
 
     def test_expiry_window_prevents_later_runs(self):
         out = StringIO()
-        with patch.dict(os.environ, {"KIWIKIND_STRIPE_PROVIDER_SMOKE_RUN": "2026-10-21-v1"}), patch(
+        with patch.dict(os.environ, {"KIWIKIND_STRIPE_PROVIDER_SMOKE_RUN": "2026-10-21-v2"}), patch(
             MODULE + ".datetime"
         ) as clock, patch(MODULE + ".gateway.client") as client:
             clock.now.return_value = datetime(2026, 10, 23, 1, 0, tzinfo=timezone.utc)
