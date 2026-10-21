@@ -106,3 +106,7 @@ class PagesTests(TestCase):
             self.assertNotIn('evil',r['Location'])
         self.assertEqual(self.client.get('/healthz').status_code,200)
         self.assertEqual(self.client.post('/admin/mfa/').status_code,404)
+        for route, page in [('/privacy/', 'privacy.html'), ('/account-deletion/', 'account-deletion.html'),
+                            ('/terms/', 'terms.html')]:
+            self.assertEqual(self.client.get(route)['Location'],
+                ORIGIN+'/kiwikind-broadband-website/'+page)
