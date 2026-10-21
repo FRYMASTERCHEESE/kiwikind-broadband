@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Release-capable KiwiKind banners. Every request MUST be a recognised test request. */
+/** Consented release banners; SDK-recognized test devices always retain test requests. */
 final class BannerAds {
     private final Activity activity;
     private final ConsentInformation consent;
@@ -39,8 +39,8 @@ final class BannerAds {
         leave();slot=target;final int token=generation;
         int gap=(int)(24*activity.getResources().getDisplayMetrics().density);
         target.setPadding(0,gap,0,gap);
-        status=new TextView(activity);status.setText("Advertisement · Test mode. Live advertising is disabled.");target.addView(status);
-        Button retry=new Button(activity);retry.setText("Retry test advertisement");retry.setAllCaps(false);
+        status=new TextView(activity);status.setText("Advertisement · Privacy choices apply.");target.addView(status);
+        Button retry=new Button(activity);retry.setText("Retry advertisement");retry.setAllCaps(false);
         retry.setOnClickListener(v->{if(active(token)&&!consentPending&&!initializing&&banner==null)gatherConsent(token);});target.addView(retry);
         target.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener(){
             public void onViewAttachedToWindow(View v){}
@@ -50,12 +50,14 @@ final class BannerAds {
     }
     private boolean active(int token){return !destroyed&&!activity.isFinishing()&&!activity.isDestroyed()
         &&foreground&&!formShowing&&token==generation&&slot!=null&&slot.isAttachedToWindow();}
+    boolean testDevice(){return new AdRequest.Builder().build().isTestDevice(activity);}
+    boolean liveAdsEnabled(){return BuildConfig.LIVE_ADS_ENABLED;}
     private void gatherConsent(int token){
         if(!active(token)||consentPending||initializing||banner!=null)return;
-        if(!new AdRequest.Builder().build().isTestDevice(activity)){
-            status.setText("Test advertisements are off on unregistered devices. Live advertising remains disabled.");return;
+        if(!AdPolicy.canRequest(liveAdsEnabled(),testDevice())){
+            status.setText("This development build requires an SDK test device for advertising.");return;
         }
-        consentPending=true;consentUpdated=false;status.setText("Test advertisement · Checking privacy choices…");
+        consentPending=true;consentUpdated=false;status.setText("Advertisement · Checking privacy choices…");
         consent.requestConsentInfoUpdate(activity,parameters,()->{
             consentPending=false;
             if(!active(token))return;
@@ -71,23 +73,23 @@ final class BannerAds {
     private void load(int token){
         if(!active(token)||!consentUpdated||banner!=null||initializing)return;
         AdRequest request=new AdRequest.Builder().build();
-        // Emulators are test devices automatically. Unregistered phones never make a unit request.
-        if(!AdPolicy.canLoad(consent.canRequestAds(),request.isTestDevice(activity),foreground,slot.isAttachedToWindow())){
-            status.setText(consent.canRequestAds()?"Live advertising is disabled. This phone must be configured as an SDK test device to display a test banner.":"Advertising stayed off: your privacy choices do not permit a request.");return;
+        // The SDK preserves emulator/registered-device test status even in a live-capable release.
+        if(!AdPolicy.canLoad(consent.canRequestAds(),request.isTestDevice(activity),foreground,slot.isAttachedToWindow(),liveAdsEnabled())){
+            status.setText(consent.canRequestAds()?"This development build requires an SDK test device.":"Advertising stayed off: your privacy choices do not permit a request.");return;
         }
         initializing=true;
         initialization.execute(()->{try{MobileAds.initialize(activity.getApplicationContext(),result->main.post(()->{
             initializing=false;
             if(!active(token)||!consentUpdated||!consent.canRequestAds())return;
             AdRequest checkedRequest=new AdRequest.Builder().build();
-            if(!checkedRequest.isTestDevice(activity))return;
+            if(!AdPolicy.canRequest(liveAdsEnabled(),checkedRequest.isTestDevice(activity)))return;
             AdView view=new AdView(activity);banner=view;loaded=false;
             view.setAdUnitId(BuildConfig.ADMOB_BANNER_ID);
             int width=Math.max(1,(int)(slot.getWidth()/activity.getResources().getDisplayMetrics().density));
             view.setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(activity,width));
             view.setAdListener(new AdListener(){
-                @Override public void onAdLoaded(){if(active(token)&&banner==view){loaded=true;status.setText("Advertisement · Test ad · No advertising revenue is generated.");}}
-                @Override public void onAdFailedToLoad(LoadAdError error){if(active(token)&&banner==view){android.util.Log.w("KiwiKindAds","Banner load: "+error.getCode()+" "+error.getMessage());removeBanner();status.setText("Test advertisement unavailable ("+error.getCode()+"). You can retry; account functions still work.");}}
+                @Override public void onAdLoaded(){if(active(token)&&banner==view){loaded=true;status.setText(checkedRequest.isTestDevice(activity)?"Advertisement · Test ad · No advertising revenue is generated.":"Advertisement");}}
+                @Override public void onAdFailedToLoad(LoadAdError error){if(active(token)&&banner==view){android.util.Log.w("KiwiKindAds","Banner load: "+error.getCode()+" "+error.getMessage());removeBanner();status.setText("Advertisement unavailable ("+error.getCode()+"). You can retry; account functions still work.");}}
             });
             LinearLayout.LayoutParams layout=new LinearLayout.LayoutParams(-1,-2);
             int gap=(int)(24*activity.getResources().getDisplayMetrics().density);

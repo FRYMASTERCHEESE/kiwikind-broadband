@@ -20,6 +20,8 @@
     void privacyChoices();
     void pause();
     void resume();
+    boolean testDevice();
+    boolean liveAdsEnabled();
 }
 
 # This existing cross-APK consent test constructs the public UMP configuration API.

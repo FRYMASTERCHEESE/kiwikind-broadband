@@ -50,6 +50,10 @@ public class AdPlacementVerification extends Instrumentation {
             activity=startActivitySync(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             evidence=new File(activity.getExternalFilesDir(null),"advertising-v8");evidence.mkdirs();
             waitForIdleSync();
+            Method testDevice=BannerAds.class.getDeclaredMethod("testDevice");testDevice.setAccessible(true);
+            require((Boolean)testDevice.invoke(field(activity,"bannerAds")),"Automated consent/ad checks require an SDK-recognized TEST device");
+            Method liveEnabled=BannerAds.class.getDeclaredMethod("liveAdsEnabled");liveEnabled.setAccessible(true);
+            require((Boolean)liveEnabled.invoke(field(activity,"bannerAds")),"Signed V12 release must permit consented live requests on ordinary devices");
             runOnMainSync(()->{try{
                 UserMessagingPlatform.getConsentInformation(activity).reset();
                 BannerAds ads=(BannerAds)field(activity,"bannerAds");
