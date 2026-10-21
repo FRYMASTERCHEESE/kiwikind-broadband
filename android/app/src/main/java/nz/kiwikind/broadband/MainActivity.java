@@ -264,7 +264,7 @@ public class MainActivity extends Activity {
             @Override public void onError(GetCredentialException e){
                 if(e instanceof androidx.credentials.exceptions.GetCredentialCancellationException)message("Google account selection was cancelled. Tap Sign in with Google to try again.");
                 else if(e instanceof androidx.credentials.exceptions.NoCredentialException)retryGoogleWithExplicitButton();
-                else message("Android Google sign-in could not start ("+e.getType()+"). Check the Android OAuth client package and signing SHA-1 in Google Cloud. Website sign-in is available below.");
+                else message("Android Google sign-in could not start. Check the Android OAuth client package and signing SHA-1 in Google Cloud. Website sign-in is available below.");
             }
         });
     }
@@ -291,7 +291,7 @@ public class MainActivity extends Activity {
             @Override public void onError(GetCredentialException e){
                 if(e instanceof androidx.credentials.exceptions.GetCredentialCancellationException)
                     message("Google sign-in cancelled. Your saved login was kept.");
-                else message("Google sign-in is unavailable ("+e.getType()+"). Check Google Play services and the app signing SHA-1; your saved login was kept.");
+                else message("Google sign-in is unavailable. Check Google Play services and the app signing SHA-1; your saved login was kept.");
             }
         });
     }
