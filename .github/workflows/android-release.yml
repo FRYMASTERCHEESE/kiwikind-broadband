@@ -2,6 +2,10 @@ name: Android signed prelaunch release
 on:
   workflow_dispatch:
     inputs:
+      published_v12_only:
+        description: Diagnose the exact already-published V12 APK without building or uploading a release
+        type: boolean
+        default: false
       verify_test_ads:
         description: Verify the signed V8 test banner and consent flow on an emulator
         type: boolean
@@ -16,8 +20,14 @@ on:
         default: true
 permissions:
   contents: read
+  actions: read
 jobs:
+  published-v12-diagnostics:
+    if: inputs.published_v12_only
+    uses: ./.github/workflows/android-published-diagnostics.yml
+    secrets: inherit
   release:
+    if: ${{ !inputs.published_v12_only }}
     runs-on: ubuntu-latest
     environment: android-release
     timeout-minutes: 30

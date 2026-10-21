@@ -20,7 +20,8 @@ import com.google.android.ump.*;
 public class AdPlacementVerification extends Instrumentation {
     private Activity activity;
     private File evidence;
-    @Override public void onCreate(Bundle args){super.onCreate(args);start();}
+    private boolean otherGeography;
+    @Override public void onCreate(Bundle args){super.onCreate(args);otherGeography=args!=null&&"other".equals(args.getString("geography"));start();}
     private void require(boolean ok,String text){if(!ok)throw new IllegalStateException(text);}
     private Object field(Object object,String key)throws Exception{Field f=object.getClass().getDeclaredField(key);f.setAccessible(true);return f.get(object);}
     private void invoke(String key,Class<?> type,Object value)throws Exception{Method m=MainActivity.class.getDeclaredMethod(key,type);m.setAccessible(true);m.invoke(activity,value);}
@@ -48,7 +49,7 @@ public class AdPlacementVerification extends Instrumentation {
         Bundle result=new Bundle();
         try{
             activity=startActivitySync(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            evidence=new File(activity.getExternalFilesDir(null),"advertising-v8");evidence.mkdirs();
+            evidence=new File(activity.getExternalFilesDir(null),otherGeography?"advertising-other":"advertising-v8");evidence.mkdirs();
             waitForIdleSync();
             Method testDevice=BannerAds.class.getDeclaredMethod("testDevice");testDevice.setAccessible(true);
             require((Boolean)testDevice.invoke(field(activity,"bannerAds")),"Automated consent/ad checks require an SDK-recognized TEST device");
@@ -58,7 +59,7 @@ public class AdPlacementVerification extends Instrumentation {
                 UserMessagingPlatform.getConsentInformation(activity).reset();
                 BannerAds ads=(BannerAds)field(activity,"bannerAds");
                 Field params=BannerAds.class.getDeclaredField("parameters");params.setAccessible(true);
-                params.set(ads,new ConsentRequestParameters.Builder().setConsentDebugSettings(new ConsentDebugSettings.Builder(activity).setDebugGeography(ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA).build()).build());
+                params.set(ads,new ConsentRequestParameters.Builder().setConsentDebugSettings(new ConsentDebugSettings.Builder(activity).setDebugGeography(otherGeography?ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_OTHER:ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA).build()).build());
                 invoke("publicPage",String.class,"home");
             }catch(Exception e){throw new RuntimeException(e);}});
             boolean refused=false,loaded=false;int taps=0;
@@ -67,6 +68,7 @@ public class AdPlacementVerification extends Instrumentation {
                 waitForIdleSync();
                 BannerAds ads=(BannerAds)field(activity,"bannerAds");
                 if((Boolean)field(ads,"formShowing")){
+                    if(otherGeography)require(!UserMessagingPlatform.getConsentInformation(activity).isConsentFormAvailable(),"Unexpected consent form in OTHER geography");
                     if(taps==0)capture("00-eea-consent.png");
                     if(clickRefusal(getUiAutomation().getRootInActiveWindow()))taps++;
                 }
@@ -74,8 +76,22 @@ public class AdPlacementVerification extends Instrumentation {
                 if((Boolean)field(ads,"loaded")){loaded=true;break;}
                 Thread.sleep(1000);
             }
-            require(refused,"EEA refusal was not completed; consent configuration is not verified");
             require(loaded,"KiwiKind test banner did not fill: "+((android.widget.TextView)field(field(activity,"bannerAds"),"status")).getText());
+            if(otherGeography){
+                ConsentInformation info=UserMessagingPlatform.getConsentInformation(activity);
+                require(taps==0&&info.getConsentStatus()==ConsentInformation.ConsentStatus.NOT_REQUIRED&&info.canRequestAds(),"OTHER geography did not complete the no-form request path");
+                capture("01-other-test-banner.png");
+                runOnMainSync(()->{try{
+                    BannerAds ads=(BannerAds)field(activity,"bannerAds");
+                    invoke("auth",boolean.class,false);
+                    require(field(ads,"banner")==null&&field(ads,"slot")==null,"Banner survived sign-in navigation");
+                    invoke("policyScreen",String.class,"privacy");
+                    require(field(ads,"banner")==null,"Banner appeared on privacy screen");
+                }catch(Exception e){throw new RuntimeException(e);}});
+                result.putString("stream","AD_OTHER_GEOGRAPHY_PASS: Published V12 signed artifact; SDK-recognized test device; UMP OTHER geography NOT_REQUIRED/canRequestAds; filled test banner; sign-in/privacy exclusions. No live ad traffic.");
+                runOnMainSync(activity::finish);finish(Activity.RESULT_OK,result);return;
+            }
+            require(refused,"EEA refusal was not completed; consent configuration is not verified");
             runOnMainSync(()->{try{
                 LinearLayout slot=(LinearLayout)field(field(activity,"bannerAds"),"slot");
                 LinearLayout content=(LinearLayout)field(activity,"content");
