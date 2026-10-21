@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from portal import views
-from portal import owner_admin, owner_mfa, catalogue, catalogue_import
+from portal import owner_admin, owner_mfa, catalogue, catalogue_import, launch_readiness
 from portal import wholesale_admin, wholesale_views
 
 # Shared native/web account APIs; all account-specific routes enforce sessions.
@@ -10,6 +10,8 @@ urlpatterns = [path('', include('payments.urls')), path('api/connection-progress
  path('api/plans', catalogue.plans),
  path('admin/mfa/', owner_mfa.challenge),
  path('admin/catalogue/import/', catalogue_import.private_catalogue_import, name='private-catalogue-import'),
+ path('admin/launch-readiness/', launch_readiness.launch_readiness, name='private-launch-readiness'),
+ path('admin/launch-readiness/framework/', launch_readiness.record_framework_review, name='record-framework-review'),
  path('admin/wholesale/', admin.site.admin_view(wholesale_admin.dashboard), name='wholesale-dashboard'),
  path('privacy/', views.privacy_policy), path('account-deletion/', views.account_deletion_info), path('', views.home), path('styles.css', views.styles), path('app.js', views.script), path('api/csrf', views.csrf), path('api/status', views.status),
  path('app-ads.txt', views.advertising_sellers), path('ads.txt', views.advertising_sellers),
