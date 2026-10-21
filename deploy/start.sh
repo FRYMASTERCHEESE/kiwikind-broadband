@@ -2,9 +2,9 @@
 set -eu
 python manage.py migrate --noinput
 python manage.py collectstatic --noinput
-# Only report whether values exist; never print credentials.
 python manage.py check_stripe_sandbox
-# Read-only Stripe API identity/mode check; do not block existing customers if
-# Stripe is temporarily unavailable. No billing feature switch is changed.
-python manage.py verify_stripe_test_connection || echo "Stripe identity check could not complete; customer services continue."
+python manage.py verify_stripe_test_connection || echo "Stripe identity verification unavailable; account service continues."
+# Provider-only QA is OFF by default, guarded by one-shot flag and deadline.
+# It only creates/expires a TEST Checkout session; no app/customer database writes.
+python manage.py stripe_checkout_provider_smoke || echo "Stripe provider smoke unavailable; account service continues."
 exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 1 --threads 4 --timeout 30 --access-logfile -
