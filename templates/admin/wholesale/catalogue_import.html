@@ -1,0 +1,34 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Private wholesale quote import</h1>
+<p><strong>Owner-only preparation.</strong> Upload up to 50 rows of authorised supplier
+quote data at a time. Imported items are always <strong>private, unverified,
+address-specific drafts</strong>. They cannot be published, sold or ordered from
+this screen. No Vetta API or supplier network is contacted.</p>
+<p><a href="?template=1">Download blank CSV template</a>. Required columns:
+<strong>name, download_mbps, upload_mbps, wholesale_ex_gst, source_reference</strong>.
+Other columns in the template are optional. Keep unknown prices blank:
+<strong>blank does not mean free</strong>. Supply plain NZD decimals with no
+currency symbols; GST is calculated by the server at 15% for internal review.</p>
+<p><strong>Do not upload</strong> a signed agreement, private account credentials,
+API keys, customer personal information, ONT identifiers or addresses.
+Only enter price details you are authorised to use. Do not copy full legal
+documents or portal secrets into the CSV.</p>
+{% if error %}<p role="alert" style="color:#a11c1c">{{ error }}</p>{% endif %}
+<p>There are {{ draft_count }} existing private draft plans. Rows with exact
+matching existing drafts are skipped. Edited, approved or conflicting records
+will <strong>never</strong> be overwritten.</p>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <p><label for="catalogue_csv">Private quote CSV file (max 100 KB)</label>
+    <input type="file" id="catalogue_csv" name="catalogue_csv"
+      accept=".csv,text/csv" required></p>
+  <p><label><input type="checkbox" name="confirm_draft_only" value="yes" required>
+    I confirm this upload is authorised quote information only. All imported
+    records must remain private and unapproved until I separately verify each
+    price, network, GST treatment, availability and customer terms.</label></p>
+  <button type="submit" class="button default">Import private drafts only</button>
+</form>
+<p><a href="{% url 'admin:portal_draftplan_changelist' %}">Back to private price catalogue</a>
+ · <a href="{% url 'wholesale-dashboard' %}">Wholesale preparation</a></p>
+{% endblock %}
