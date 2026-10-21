@@ -47,7 +47,7 @@ def checkout(user, agreement_id, expected_version, api):
         if a.setup_cents:
             items.append({'price_data': {'currency': 'nzd', 'unit_amount': a.setup_cents,
                 'product_data': {'name': 'KiwiKind TEST ONLY setup'}}, 'quantity': 1})
-        params = dict(mode='subscription', payment_method_types=['card'],
+        params = dict(mode='subscription', allowed_payment_method_types=['card'],
             client_reference_id=str(a.pk), customer_email=a.checkout_email, line_items=items,
             metadata={'kiwikind_test_agreement': str(a.pk)},
             subscription_data={'metadata': {'kiwikind_test_agreement': str(a.pk)}},

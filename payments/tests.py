@@ -144,6 +144,13 @@ class BillingTests(TestCase):
         self.a.refresh_from_db();self.assertEqual(self.a.checkout_email,self.user.email)
         self.assertGreater(args[0]['expires_at'],time.time()+1800)
 
+    def test_checkout_uses_supported_endive_card_selection(self):
+        response = self.post()
+        self.assertEqual(response.status_code, 200, response.content)
+        args, _ = self.api.v1.checkout.sessions.create.call_args
+        self.assertNotIn('payment_method_types', args[0])
+        self.assertEqual(args[0]['allowed_payment_method_types'], ['card'])
+
     def test_repeated_checkout_reuses_session(self):
         self.assertEqual(self.post().status_code,200)
         self.assertEqual(self.post().status_code,200)
