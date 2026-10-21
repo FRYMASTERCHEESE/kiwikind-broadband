@@ -2,6 +2,10 @@ name: Android pre-launch build
 on:
   workflow_dispatch:
     inputs:
+      catalogue_preview:
+        description: Build separate offline private design preview only; no Play upload
+        type: boolean
+        default: false
       test_ads:
         description: Compile and lint only the internal official test-ad preview
         required: false
@@ -14,7 +18,11 @@ on:
 permissions:
   contents: read
 jobs:
+  catalogue-preview:
+    if: inputs.catalogue_preview
+    uses: ./.github/workflows/catalogue-preview.yml
   build:
+    if: ${{ !inputs.catalogue_preview }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
