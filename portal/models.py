@@ -2,6 +2,8 @@ import uuid
 import secrets
 from django.conf import settings
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 from django.contrib.auth.models import User
 
 
@@ -161,3 +163,40 @@ class VerifiedSupplierOption(models.Model):
 
     def __str__(self):
         return f'{self.product_id}/{self.group_id}/{self.option_id}'
+
+
+class PrivateCatalogueRelease(models.Model):
+    """Immutable private draft bundle; importing cannot approve or publish it."""
+    checksum = models.CharField(max_length=64, unique=True, editable=False)
+    payload = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    verified_on = models.DateField(null=True, blank=True)
+    valid_until = models.DateField(null=True, blank=True)
+    active = models.BooleanField(default=False)
+    approved_digest = models.CharField(max_length=64, blank=True, editable=False)
+    approved_at = models.DateTimeField(null=True, blank=True, editable=False)
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.PROTECT, editable=False)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['active'], condition=models.Q(active=True),
+            name='one_active_private_catalogue')]
+
+    def clean(self):
+        from .private_catalogue import validate_payload, digest
+        validate_payload(self.payload, publish=self.active)
+        if self.active and (not self.verified_on or self.verified_on > timezone.localdate()
+                or not self.valid_until or self.valid_until < timezone.localdate()
+                or not self.approved_at or not self.approved_by_id
+                or self.approved_digest != digest(self.payload)):
+            raise ValidationError('Publication needs dated supplier verification and owner approval of this exact bundle.')
+
+    def save(self, *args, **kwargs):
+        from .private_catalogue import digest
+        self.full_clean(exclude=['checksum'])
+        self.checksum = digest(self.payload)
+        if self.pk:
+            original = type(self).objects.get(pk=self.pk)
+            if original.checksum != self.checksum:
+                raise ValidationError('Create a new draft release to change products; preserve the previous release.')
+        super().save(*args, **kwargs)

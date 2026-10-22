@@ -41,17 +41,11 @@ class CatalogueTests(TestCase):
         with override_settings(PLAN_PUBLICATION_ENABLED=True):
             self.assertEqual(self.client.get('/api/plans').json()['plans'], [])
 
-    def test_publication_gate_and_projection_hide_wholesale(self):
+    def test_legacy_drafts_never_become_a_second_public_catalogue(self):
         self.approved()
-        self.assertEqual(self.client.get('/api/plans').json()['plans'], [])
-        with override_settings(PLAN_PUBLICATION_ENABLED=True):
+        with override_settings(PLAN_PUBLICATION_ENABLED=True, BROADBAND_CATALOGUE_ENABLED=True):
             response = self.client.get('/api/plans')
-            plan = response.json()['plans'][0]
-            self.assertEqual(plan['retail_monthly_cents'], 9200)
-            self.assertEqual(plan['retail_setup_cents'], 4600)
-            self.assertNotIn('wholesale', response.content.decode())
-            self.assertNotIn('private-supplier-quote', response.content.decode())
-            self.assertEqual(plan['address_availability'], 'unverified')
+            self.assertEqual(response.json()['plans'], [])
             self.assertEqual(response['Cache-Control'], 'no-store')
             self.assertNotIn('Access-Control-Allow-Credentials', response)
 

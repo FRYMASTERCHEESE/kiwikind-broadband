@@ -476,7 +476,7 @@ public class MainActivity extends Activity {
         paragraph("Step 1: choose fibre, rural or other broadband. Step 2: choose speed and installation type. Step 3: send your address for confirmation. Only pay after reviewing the final offer. The shown monthly and setup estimates already include GST.");
         if(signedIn)button("Track my existing requests",this::orders);
         JSONArray products=r.getJSONArray("products");String consent=r.getString("consent_version");
-        if(products.length()==0)paragraph("Broadband plans are temporarily unavailable. Contact KiwiKind.");
+        if(products.length()==0){paragraph("We are updating our broadband plans. Please check back soon. Existing accounts and requests remain available.");if(signedIn)nav();else button("Sign in",()->auth(false));return;}
         EditText search=field("Find broadband by type (fibre, rural, wireless or mobile)",
             InputType.TYPE_CLASS_TEXT);
         java.util.ArrayList<String> searchTexts=new java.util.ArrayList<>();
@@ -485,6 +485,9 @@ public class MainActivity extends Activity {
             JSONObject p=products.getJSONObject(i);
             int before=content.getChildCount();
             title(p.getString("name"));
+            paragraph(p.optString("allowance")+"\n"+p.optString("terms"));
+            JSONObject preview=p.optJSONObject("default_quote");
+            if(preview!=null)paragraph("Setup once: "+(preview.isNull("setup_cents")?"To confirm":billingMoney(preview.getLong("setup_cents")))+"\nFirst payment including GST: "+(preview.isNull("first_invoice_cents")?"To confirm":billingMoney(preview.getLong("first_invoice_cents"))));
             paragraph("Estimated starting from "+billingMoney(p.getLong("headline_monthly_cents"))+" per month, including GST.\n"+p.optString("headline_note")+"\n"+p.getString("description")+"\n"+("needs_supplier_confirmation".equals(p.optString("price_status"))?"Supplier price still needs confirmation before a final offer.":"Installation and address charges must be confirmed before payment."));
             button("Choose options",()->configureBroadband(p,consent));
             int after=content.getChildCount();

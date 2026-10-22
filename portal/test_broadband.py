@@ -14,7 +14,7 @@ from payments.live_models import LiveAgreement
 from payments.retail_pricing import order_quote
 
 
-@override_settings(BROADBAND_CATALOGUE_ENABLED=True,PUBLIC_ORIGIN='https://kiwikind.example.invalid')
+@override_settings(BROADBAND_CATALOGUE_ENABLED=True, PLAN_PUBLICATION_ENABLED=True,PUBLIC_ORIGIN='https://kiwikind.example.invalid')
 class BroadbandTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user('broadband-customer', 'buyer@example.invalid')
@@ -22,115 +22,76 @@ class BroadbandTests(TestCase):
         self.owner = get_user_model().objects.create_superuser('operator', 'operator@example.invalid', 'Synthetic-password-only')
         self.operator = Client()
         owner_fixture(self.operator, self.owner)
-        # Disposable test records only; real supplier rate sheet stays private.
-        source = next(p for p in catalogue_source()[0] if p['id'] == 'ufb')
-        rows = []
-        for n, opt in enumerate(source['groups'][0]['options']):
-            if opt['id'] == '2':  # screenshot price is truncated, must be hidden
-                continue
-            rows.append(VerifiedSupplierOption(product_id='ufb', group_id='speed',
-                option_id=opt['id'], label=opt['name'],
-                monthly_ex_gst_cents=int(Decimal(opt['monthly']) * 100),
-                setup_ex_gst_cents=int(Decimal(opt['setup']) * 100),
-                sort_order=n, verified=True, verified_on=timezone.localdate(),
-                source_ref='synthetic-old-fixture'))
-        rows.extend([
-            VerifiedSupplierOption(product_id='ufb', group_id='speed', option_id='21',
-                label='50Mbps Down / 20Mbps Up', monthly_ex_gst_cents=7000,
-                setup_ex_gst_cents=0, sort_order=1, verified=True,
-                verified_on=timezone.localdate(), source_ref='synthetic'),
-            VerifiedSupplierOption(product_id='ufb', group_id='speed', option_id='22',
-                label='300Mbps Down / 300Mbps Up (SME)', monthly_ex_gst_cents=8500,
-                setup_ex_gst_cents=8500, sort_order=6, verified=True,
-                verified_on=timezone.localdate(), source_ref='synthetic'),
-        ])
-        for id, amount in [('churn', 2000), ('existing_ont', 0), ('new_ont', 0),
-                           ('additional_ont', 30000)]:
-            rows.append(VerifiedSupplierOption(product_id='ufb', group_id='install',
-                option_id=id, label=id, monthly_ex_gst_cents=0,
-                setup_ex_gst_cents=amount, verified=True,
-                verified_on=timezone.localdate(), source_ref='synthetic'))
-        VerifiedSupplierOption.objects.bulk_create(rows)
-        self.selection = quote('ufb', ['3', 'existing_ont'])
-        self.data = dict(product_id='ufb', selections=['3', 'existing_ont'], quote_version=self.selection['quote_version'],
+        from .models import PrivateCatalogueRelease
+        from .private_catalogue import validate_payload, digest
+        from .test_private_catalogue import sample
+        payload = sample()
+        payload[0].update(id='ufb', name='Synthetic regression fibre', base='0.00', baseSetup='0.00')
+        payload[0]['groups'] = [
+            {'id': 'speed', 'label': 'Speed', 'options': [
+                {'id': '3', 'name': 'Synthetic speed', 'monthly': '69.92', 'setup': '0.00', 'unknown': False, 'usage': None}]},
+            {'id': 'install', 'label': 'Installation', 'options': [
+                {'id': key, 'name': key, 'monthly': '0.00', 'setup': amount, 'unknown': False, 'usage': None}
+                for key, amount in [('existing-ont', '0.00'), ('churn', '20.00'), ('additional-ont', '300.00')]]}]
+        payload = validate_payload(payload)
+        self.release = PrivateCatalogueRelease.objects.create(payload=payload, active=True,
+            verified_on=timezone.localdate(), valid_until=timezone.localdate(),
+            approved_by=self.owner, approved_at=timezone.now(), approved_digest=digest(payload))
+        self.selection = quote('ufb', ['3', 'existing-ont'])
+        self.data = dict(product_id='ufb', selections=['3', 'existing-ont'], quote_version=self.selection['quote_version'],
             address='10 Synthetic Test Street', postcode='1010', contact_name='Synthetic Customer', phone='',
             idempotency_key=str(uuid.uuid4()), consent_version=ORDER_CONSENT, accept_review=True)
 
     def submit(self, **changes):
         return self.client.post('/api/broadband/orders', json.dumps({**self.data, **changes}), content_type='application/json')
 
-    def test_all_screenshot_categories_and_inclusive_additions(self):
+    def test_private_release_and_inclusive_additions(self):
         response = self.client.get('/api/broadband/catalogue').json()
-        self.assertEqual(len(response['products']), 7)
+        self.assertEqual(len(response['products']), 1)
         self.assertFalse(response['supplier_orders_enabled'])
         self.assertEqual(response['payment_timing'], 'after_connection_confirmation')
-        self.assertEqual([len(p['groups'][0]['options']) for p in response['products'][:3]], [5, 5, 22])
-        self.assertEqual(len(response['products'][2]['groups'][1]['options']), 5)
         self.assertNotIn('source_monthly_cents', json.dumps(response))
-        self.assertEqual(self.selection['monthly_cents'], 8341) # 69.92 * 1.15 + 3.00
+        self.assertEqual(self.selection['monthly_cents'], 8341)
         self.assertEqual(self.selection['setup_cents'], 1000)
         self.assertEqual(self.selection['first_invoice_cents'], 9341)
-        mobile = quote('mobile-4g', ['0', '0', '0'])
-        self.assertEqual((mobile['monthly_cents'], mobile['setup_cents']), (1450, 2150))
-        vector = quote('vector', ['0', '5', '0', '1'])
-        self.assertEqual(vector['monthly_cents'], 27764)
-        self.assertEqual(vector['setup_cents'], 13650) # (25 + 85) * 1.15 + 10
-        self.assertEqual(vector['first_invoice_cents'], vector['monthly_cents'] + vector['setup_cents'])
 
-    def test_unknown_fees_and_metered_usage_are_not_silently_zero(self):
-        result = quote('vector', ['1', '1', '0', '0'])
-        self.assertIsNone(result['setup_cents'])
-        self.assertIsNone(result['first_invoice_cents'])
-        self.assertIn('0.0805/GB', result['usage'][0])
-        self.assertFalse(result['quote_complete'])
-
-    def test_speed_only_setup_is_not_an_install_price(self):
-        unconfirmed = quote('ufb', ['3', 'unknown'])
-        self.assertIsNone(unconfirmed['setup_cents'])
-        self.assertIsNone(unconfirmed['first_invoice_cents'])
-        self.assertFalse(unconfirmed['quote_complete'])
-        self.assertIn('installation', ' '.join(unconfirmed['usage']).lower())
+    def test_unknown_installation_is_not_a_free_selection(self):
+        with self.assertRaises(ValueError): quote('ufb', ['3', 'unknown'])
         churn = quote('ufb', ['3', 'churn'])
-        self.assertEqual(churn['monthly_cents'], self.selection['monthly_cents'])
-        self.assertEqual(churn['setup_cents'], 3300)  # Synthetic 2000 ex GST + $10
-        self.assertEqual(churn['first_invoice_cents'], churn['monthly_cents'] + 3300)
-        additional = quote('ufb', ['3', 'additional_ont'])
-        self.assertGreater(additional['setup_cents'], churn['setup_cents'])
+        self.assertEqual(churn['setup_cents'], 3300)
+        self.assertEqual(churn['first_invoice_cents'], churn['monthly_cents']+3300)
 
-    def test_missing_verified_speed_is_hidden_no_stale_fallback(self):
-        VerifiedSupplierOption.objects.filter(product_id='ufb', group_id='speed',
-            option_id='3').delete()
-        with self.assertRaises(ValueError):
-            quote('ufb', ['3', 'existing_ont'])
-        data = self.client.get('/api/broadband/catalogue').json()
-        ufb = next(p for p in data['products'] if p['id']=='ufb')
-        self.assertFalse(any(o['id']=='3' for o in ufb['groups'][0]['options']))
-        VerifiedSupplierOption.objects.filter(product_id='ufb').delete()
-        self.assertFalse(any(p['id']=='ufb' for p in
-            self.client.get('/api/broadband/catalogue').json()['products']))
+    def test_removed_release_is_hidden_without_fallback(self):
+        from .models import PrivateCatalogueRelease
+        PrivateCatalogueRelease.objects.filter(pk=self.release.pk).update(active=False)
+        with self.assertRaises(ValueError): quote('ufb', ['3', 'existing-ont'])
+        self.assertEqual(self.client.get('/api/broadband/catalogue').json()['products'], [])
 
     def test_rate_changes_invalidate_order_and_old_offer_draft(self):
+        from .models import PrivateCatalogueRelease
+        from .private_catalogue import digest, validate_payload
         self.assertEqual(self.submit().status_code, 201)
         pk = str(BroadbandOrder.objects.get().order_id)
-        rate = VerifiedSupplierOption.objects.get(
-            product_id='ufb', group_id='speed', option_id='3')
-        rate.monthly_ex_gst_cents += 100
-        rate.save()
+        payload = self.release.payload
+        payload[0]['groups'][0]['options'][0]['monthly'] = '70.92'
+        payload = validate_payload(payload)
+        PrivateCatalogueRelease.objects.filter(pk=self.release.pk).update(active=False)
+        PrivateCatalogueRelease.objects.create(payload=payload, active=True,
+            verified_on=timezone.localdate(), valid_until=timezone.localdate(),
+            approved_by=self.owner, approved_at=timezone.now(), approved_digest=digest(payload))
         self.assertEqual(self.submit(idempotency_key=str(uuid.uuid4())).status_code, 409)
-        result = self.operator.post(
-            f'/api/owner/broadband-orders/{pk}/prepare-offer',
-            '{}', content_type='application/json')
+        result = self.operator.post(f'/api/owner/broadband-orders/{pk}/prepare-offer', '{}', content_type='application/json')
         self.assertEqual(result.status_code, 409)
         self.assertFalse(LiveAgreement.objects.exists())
 
     def test_quote_invalid_options_and_closed_gate(self):
         for selection in ([], ['99'], ['3'], ['3','99'], [True], [3], {}, None):
             with self.assertRaises(ValueError): quote('ufb', selection)
-        self.assertEqual(self.client.get('/api/broadband/quote?product=ufb&options=3,existing_ont').json()['monthly_cents'], 8341)
+        self.assertEqual(self.client.get('/api/broadband/quote?product=ufb&options=3,existing-ont').json()['monthly_cents'], 8341)
         with override_settings(BROADBAND_CATALOGUE_ENABLED=False):
             self.assertEqual(self.client.get('/api/broadband/catalogue').json()['products'], [])
             self.assertEqual(self.submit().status_code, 503)
-            self.assertEqual(self.client.get('/api/broadband/quote?product=ufb&options=3,existing_ont').status_code, 503)
+            self.assertEqual(self.client.get('/api/broadband/quote?product=ufb&options=3,existing-ont').status_code, 503)
 
     def test_order_uses_server_prices_and_never_calls_stripe_or_supplier(self):
         with patch('payments.live_gateway.client') as stripe:
