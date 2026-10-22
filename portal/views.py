@@ -87,7 +87,7 @@ def health(request): return JsonResponse({'status':'ok','service':'kiwikind-broa
 
 def capabilities():
     return {'mode':'prelaunch','intake_enabled':settings.INTAKE_ENABLED,'registration_enabled':settings.REGISTRATION_ENABLED,'live_services':False,
-      'availability':'unverified','billing_enabled':False,'legal_entity':settings.LEGAL_ENTITY,
+      'availability':'unverified','billing_enabled':__import__('payments.live_gateway',fromlist=['configured']).configured(),'legal_entity':settings.LEGAL_ENTITY,
       'business_contact':settings.BUSINESS_CONTACT,'privacy_contact':settings.PRIVACY_CONTACT,'consent_version':CONSENT}
 
 @endpoint(['GET'])
@@ -303,6 +303,12 @@ def export(request):
     data['sandbox_billing_agreements']=list(TestAgreement.objects.filter(user=request.user).values(
         'id','label','monthly_cents','setup_cents','reviewed','status','cancel_at_period_end','checkout_started_at','created_at'))
     data['sandbox_billing_invoices']=list(TestInvoice.objects.filter(agreement__user=request.user).values(
+        'id','agreement_id','amount_cents','status','refunded_cents','dispute_status','created_at'))
+    from payments.live_models import LiveAgreement, LiveInvoice
+    data['payment_agreements']=list(LiveAgreement.objects.filter(user=request.user).values(
+        'id','label','monthly_cents','setup_cents','tax_treatment','service_terms','bill_from',
+        'terms_version','status','cancel_at_period_end','checkout_started_at','created_at'))
+    data['payment_invoices']=list(LiveInvoice.objects.filter(agreement__user=request.user).values(
         'id','agreement_id','amount_cents','status','refunded_cents','dispute_status','created_at'))
     data['referrals']=list(Referral.objects.filter(referrer=request.user).values('id','status','created_at'))
     data['account_preferences']={'account_notifications':AccountPreferences.objects.filter(user=request.user,account_notifications=True).exists()}

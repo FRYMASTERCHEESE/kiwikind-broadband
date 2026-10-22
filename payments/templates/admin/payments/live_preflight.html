@@ -13,9 +13,8 @@ It cannot activate Stripe or create any charge.</p>
 <li>Live account ID: <strong>{% if config.live_account_id_present %}present{% else %}not configured{% endif %}</strong></li>
 <li>Live webhook signing secret: <strong>{% if config.live_webhook_secret_present %}present{% else %}not configured{% endif %}</strong></li>
 </ul>
-<p><strong>Actual customer billing implementation: NOT RELEASED.</strong>
-No live Checkout, invoice, subscription, or refund route is enabled by
-these checks. Your existing sandbox payment system continues unchanged.</p>
+<p><strong>Actual customer billing implementation: {% if config.live_checkout_enabled %}ENABLED for approved private customer agreements{% else %}PAUSED pending release configuration{% endif %}.</strong>
+These read-only checks never create payments. The sandbox remains separate.</p>
 
 {% if provider %}
 <h2>Read-only Stripe result</h2>

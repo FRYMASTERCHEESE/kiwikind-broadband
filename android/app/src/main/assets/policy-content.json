@@ -6,7 +6,7 @@
     },
     {
       "kind": "p",
-      "text": "Updated 20 October 2026. This policy covers the KiwiKind Broadband Android app and customer portal. KiwiKind Broadband Limited (NZBN 9429054036550), incorporated on 19 October 2026, operates this prelaunch project. Free accounts and support conversations are available. Broadband orders, supplier processing and payments remain closed; incorporation does not establish an operating ISP. The Google Play developer display name is FryMasterCheese Studios."
+      "text": "Updated 22 October 2026. This policy covers the KiwiKind Broadband Android app and customer portal. KiwiKind Broadband Limited (NZBN 9429054036550), incorporated on 19 October 2026, operates this prelaunch project. Free accounts and support conversations are available. Public broadband orders and supplier processing remain closed; private payment offers are described below; incorporation does not establish an operating ISP. The Google Play developer display name is FryMasterCheese Studios."
     },
     {
       "kind": "h2",
@@ -30,7 +30,7 @@
     },
     {
       "kind": "p",
-      "text": "Broadband orders, payments and provisioning are disabled. No active service, price or coverage is promised. Address, contact name, postcode and optional phone fields exist in the software for future requests, but customer intake is closed. We will update relevant notices before enabling collection for live services."
+      "text": "Public broadband orders and provisioning are disabled. Private payment offers are described below. No active service, price or coverage is promised. Address, contact name, postcode and optional phone fields exist in the software for future requests, but customer intake is closed. We will update relevant notices before enabling collection for live services."
     },
     {
       "kind": "h2",
@@ -62,7 +62,7 @@
     },
     {
       "kind": "p",
-      "text": "The public information website does not load advertising code. Android V6 and V7 are ad-free; V8 through V11 restrict requests to SDK-recognised test devices. Version 0.2.10 (V12) permits live banner requests in the signed release, using KiwiKind’s own AdMob App ID and banner unit with Google Mobile Ads SDK 25.5.0 and User Messaging Platform 4.0.0. Google controls ad availability and may limit serving before app review is complete. SDK-recognised test devices and emulators continue to receive test ads; development builds remain test-only. A banner is shown only on public Home after Google’s consent checks permit a request. Sign-in, account, support, billing, privacy and deletion screens have no advertising placements. Advertising is separate from broadband services: live broadband payments, public retail plans and supplier orders remain disabled."
+      "text": "The public information website does not load advertising code. Android V6 and V7 are ad-free; V8 through V11 restrict requests to SDK-recognised test devices. Version 0.2.10 (V12) permits live banner requests in the signed release, using KiwiKind’s own AdMob App ID and banner unit with Google Mobile Ads SDK 25.5.0 and User Messaging Platform 4.0.0. Google controls ad availability and may limit serving before app review is complete. SDK-recognised test devices and emulators continue to receive test ads; development builds remain test-only. A banner is shown only on public Home after Google’s consent checks permit a request. Sign-in, account, support, billing, privacy and deletion screens have no advertising placements. Advertising is separate from payments. Billing screens have no advertising. Public retail plans and supplier orders remain disabled."
     },
     {
       "kind": "h2",
@@ -82,11 +82,11 @@
     },
     {
       "kind": "h2",
-      "text": "Optional private payment testing"
+      "text": "Private payment offers and Stripe"
     },
     {
       "kind": "p",
-      "text": "Live payments remain disabled. Only accounts explicitly selected by the owner for testing can start a sandbox checkout. After explicit consent, the backend sends the account email, an internal test reference and the agreed test amounts to Stripe. Stripe hosts the test payment form; use only test payment details, never a real card. KiwiKind stores test agreement, invoice, payment-status, refund and dispute references so the website and app can show the same results. These records do not activate broadband and are separate from ordinary invoices. Account exports include your test records. Deletion reviews include these records and any corresponding Stripe test data; deletion is not automatic. Test status changes come from verified provider notifications, not from a browser return page. Contact us for access, correction or deletion."
+      "text": "Private customer payment offers are separate from public broadband ordering, which remains closed. An approved offer shows the full monthly amount, one-time setup amount, GST and written service terms. The totals include exactly $3 extra monthly and $10 extra setup once, both including GST. A payment requires your explicit agreement and is available only when live checkout is enabled. After consent, KiwiKind sends your account email, internal agreement reference and agreed amounts to Stripe. Stripe hosts the payment form and processes card details; KiwiKind does not receive full card numbers. KiwiKind stores the agreed terms, consent audit, subscription, invoice, payment, refund and dispute references so you can see your records across the website and app. Status comes from verified Stripe notifications, not a browser return page. Payment does not automatically activate broadband or place a supplier order. You can request cancellation of future subscription billing at the current period end; service cancellation and contractual obligations are handled separately with KiwiKind. Refunds are reviewed by KiwiKind. Exports include your payment records; deletion requests require review for lawful financial record retention and related Stripe records. Stripe may process information overseas under its privacy policy. Sandbox billing remains separate and accepts test details only."
     },
     {
       "kind": "h2",

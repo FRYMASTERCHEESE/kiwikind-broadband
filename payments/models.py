@@ -74,3 +74,7 @@ class OwnerSandboxRun(models.Model):
     evidence = models.JSONField(default=dict, blank=True)
     checked_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+# Django discovers these separate production records without mixing ledgers.
+from .live_models import LiveAgreement, LiveInvoice, LiveEvent  # noqa: E402,F401

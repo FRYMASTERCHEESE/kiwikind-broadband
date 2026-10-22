@@ -340,7 +340,7 @@ public class MainActivity extends Activity {
         if(account.has("email"))paragraph(account.optString("email"));
         paragraph("Your account, requests, support conversations and preferences are shared securely with the KiwiKind website. Email registration remains closed during pre-launch.");
         accountCard("Connection preparation","Launch preparation updates · No active service",this::connectionPreparation);
-        accountCard("My connection","No active service · View requests",this::orders);accountCard("My support","Support & complaints",this::tickets);accountCard("Billing","Payments disabled",()->run(()->api.call("invoices",null),r->{refreshScreen=null;content.removeAllViews();title("Billing");paragraph("Payments are disabled. No charges are being taken.");JSONArray a=r.optJSONArray("invoices");if(a==null||a.length()==0)paragraph("No invoices.");else for(int i=0;i<a.length();i++)paragraph(a.getJSONObject(i).toString());button("Billing status / private payment testing",this::billingScreen);nav();}));
+        accountCard("My connection","No active service · View requests",this::orders);accountCard("My support","Support & complaints",this::tickets);accountCard("Billing","Private payment offers and invoices",this::liveBillingScreen);
         button("Refresh account from website",()->run(()->api.call("me",null),r->{signedIn=true;accountHome(r);message("Account refreshed from KiwiKind server.");}));
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
         button("Request account deletion",()->deletionScreen(account.optBoolean("has_password",true)));
@@ -350,6 +350,47 @@ public class MainActivity extends Activity {
         button("Sign out",()->run(()->api.call("logout",data()),r->{api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);message("Signed out.");}));
         message("Account connected · Pre-launch only");
     }
+
+    private void liveBillingScreen(){run(()->api.call("payments/summary",null),r->{
+        refreshScreen=this::liveBillingScreen;content.removeAllViews();title("Payments");
+        if(!"live".equals(r.optString("mode"))){paragraph("Unexpected payment mode. Nothing was submitted.");nav();return;}
+        paragraph("Only approved offers assigned to your account can be paid. All displayed amounts include GST. Payment does not automatically activate broadband.");
+        JSONArray agreements=r.optJSONArray("agreements");
+        if(agreements==null||agreements.length()==0)paragraph("No approved payment offer is assigned to your account.");
+        else for(int i=0;i<agreements.length();i++){
+            JSONObject a=agreements.getJSONObject(i);String id=a.getString("id"),version=a.getString("terms_version");
+            long monthlyCents=a.getLong("monthly_cents"),setupCents=a.getLong("setup_cents");
+            if(monthlyCents<0||setupCents<0||monthlyCents>1200000||setupCents>1200000)throw new IllegalStateException("Invalid payment amount");
+            String monthly=billingMoney(monthlyCents),setup=billingMoney(setupCents),status=a.getString("status");
+            String terms=a.getString("service_terms");
+            paragraph(a.getString("label")+"\n"+monthly+" per month plus "+setup+" setup once. First payment: "+billingMoney(monthlyCents+setupCents)+". GST included.\nThe totals already include exactly $3 monthly and $10 setup once, both including GST.\n"+terms+"\nPayment start: "+a.optString("bill_from")+". Status: "+status+(a.optBoolean("cancel_at_period_end")?" · cancellation requested":""));
+            if(r.optBoolean("live_payments_enabled")&&a.optBoolean("ready_to_pay")&&"pending".equals(status))button("Continue to secure Stripe checkout",()->{
+                new AlertDialog.Builder(this).setTitle("Confirm recurring payment")
+                    .setMessage("I accept the displayed terms and authorise "+monthly+" each month plus "+setup+" once, including GST. My account email and agreement reference will be sent to Stripe. Payment does not automatically activate broadband.\n\n"+terms)
+                    .setNegativeButton("Back",null).setPositiveButton("Agree and continue",(dialog,which)->run(
+                        ()->api.call("payments/checkout",data("agreement_id",id,"terms_version",version,"accept_live_recurring",true)),reply->{
+                            String url=reply.optString("url");
+                            if(!reply.optBoolean("livemode")||!BillingUrls.isLiveCheckout(url)){message("Unrecognised payment destination. Nothing opened.");return;}
+                            startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(url)));
+                            message("Stripe checkout opened. Refresh after returning; a return page is not proof of payment.");
+                        })).show();
+            });
+            if(a.optBoolean("can_manage")&&!a.optBoolean("cancel_at_period_end")&&!java.util.Arrays.asList("pending","canceled","incomplete_expired").contains(status))button("Stop future subscription payments",()->{
+                new AlertDialog.Builder(this).setTitle("Stop future payments?")
+                    .setMessage("Request cancellation at the current period end. Contact KiwiKind separately about broadband cancellation and contractual obligations.")
+                    .setNegativeButton("Back",null).setPositiveButton("Stop future payments",(dialog,which)->run(
+                        ()->api.call("payments/cancel",data("agreement_id",id,"accept_live_cancel",true)),reply->{message(reply.optString("message"));liveBillingScreen();})).show();
+            });
+            JSONArray invoices=a.optJSONArray("invoices");
+            if(invoices!=null)for(int j=0;j<invoices.length();j++){
+                JSONObject invoice=invoices.getJSONObject(j);
+                paragraph("Invoice: "+billingMoney(invoice.getLong("amount_cents"))+" · "+invoice.getString("status")+" · refunded "+billingMoney(invoice.getLong("refunded_cents"))+(invoice.optString("dispute_status").isEmpty()?"":" · dispute "+invoice.optString("dispute_status")));
+            }
+        }
+        if(!r.optBoolean("live_payments_enabled"))paragraph("New payments are paused. Existing payment records remain available.");
+        button("Refresh payments",this::liveBillingScreen);button("Private sandbox testing",this::billingScreen);nav();
+    });}
+
     private String billingMoney(long cents){return "NZ$"+java.math.BigDecimal.valueOf(cents,2).toPlainString();}
     private void billingScreen(){run(()->api.call("billing/summary",null),r->{
         refreshScreen=this::billingScreen;content.removeAllViews();title("Billing status");

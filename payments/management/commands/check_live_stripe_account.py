@@ -18,7 +18,7 @@ class Command(BaseCommand):
                 "Stripe live %s: %s" %
                 (key, "present" if config[key] else "missing")
             )
-        self.stdout.write("Stripe live checkout: DISABLED (not implemented)")
+        self.stdout.write("Stripe live checkout: " + ("ENABLED (approved customer agreements only)" if config['live_checkout_enabled'] else "DISABLED (release or configuration pending)"))
         if options["verify_provider"]:
             verified = verify_account()
             # Report statuses ONLY, not raw keys, IDs or Stripe responses.
