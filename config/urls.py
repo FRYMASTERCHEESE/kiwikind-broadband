@@ -4,11 +4,16 @@ from portal import views
 from portal import owner_admin, owner_mfa, catalogue, catalogue_import, launch_readiness
 from portal import wholesale_admin, wholesale_views
 from portal import pages, owner_ops
+from portal import broadband
 from payments import owner_scenarios
 
 # Shared native/web account APIs; all account-specific routes enforce sessions.
 
 urlpatterns = [path('', include('payments.urls')), path('api/connection-progress', wholesale_views.connection_progress),
+ path('api/broadband/catalogue', broadband.catalogue),
+ path('api/broadband/quote', broadband.quote_view),
+ path('api/broadband/orders', broadband.submit_order),
+ path('api/owner/broadband-orders/<uuid:pk>/prepare-offer', broadband.prepare_offer),
  path('api/pages/cookie-probe', pages.cookie_probe),
  path('api/pages/session-probe', pages.session_probe),
  path('api/owner/state', pages.owner_state),

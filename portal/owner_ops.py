@@ -8,6 +8,7 @@ import json
 import uuid
 from functools import wraps
 from django import forms
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core import signing
 from django.core.serializers.json import DjangoJSONEncoder
@@ -130,6 +131,10 @@ def detail(kind,obj):
     if kind=='tickets' and not obj._state.adding:
         result['messages']=list(obj.messages.order_by('created_at').values('id','author_id','body','created_at')[:200])
     if kind=='catalogue':result['checklist']=catalogue_readiness(obj)
+    if kind=='requests' and not obj._state.adding and hasattr(obj, 'broadband'):
+        from .broadband import public_quote
+        result['broadband'] = public_quote(obj.broadband.quote)
+        result['payment_agreement_id'] = str(obj.broadband.payment_agreement_id) if obj.broadband.payment_agreement_id else None
     if kind in ('preparation','faults') and not obj._state.adding:
         graph=ORDER_TRANSITIONS if kind=='preparation' else FAULT_TRANSITIONS
         blocked={'submitted','provisioning','active'} if kind=='preparation' else {'escalated','investigating'}
@@ -145,7 +150,7 @@ def index(request):
     return JsonResponse({'collections':[{'name':key,'label':key.replace('-',' ').capitalize(),
         'create':value['create'],'readonly':value['readonly']} for key,value in SPECS.items()],
         'live_payments':live_gateway.configured(),
-        'public_prices':False,'supplier_orders':False})
+        'public_prices':settings.BROADBAND_CATALOGUE_ENABLED,'supplier_orders':False})
 
 
 @endpoint(['GET','POST'])
@@ -194,6 +199,10 @@ def save(request,kind,pk):
         if not isinstance(values,dict):raise ValueError('Fields must be an object')
         allowed=set(SPECS[kind]['fields'])|({'expected_updated_at','confirm_current_approval'} if kind=='catalogue' else {'confirm_live_offer'} if kind=='payment-agreements' else set())
         if set(values)-allowed:raise ValueError('Protected or unknown fields cannot be changed')
+        if kind=='requests' and values.get('status')=='cancelled' and hasattr(obj,'broadband'):
+            agreement_id=obj.broadband.payment_agreement_id
+            if agreement_id and LiveAgreement.objects.filter(pk=agreement_id,checkout_started_at__isnull=False).exists():
+                return JsonResponse({'error':'Payment has started. Review the customer payment and cancellation terms before cancelling the service.'},status=409)
         if kind=='privacy' and values.get('status')=='completed' and request.data.get('confirm_completed') is not True:
             raise ValueError('Confirm that manual fulfilment and lawful retention review are complete. This only records review status; it does not delete data.')
         form=form_for(kind,obj,values)

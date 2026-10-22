@@ -1,0 +1,872 @@
+[
+  {
+    "id": "adsl",
+    "name": "Direct ADSL Copper Broadband",
+    "headline": "67.11",
+    "description": "Copper broadband, delivered through the Vetta network with a static IPv4 and dynamic /56 IPv6. Address eligibility to confirm.",
+    "base": "67.11",
+    "baseSetup": "0.00",
+    "groups": [
+      {
+        "label": "Install Type",
+        "options": [
+          {
+            "name": "Standard Churn (moving from another ISP)",
+            "monthly": "0.00",
+            "setup": "30.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "New Connection (no Chorus visit)",
+            "monthly": "0.00",
+            "setup": "30.00",
+            "unknown": false,
+            "usage": null,
+            "id": "1"
+          },
+          {
+            "name": "New Connection (Exchange or Cabinet visit)",
+            "monthly": "0.00",
+            "setup": "100.00",
+            "unknown": false,
+            "usage": null,
+            "id": "2"
+          },
+          {
+            "name": "New Connection (Customer site visit)",
+            "monthly": "0.00",
+            "setup": "200.00",
+            "unknown": false,
+            "usage": null,
+            "id": "3"
+          },
+          {
+            "name": "New Connection & Wiring (Customer site visit)",
+            "monthly": "0.00",
+            "setup": "350.00",
+            "unknown": false,
+            "usage": null,
+            "id": "4"
+          }
+        ],
+        "id": "0"
+      }
+    ],
+    "note": "Service eligibility, contract terms and any unlisted fees remain to confirm.",
+    "source_date": "2026-10-22"
+  },
+  {
+    "id": "vdsl",
+    "name": "Direct VDSL Copper Broadband",
+    "headline": "67.11",
+    "description": "VDSL copper broadband, delivered through the Vetta network with a static IPv4 and dynamic /56 IPv6. Address eligibility to confirm.",
+    "base": "67.11",
+    "baseSetup": "0.00",
+    "groups": [
+      {
+        "label": "Install Type",
+        "options": [
+          {
+            "name": "Standard Churn (moving from another ISP)",
+            "monthly": "0.00",
+            "setup": "30.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "New Connection (no Chorus visit)",
+            "monthly": "0.00",
+            "setup": "30.00",
+            "unknown": false,
+            "usage": null,
+            "id": "1"
+          },
+          {
+            "name": "New Connection (Exchange or Cabinet visit)",
+            "monthly": "0.00",
+            "setup": "100.00",
+            "unknown": false,
+            "usage": null,
+            "id": "2"
+          },
+          {
+            "name": "New Connection (Customer site visit)",
+            "monthly": "0.00",
+            "setup": "200.00",
+            "unknown": false,
+            "usage": null,
+            "id": "3"
+          },
+          {
+            "name": "New Connection & Wiring (Customer site visit)",
+            "monthly": "0.00",
+            "setup": "350.00",
+            "unknown": false,
+            "usage": null,
+            "id": "4"
+          }
+        ],
+        "id": "0"
+      }
+    ],
+    "note": "Service eligibility, contract terms and any unlisted fees remain to confirm.",
+    "source_date": "2026-10-22"
+  },
+  {
+    "id": "ufb",
+    "name": "Direct UFB Fibre Broadband",
+    "headline": "37.39",
+    "description": "Fibre broadband through supported networks, with a static IPv4 and dynamic /56 IPv6. Choose your UFB speed on the next screen.",
+    "base": "0.00",
+    "baseSetup": "0.00",
+    "groups": [
+      {
+        "label": "Select UFB Speed",
+        "options": [
+          {
+            "name": "128Kbps Down / 128Kbps Up",
+            "monthly": "37.39",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "100Mbps Down / 20Mbps Up",
+            "monthly": "68.48",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "1"
+          },
+          {
+            "name": "100Mbps Down / 20Mbps Up (Home Fibre Starter - retail under $70 incl)",
+            "monthly": "48.21",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "2"
+          },
+          {
+            "name": "500Mbps Down / 100Mbps Up",
+            "monthly": "69.92",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "3"
+          },
+          {
+            "name": "100Mbps Down / 50Mbps Up",
+            "monthly": "79.88",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "4"
+          },
+          {
+            "name": "100Mbps Down / 100Mbps Up",
+            "monthly": "80.02",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "5"
+          },
+          {
+            "name": "500Mbps Down / 500Mbps Up (SME)",
+            "monthly": "75.87",
+            "setup": "75.87",
+            "unknown": false,
+            "usage": null,
+            "id": "6"
+          },
+          {
+            "name": "200Mbps Down / 20Mbps Up",
+            "monthly": "92.35",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "7"
+          },
+          {
+            "name": "200Mbps Down / 100Mbps Up",
+            "monthly": "99.83",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "8"
+          },
+          {
+            "name": "200Mbps Down / 200Mbps Up",
+            "monthly": "104.95",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "9"
+          },
+          {
+            "name": "950Mbps Down / 500Mbps Up",
+            "monthly": "82.74",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "10"
+          },
+          {
+            "name": "950Mbps Down / 500Mbps Up (SME)",
+            "monthly": "88.69",
+            "setup": "88.69",
+            "unknown": false,
+            "usage": null,
+            "id": "11"
+          },
+          {
+            "name": "50Mbps Down / 20Mbps Up (Secondary)",
+            "monthly": "35.46",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "12"
+          },
+          {
+            "name": "100Mbps Down / 20Mbps Up (Secondary)",
+            "monthly": "46.25",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "13"
+          },
+          {
+            "name": "100Mbps Down / 50Mbps Up (Secondary)",
+            "monthly": "65.24",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "14"
+          },
+          {
+            "name": "200Mbps Down / 20Mbps Up (Secondary)",
+            "monthly": "69.86",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "15"
+          },
+          {
+            "name": "Hyperfibre Home 2000",
+            "monthly": "96.13",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "16"
+          },
+          {
+            "name": "Hyperfibre Home 4000",
+            "monthly": "116.73",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "17"
+          },
+          {
+            "name": "Hyperfibre SME 1000",
+            "monthly": "95.00",
+            "setup": "95.00",
+            "unknown": false,
+            "usage": null,
+            "id": "18"
+          },
+          {
+            "name": "Hyperfibre SME 2000",
+            "monthly": "102.38",
+            "setup": "102.38",
+            "unknown": false,
+            "usage": null,
+            "id": "19"
+          },
+          {
+            "name": "Hyperfibre SME 4000",
+            "monthly": "122.98",
+            "setup": "122.98",
+            "unknown": false,
+            "usage": null,
+            "id": "20"
+          }
+        ],
+        "id": "0"
+      }
+    ],
+    "note": "Starting price is the 128Kbps/128Kbps option. Other speeds and eligibility differ.",
+    "source_date": "2026-10-22"
+  },
+  {
+    "id": "vector",
+    "name": "Direct Vector UFB Fibre Broadband",
+    "headline": "218.82",
+    "description": "Fibre options for properties within Vector coverage in Auckland. Static IPv4 and dynamic /56 IPv6. Connection speed and data are selected separately.",
+    "base": "0.00",
+    "baseSetup": "0.00",
+    "groups": [
+      {
+        "label": "Install Type",
+        "options": [
+          {
+            "name": "Churn (moving from another ISP)",
+            "monthly": "0.00",
+            "setup": "25.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "New UFB Service (Vector ONT exists)",
+            "monthly": "0.00",
+            "setup": "0.00",
+            "unknown": true,
+            "usage": null,
+            "id": "1"
+          },
+          {
+            "name": "New UFB Install (No Vector ONT exists)",
+            "monthly": "0.00",
+            "setup": "299.00",
+            "unknown": false,
+            "usage": null,
+            "id": "2"
+          },
+          {
+            "name": "New UFB Install (Additional ONT)",
+            "monthly": "0.00",
+            "setup": "299.00",
+            "unknown": false,
+            "usage": null,
+            "id": "3"
+          }
+        ],
+        "id": "0"
+      },
+      {
+        "label": "Monthly Data Limit",
+        "options": [
+          {
+            "name": "Billed per Mbps at 95th percentile",
+            "monthly": "0.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": {
+              "rate": "5.00",
+              "unit": "Mbps"
+            },
+            "id": "0"
+          },
+          {
+            "name": "Billed per GB on actual usage",
+            "monthly": "0.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": {
+              "rate": "0.07",
+              "unit": "GB"
+            },
+            "id": "1"
+          },
+          {
+            "name": "100GB Pack",
+            "monthly": "5.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "2"
+          },
+          {
+            "name": "250GB Pack",
+            "monthly": "7.50",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "3"
+          },
+          {
+            "name": "500GB Pack",
+            "monthly": "10.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "4"
+          },
+          {
+            "name": "Uncapped (fair use)",
+            "monthly": "20.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "5"
+          }
+        ],
+        "id": "1"
+      },
+      {
+        "label": "Select UFB Speed",
+        "options": [
+          {
+            "name": "Vector Eclipse Lite 200Mbps Down / 10Mbps Up",
+            "monthly": "218.82",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "Vector Eclipse Lite 200Mbps Down / 20Mbps Up",
+            "monthly": "236.47",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "1"
+          },
+          {
+            "name": "Vector Eclipse Lite 200Mbps Down / 50Mbps Up",
+            "monthly": "289.41",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "2"
+          },
+          {
+            "name": "Vector Eclipse Lite 200Mbps Down / 100Mbps Up",
+            "monthly": "377.65",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "3"
+          },
+          {
+            "name": "Vector Eclipse Lite 950Mbps Down / 10Mbps Up",
+            "monthly": "260.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "4"
+          },
+          {
+            "name": "Vector Eclipse Lite 950Mbps Down / 20Mbps Up",
+            "monthly": "277.65",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "5"
+          },
+          {
+            "name": "Vector Eclipse Lite 950Mbps Down / 50Mbps Up",
+            "monthly": "330.59",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "6"
+          },
+          {
+            "name": "Vector Eclipse Lite 950Mbps Down / 100Mbps Up",
+            "monthly": "418.82",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "7"
+          },
+          {
+            "name": "Vector Eclipse Lite 100Mbps Down / 100Mbps Up",
+            "monthly": "375.29",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "8"
+          },
+          {
+            "name": "Vector Eclipse Lite 4Gbps Down / 20Mbps Up",
+            "monthly": "350.67",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "9"
+          },
+          {
+            "name": "Vector Eclipse Lite 4Gbps Down / 50Mbps Up",
+            "monthly": "389.33",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "10"
+          },
+          {
+            "name": "Vector Eclipse Lite 4Gbps Down / 100Mbps Up",
+            "monthly": "429.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "11"
+          },
+          {
+            "name": "Vector Eclipse 500Mbps / 500Mbps",
+            "monthly": "323.53",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "12"
+          },
+          {
+            "name": "Vector Eclipse 950Mbps / 950Mbps",
+            "monthly": "352.94",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "13"
+          },
+          {
+            "name": "Vector Eclipse 2Gbps / 2Gbps",
+            "monthly": "382.35",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "14"
+          },
+          {
+            "name": "Vector Eclipse 4Gbps / 4Gbps",
+            "monthly": "466.67",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "15"
+          }
+        ],
+        "id": "2"
+      },
+      {
+        "id": "3",
+        "label": "Additional router",
+        "options": [
+          {
+            "id": "0",
+            "name": "No additional router",
+            "monthly": "0.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null
+          },
+          {
+            "id": "1",
+            "name": "Vetta GWN7052 Router",
+            "monthly": "0.00",
+            "setup": "85.00",
+            "unknown": false,
+            "usage": null
+          }
+        ]
+      }
+    ],
+    "note": "Service eligibility, contract terms and any unlisted fees remain to confirm.",
+    "source_date": "2026-10-22"
+  },
+  {
+    "id": "rbi",
+    "name": "RBI Rural Broadband",
+    "headline": "87.54",
+    "description": "Rural broadband for eligible New Zealand addresses, with static IPv4. Select your router and monthly data allowance.",
+    "base": "0.00",
+    "baseSetup": "0.00",
+    "groups": [
+      {
+        "label": "Router Option",
+        "options": [
+          {
+            "name": "SIM Card Only (for existing B315, B525, B618 or X58 router)",
+            "monthly": "0.00",
+            "setup": "30.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "TP-Link Deco X58-4G router",
+            "monthly": "0.00",
+            "setup": "254.73",
+            "unknown": false,
+            "usage": null,
+            "id": "1"
+          }
+        ],
+        "id": "0"
+      },
+      {
+        "label": "Monthly Data Limit",
+        "options": [
+          {
+            "name": "120GB Data",
+            "monthly": "87.54",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "120GB Data + Uncapped 12am to 5pm",
+            "monthly": "109.54",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "1"
+          },
+          {
+            "name": "200GB Data",
+            "monthly": "123.94",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "2"
+          },
+          {
+            "name": "200GB Data + Uncapped 12am to 5pm",
+            "monthly": "145.94",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "3"
+          },
+          {
+            "name": "Uncapped Data",
+            "monthly": "109.56",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "4"
+          }
+        ],
+        "id": "1"
+      }
+    ],
+    "note": "Service eligibility, contract terms and any unlisted fees remain to confirm.",
+    "source_date": "2026-10-22"
+  },
+  {
+    "id": "fixed-wireless",
+    "name": "Fixed Wireless Broadband",
+    "headline": "55.29",
+    "description": "Fixed wireless broadband for urban and urban-fringe addresses. Capped and uncapped options, subject to availability.",
+    "base": "0.00",
+    "baseSetup": "0.00",
+    "groups": [
+      {
+        "label": "Service Speed/Data",
+        "options": [
+          {
+            "name": "5Mbps Down / 2Mbps Up - Uncapped",
+            "monthly": "55.29",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "10Mbps Down / 2Mbps Up - Uncapped",
+            "monthly": "67.06",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "1"
+          },
+          {
+            "name": "100Mbps Down / 40Mbps Up - Uncapped",
+            "monthly": "171.82",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "2"
+          },
+          {
+            "name": "Full Speed / 60GB",
+            "monthly": "32.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "3"
+          },
+          {
+            "name": "Full Speed / 150GB",
+            "monthly": "40.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "4"
+          },
+          {
+            "name": "Full Speed / 300GB",
+            "monthly": "50.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "5"
+          },
+          {
+            "name": "Full Speed / 600GB",
+            "monthly": "60.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "6"
+          }
+        ],
+        "id": "0"
+      },
+      {
+        "label": "Router Option",
+        "options": [
+          {
+            "name": "SIM Card Only (for existing B315, B525, B618 or X58 router)",
+            "monthly": "0.00",
+            "setup": "30.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "TP-Link Deco X58-4G router",
+            "monthly": "0.00",
+            "setup": "254.73",
+            "unknown": false,
+            "usage": null,
+            "id": "1"
+          }
+        ],
+        "id": "1"
+      }
+    ],
+    "note": "Service eligibility, contract terms and any unlisted fees remain to confirm.",
+    "source_date": "2026-10-22"
+  },
+  {
+    "id": "mobile-4g",
+    "name": "4G Mobile Broadband",
+    "headline": "10.00",
+    "description": "Mobile broadband over the 2degrees backbone, with optional static public IP. Additional data is $11.50/GB including GST.",
+    "base": "6.00",
+    "baseSetup": "10.00",
+    "groups": [
+      {
+        "label": "Router Option",
+        "options": [
+          {
+            "name": "SIM Card Only",
+            "monthly": "0.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "Huawei E3372 USB Modem",
+            "monthly": "0.00",
+            "setup": "88.00",
+            "unknown": true,
+            "usage": null,
+            "id": "1"
+          },
+          {
+            "name": "TP-Link X58 router",
+            "monthly": "0.00",
+            "setup": "217.39",
+            "unknown": true,
+            "usage": null,
+            "id": "2"
+          },
+          {
+            "name": "MikroTik LtAP Mini Cellular",
+            "monthly": "0.00",
+            "setup": "208.26",
+            "unknown": true,
+            "usage": null,
+            "id": "3"
+          },
+          {
+            "name": "MikroTik hAP ac3 Cellular",
+            "monthly": "0.00",
+            "setup": "354.91",
+            "unknown": true,
+            "usage": null,
+            "id": "4"
+          }
+        ],
+        "id": "0"
+      },
+      {
+        "label": "Monthly Data Limit",
+        "options": [
+          {
+            "name": "500MB Data",
+            "monthly": "4.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "1GB Data",
+            "monthly": "8.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "1"
+          },
+          {
+            "name": "2.5GB Data",
+            "monthly": "20.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "2"
+          },
+          {
+            "name": "5GB Data",
+            "monthly": "40.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "3"
+          },
+          {
+            "name": "10GB Data",
+            "monthly": "80.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "4"
+          }
+        ],
+        "id": "1"
+      },
+      {
+        "label": "IP Addressing",
+        "options": [
+          {
+            "name": "Carrier NAT",
+            "monthly": "0.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "0"
+          },
+          {
+            "name": "Static Public IP",
+            "monthly": "5.00",
+            "setup": "0.00",
+            "unknown": false,
+            "usage": null,
+            "id": "1"
+          }
+        ],
+        "id": "2"
+      }
+    ],
+    "note": "Service eligibility, contract terms and any unlisted fees remain to confirm.",
+    "source_date": "2026-10-22"
+  }
+]

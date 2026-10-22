@@ -1,13 +1,13 @@
 {
   "source": "https://frymastercheese.github.io/kiwikind-broadband-website/",
-  "sha256": "d5ee917cf668857d27be0d0f1e1821d2ec6722331065ebc4cc80f2223bf80390",
+  "sha256": "5eda457e92a853640c9d6d7a384c5bd59e3c45bc514bed24574ab8d7dc206e0a",
   "sections": [
     {
       "id": "home",
       "blocks": [
         {
           "kind": "p",
-          "text": "Aotearoa New Zealand · In development"
+          "text": "Aotearoa New Zealand · Broadband"
         },
         {
           "kind": "h1",
@@ -19,15 +19,15 @@
         },
         {
           "kind": "p",
-          "text": "We're still preparing. No plans, orders or payments are available."
+          "text": "Choose a broadband plan and send your address. Pay only after we confirm your connection details."
         },
         {
           "kind": "strong",
-          "text": "Building carefully, before connecting anyone."
+          "text": "Your plan. Your address. Your confirmed connection."
         },
         {
           "kind": "p",
-          "text": "KiwiKind is not yet an operating internet service provider. No prices, fibre availability, supplier arrangements or installation dates have been confirmed."
+          "text": "Browse GST-inclusive prices, submit your connection details and review your final offer before paying. Availability and installation dates are confirmed for each address."
         }
       ]
     },
@@ -51,7 +51,7 @@
         {
           "kind": "card",
           "text": "Reliable connections",
-          "answer": "Our aim is to offer fibre services through genuine New Zealand wholesale partners once agreements are in place.",
+          "answer": "Choose fibre, copper, rural or wireless broadband, subject to network availability at your address.",
           "icon": "📶"
         },
         {
@@ -75,18 +75,18 @@
         },
         {
           "kind": "p",
-          "text": "Your existing KiwiKind account uses the same customer portal and account system as the Android app. Sign in through our secure portal. Create a free account or sign in. Broadband orders and payments remain closed."
+          "text": "Your existing KiwiKind account uses the same customer portal and account system as the Android app. Sign in here on our website. Create a free account or sign in. Choose your plan, track your order and review your approved payment offer after sign-in."
         },
         {
           "kind": "card",
           "text": "My account",
-          "answer": "Sign in to your existing account through the customer portal used by the website and Android app.",
+          "answer": "Create a free account or sign in through the shared website and Android customer portal.",
           "icon": "👤"
         },
         {
           "kind": "card",
           "text": "My connection",
-          "answer": "Follow future connection requests and updates. Availability and ordering remain disabled during pre-launch.",
+          "answer": "Track your broadband order and connection review. We confirm availability before you pay.",
           "icon": "🏠"
         },
         {
@@ -129,15 +129,15 @@
         },
         {
           "kind": "p",
-          "text": "Payments disabled"
+          "text": "Private offers after sign-in"
         },
         {
           "kind": "p",
-          "text": "Dashboard design preview only. Open the secure customer portal below to access your existing account. Broadband orders and payments remain disabled."
+          "text": "Dashboard design preview only. Open My KiwiKind below to access your existing account. Submit a plan for connection confirmation; payments require your approved final offer."
         },
         {
           "kind": "p",
-          "text": "Account pages open on our secure Render customer portal. Sign up opens free account registration. Your account and support conversations are shared with the Android app. Broadband orders and payments remain closed. If the free server is waking up, allow a moment for the page to connect."
+          "text": "This GitHub Pages website hosts KiwiKind public information, sign-in and My KiwiKind. Your account is securely shared with the Android app. Choose a broadband plan and submit your address. Payment follows connection confirmation. If the backend is waking up, please allow a moment."
         }
       ]
     },
@@ -154,39 +154,39 @@
         },
         {
           "kind": "b",
-          "text": "01 · NOW"
+          "text": "01 · CHOOSE"
         },
         {
           "kind": "h3",
-          "text": "Build the experience"
+          "text": "Choose your plan"
         },
         {
           "kind": "p",
-          "text": "Design the website and Android app, and test a secure shared account system."
+          "text": "Select a broadband service, speed, data and installation options."
         },
         {
           "kind": "b",
-          "text": "02 · BEFORE LAUNCH"
+          "text": "02 · CONFIRM"
         },
         {
           "kind": "h3",
-          "text": "Verify the service"
+          "text": "Confirm your connection"
         },
         {
           "kind": "p",
-          "text": "Confirm wholesale partnerships, actual costs, legal requirements and customer support arrangements."
+          "text": "Send your address. KiwiKind checks availability and confirms the final price and connection details."
         },
         {
           "kind": "b",
-          "text": "03 · WHEN READY"
+          "text": "03 · PAY"
         },
         {
           "kind": "h3",
-          "text": "Publish real plans"
+          "text": "Review and pay securely"
         },
         {
           "kind": "p",
-          "text": "Only publish pricing, coverage and ordering when they're backed by verified agreements."
+          "text": "Accept your confirmed offer and pay through Stripe. Your monthly and one-time setup totals include GST."
         }
       ]
     },
@@ -204,22 +204,43 @@
         {
           "kind": "faq",
           "text": "Can I sign up for broadband today?",
-          "answer": "Not yet. KiwiKind is a pre-launch project, not an operating internet service provider."
+          "answer": "Yes. Choose a plan and submit your address and connection details. We confirm availability and the final offer before you pay."
         },
         {
           "kind": "faq",
           "text": "Will KiwiKind offer cheaper fibre?",
-          "answer": "Affordable fibre is our goal. We cannot promise prices until wholesale costs and business requirements are confirmed."
+          "answer": "Our broadband catalogue shows monthly and setup totals including GST. Compare the options and review your confirmed offer before payment."
         },
         {
           "kind": "faq",
           "text": "Is there an Android app?",
-          "answer": "An Android app is in development. It isn't available for public customer use yet."
+          "answer": "The Android app is available to existing closed testers. It is not a public Play Store release."
         },
         {
           "kind": "faq",
           "text": "Can I check availability or pay?",
-          "answer": "No. Coverage checks, orders and payments are disabled until the service is ready."
+          "answer": "Submit your address with your chosen plan. We check availability manually; after confirmation, your payment offer appears under Billing on the website and app."
+        }
+      ]
+    },
+    {
+      "id": "plans",
+      "blocks": [
+        {
+          "kind": "p",
+          "text": "Broadband plans"
+        },
+        {
+          "kind": "h2",
+          "text": "Choose your broadband."
+        },
+        {
+          "kind": "p",
+          "text": "Published retail prices include GST. Address availability and installation need separate confirmation."
+        },
+        {
+          "kind": "p",
+          "text": "Browse broadband plans and configure your order →"
         }
       ]
     }
