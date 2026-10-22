@@ -30,7 +30,7 @@
     },
     {
       "kind": "p",
-      "text": "Public broadband orders and provisioning are disabled. Private payment offers are described below. No active service, price or coverage is promised. Address, contact name, postcode and optional phone fields exist in the software for future requests, but customer intake is closed. We will update relevant notices before enabling collection for live services."
+      "text": "Broadband plan requests are open for manual address and connection confirmation. Supplier provisioning is never triggered automatically by submitting a request. Confirmed, individually approved payment offers are described below. Network availability and installation dates are not guaranteed. Address, contact name, postcode and optional phone fields exist in the software for future requests, but customer intake is closed. We will update relevant notices before enabling collection for live services."
     },
     {
       "kind": "h2",
@@ -164,7 +164,7 @@
     },
     {
       "kind": "p",
-      "text": "Public broadband orders and supplier provisioning remain disabled. This deletion request does not require buying a service or paying a fee. Read our privacy policy or contact the same email for access/correction requests."
+      "text": "Broadband plan requests may be submitted for address review; supplier provisioning remains manual and subject to confirmation. This deletion request does not require buying a service or paying a fee. Read our privacy policy or contact the same email for access/correction requests."
     }
   ],
   "terms": [

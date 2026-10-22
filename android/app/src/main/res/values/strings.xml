@@ -1,6 +1,6 @@
 <resources>
   <string name="app_name">KiwiKind Broadband</string>
-  <string name="prelaunch">PRE-LAUNCH · No live service or payments</string>
-  <string name="account_consent">I accept the pre-launch terms and have read the privacy notice.</string>
-  <string name="request_consent">I accept the pre-launch request terms. Availability, pricing and installation are unconfirmed.</string>
+  <string name="prelaunch">Broadband requests open · availability confirmation required</string>
+  <string name="account_consent">I accept the broadband and account terms and have read the privacy notice.</string>
+  <string name="request_consent">I accept the order review terms. Availability and final installation details need confirmation before payment.</string>
 </resources>

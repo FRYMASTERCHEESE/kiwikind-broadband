@@ -8,8 +8,8 @@ class AndroidReleaseMetadataTests(SimpleTestCase):
     def test_actual_version_code_and_name_are_read_from_gradle(self):
         gradle = Path('android/app/build.gradle').read_text()
         code, name = expected_version(gradle)
-        self.assertEqual(code, '14')
-        self.assertEqual(name, '0.2.12-closed-test')
+        self.assertEqual(code, '15')
+        self.assertEqual(name, '0.2.13-closed-test')
 
     def test_distinct_valid_versions_work_without_changing_verifier(self):
         self.assertEqual(expected_version("versionCode 15\nversionName '0.2.13-closed-test'\n"),
