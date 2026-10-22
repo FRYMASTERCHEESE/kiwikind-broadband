@@ -49,7 +49,7 @@ class Command(BaseCommand):
                     or session.get('subscription') is not None or session.get('status') not in ('open', 'expired')
                     or (session.get('status') == 'open' and not gateway.safe_checkout(session.get('url')))):
                 raise ValueError('Unexpected test checkout')
-            lines = gateway.plain(api.v1.checkout.sessions.list_line_items(session_id, {'limit': 10}))
+            lines = gateway.plain(api.v1.checkout.sessions.line_items.list(session_id, {'limit': 10}))
             items = lines.get('data', [])
             if (lines.get('has_more') or len(items) != 2
                     or sorted(item.get('amount_total') for item in items) != [1230, 1450]
