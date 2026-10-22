@@ -18,7 +18,8 @@ def _including_gst(value):
         Decimal('1'), rounding=ROUND_HALF_UP))
 
 
-def order_quote(monthly_ex_gst_cents, setup_ex_gst_cents, *, include_processing=False):
+def order_quote(monthly_ex_gst_cents, setup_ex_gst_cents, *, include_processing=False,
+                monthly_price_increase_cents=0):
     """GST first, then add the owner's already-GST-inclusive additions once.
 
     First invoice is the sum of the two displayed charge lines so rounding
@@ -30,12 +31,20 @@ def order_quote(monthly_ex_gst_cents, setup_ex_gst_cents, *, include_processing=
              else _including_gst(setup_ex_gst_cents) + 1000)
     if type(include_processing) is not bool:
         raise ValueError('Invalid retail pricing option')
+    # Increase the complete advertised monthly retail amount by exactly $4,
+    # never the supplier wholesale amount, and never the once-only setup.
+    # Restrict to explicitly supported pricing-policy versions.
+    if type(monthly_price_increase_cents) is not int or monthly_price_increase_cents not in (0, 400):
+        raise ValueError('Invalid retail monthly price policy')
+    if monthly_price_increase_cents and not include_processing:
+        raise ValueError('Monthly increase requires an all-inclusive retail price')
     if include_processing:
         from .all_in_prices import all_in_amount
         initial_monthly = monthly
         monthly = all_in_amount(initial_monthly)
         if setup is not None:
             setup = all_in_amount(initial_monthly + setup) - monthly
+    monthly += monthly_price_increase_cents
     if monthly > 1200000 or (setup is not None and not 0 <= setup <= 1200000):
         raise ValueError('Retail quote exceeds allowed limits')
     return {

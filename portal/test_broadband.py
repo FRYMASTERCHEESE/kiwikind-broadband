@@ -11,6 +11,7 @@ from .models import Order, BroadbandOrder, WholesaleOrder, VerifiedSupplierOptio
 from .testing import owner_fixture
 from decimal import Decimal
 from payments.live_models import LiveAgreement
+from payments.retail_pricing import order_quote
 
 
 @override_settings(BROADBAND_CATALOGUE_ENABLED=True,PUBLIC_ORIGIN='https://kiwikind.example.invalid')
@@ -242,9 +243,48 @@ class BroadbandTests(TestCase):
                 user=self.user, created_by=self.owner, label='Synthetic full price',
                 service_reference='synthetic-all-in', source_monthly_cents=6992,
                 source_setup_cents=2000, service_terms='Synthetic terms')
-            self.assertEqual(agreement.pricing_policy, 'all_in_v2')
+            self.assertEqual(agreement.pricing_policy, 'all_in_v3')
             self.assertEqual(agreement.monthly_cents, revised['monthly_cents'])
             self.assertEqual(agreement.setup_cents, revised['setup_cents'])
+
+    def test_monthly_price_rise_is_exactly_four_dollars_with_same_setup(self):
+        original = quote('ufb', ['3', 'churn'])
+        self.assertEqual((original['monthly_cents'], original['setup_cents']),
+                         (8341, 3300))
+        with override_settings(KIWIKIND_ALL_IN_RETAIL_ENABLED=True):
+            before = order_quote(original['source_monthly_cents'],
+                                 original['source_setup_cents'], include_processing=True)
+            after = quote('ufb', ['3', 'churn'])
+            self.assertEqual(after['monthly_cents'], before['monthly_cents'] + 400)
+            self.assertEqual(after['setup_cents'], before['setup_cents'])
+            self.assertEqual(after['first_invoice_cents'],
+                             before['first_invoice_cents'] + 400)
+            listing = self.client.get('/api/broadband/catalogue').json()
+            fibre = next(p for p in listing['products'] if p['id'] == 'ufb')
+            from .broadband import effective_catalogue, cents
+            entry = next(p for p in effective_catalogue()[0] if p['id'] == 'ufb')
+            self.assertEqual(fibre['headline_monthly_cents'],
+                             order_quote(cents(entry['headline']), 0, include_processing=True)['monthly_cents'] + 400)
+            self.assertNotIn('monthly_addition_cents', listing)
+            self.assertNotIn('setup_addition_cents', __import__('portal.broadband', fromlist=['public_quote']).public_quote(after))
+
+    def test_all_seven_catalogue_types_get_monthly_increase(self):
+        products, _ = catalogue_source()
+        with override_settings(KIWIKIND_ALL_IN_RETAIL_ENABLED=True):
+            for p in products:
+                if p['id'] == 'ufb':
+                    selections = ['3', 'churn']
+                else:
+                    selections = [g['options'][0]['id'] for g in p['groups']]
+                result = quote(p['id'], selections)
+                supplier_monthly = result['source_monthly_cents']
+                supplier_setup = result['source_setup_cents']
+                original = order_quote(supplier_monthly, supplier_setup,
+                                       include_processing=True)
+                self.assertEqual(result['monthly_cents'],
+                                 original['monthly_cents'] + 400, p['id'])
+                self.assertEqual(result['setup_cents'],
+                                 original['setup_cents'], p['id'])
 
     def test_prior_agreement_amounts_are_not_recalculated(self):
         agreement = LiveAgreement.objects.create(
@@ -258,6 +298,20 @@ class BroadbandTests(TestCase):
             agreement.refresh_from_db()
             self.assertEqual((agreement.monthly_cents, agreement.setup_cents), original)
             self.assertEqual(agreement.pricing_policy, 'legacy_v1')
+
+    def test_existing_all_in_v2_agreements_keep_old_prices(self):
+        old = LiveAgreement.objects.create(
+            user=self.user, created_by=self.owner, label='Previous all-in rate',
+            service_reference='synthetic-old-all-in', pricing_policy='all_in_v2',
+            source_monthly_cents=6992, source_setup_cents=3500,
+            service_terms='Historical synthetic customer terms')
+        original = (old.monthly_cents, old.setup_cents)
+        self.assertEqual(original, (8662, 5200))
+        with override_settings(KIWIKIND_ALL_IN_RETAIL_ENABLED=True):
+            old.save()
+            old.refresh_from_db()
+        self.assertEqual((old.monthly_cents, old.setup_cents), original)
+        self.assertEqual(old.pricing_policy, 'all_in_v2')
 
     def test_order_submission_requires_csrf(self):
         client=Client(enforce_csrf_checks=True);client.force_login(self.user)

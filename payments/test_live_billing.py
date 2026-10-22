@@ -116,6 +116,23 @@ class LiveBillingTests(TestCase):
         self.assertEqual(params['line_items'][0]['price_data']['tax_behavior'], 'inclusive')
         self.assertEqual(self.a.monthly_cents + self.a.setup_cents, 2805)
 
+    def test_new_four_dollar_price_matches_stripe_without_extra_charge_line(self):
+        self.a.pricing_policy = 'all_in_v3'
+        self.a.save()
+        self.assertEqual((self.a.monthly_cents, self.a.setup_cents), (1932, 1273))
+        self.session['amount_total'] = 3205
+        response = self.post()
+        self.assertEqual(response.status_code, 200, response.content)
+        items = self.api.v1.checkout.sessions.create.call_args.args[0]['line_items']
+        self.assertEqual(len(items), 2)
+        self.assertEqual(items[0]['price_data']['unit_amount'], 1932)
+        self.assertEqual(items[1]['price_data']['unit_amount'], 1273)
+        self.assertEqual(items[0]['price_data']['recurring'], {'interval':'month'})
+        self.assertNotIn('recurring', items[1]['price_data'])
+        self.assertEqual(items[0]['price_data']['tax_behavior'], 'inclusive')
+        self.assertEqual(items[0]['price_data']['unit_amount'] +
+                         items[1]['price_data']['unit_amount'], 3205)
+
     def test_browser_cannot_change_approved_price(self):
         self.assertEqual(self.post(monthly_cents=1,setup_cents=0).status_code,200)
         self.assertEqual(self.api.v1.checkout.sessions.create.call_args.args[0]['line_items'][0]['price_data']['unit_amount'],1450)
