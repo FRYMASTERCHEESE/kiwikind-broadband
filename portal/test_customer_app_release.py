@@ -27,4 +27,4 @@ class CustomerAppReleaseTests(SimpleTestCase):
         self.assertNotIn("Pre-launch terms",self.main)
         self.assertNotIn("PRE-LAUNCH · No live service",self.strings)
         self.assertIn("availability confirmation required",self.strings)
-        self.assertIn("account and order terms",self.strings)
+        self.assertIn("broadband and account terms",self.strings)
