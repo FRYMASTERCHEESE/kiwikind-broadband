@@ -103,6 +103,21 @@ class OwnerLaunchReadinessTests(TestCase):
         self.assertContains(page,'Cancel-at-period-end and subscription.updated receipt')
         self.assertContains(page,'Provider-checked TEST evidence: renewal=False, declined card=False, 3DS challenge completed=False')
 
+    def test_signed_android_evidence_is_not_confused_with_play_or_live_subscriptions(self):
+        from .launch_readiness import evidence_snapshot
+        self.login()
+        snap = evidence_snapshot()
+        checks = {row['label']: row for row in snap['checks']}
+        self.assertTrue(checks['Android signed V15 release and emulator QA']['done'])
+        self.assertIn('39829195047', checks['Android signed V15 release and emulator QA']['detail'])
+        self.assertFalse(checks['Google Play closed testing and real-phone acceptance']['done'])
+        self.assertFalse(checks['Real customer subscription billing and end-to-end renewal']['done'])
+        self.assertFalse(snap['production_ready'])
+        self.assertFalse(snap['public_sales_closed'] is False)
+        self.assertFalse(checks['Stripe sandbox credentials']['detail'].find('no live Stripe keys') >= 0)
+        self.assertNotIn('KIWIKIND_LIVE_SECRET_KEY', str(snap))
+        self.assertNotIn('whsec_', str(snap))
+
     @override_settings(INTAKE_ENABLED=True,PLAN_PUBLICATION_ENABLED=True)
     def test_public_sales_switch_is_a_warning_not_a_pass(self):
         self.login()

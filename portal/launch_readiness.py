@@ -44,8 +44,9 @@ def evidence_snapshot():
         detail=('Intake and plan publication are off.' if closed else
                 'WARNING: a sales or publication switch is enabled. Investigate before launch.')),
       dict(label='Stripe sandbox credentials',done=gateway.configured(),
-        detail='Test configuration is present; no live Stripe keys or checkout are enabled.'),
-      dict(label='Stripe real TEST invoice and webhook',done=paid,
+        detail=('Stripe TEST credentials are present. A separate owner-only NZ$1 LIVE verification may also have live credentials; it never approves customer subscriptions.' if gateway.configured() else
+                'Stripe TEST credentials are not yet complete.')),
+      dict(label='Stripe TEST invoice and signed webhook',done=paid,
         detail='Provider-bound TEST invoice and invoice.paid receipt recorded.' if paid else
                'A paid TEST invoice and signed receipt are not yet both present.'),
       dict(label='Stripe TEST full refund',done=refunded,
@@ -62,10 +63,14 @@ def evidence_snapshot():
         detail=f'{approved} reviewed general plan records. {private} total private records. No approval to publish is implied.'),
       dict(label='Supplier Product Terms and authenticated order integration',done=False,
         detail='Service-specific Product Terms, valid general price schedule, API documentation, address qualifications and real supplier order tests are not verified.'),
-      dict(label='Stripe real renewal, declined card and authentication challenge',done=renewal and decline and authentication,
+      dict(label='Stripe TEST renewal, declined card and 3D Secure',done=renewal and decline and authentication,
         detail=f'Provider-checked TEST evidence: renewal={renewal}, declined card={decline}, 3DS challenge completed={authentication}. Signed webhook ledger required for paid invoices.'),
-      dict(label='Signed Android release and Play test on device',done=False,
-        detail='Signed APK/AAB and Android 36 emulator checks verified in GitHub run 39573886915 (source df1c1b7). Physical-device Google sign-in and Play internal testing remain unverified.'),
+      dict(label='Android signed V15 release and emulator QA',done=True,
+        detail='Signed APK/AAB, signature/lint/unit tests, privacy/ad checks and Android 36 emulator checks passed in GitHub Actions run 39829195047 (source ea43caf7). This is an artifact build, NOT a Google Play upload.'),
+      dict(label='Google Play closed testing and real-phone acceptance',done=False,
+        detail='Play track upload/review, real signed Play install, actual phone sign-in and device acceptance require separate external evidence.'),
+      dict(label='Real customer subscription billing and end-to-end renewal',done=False,
+        detail='Sandbox renewals and the separate live owner NZ$1 one-time charge are not real customer recurring billing. Service-specific approved offers, provider verification and customer acceptance remain mandatory.'),
       dict(label='Consumer contracts, GST, support, recovery and launch sign-off',done=False,
         detail='Business decisions and evidence remain required before opening orders, plans or live billing.')
     ]

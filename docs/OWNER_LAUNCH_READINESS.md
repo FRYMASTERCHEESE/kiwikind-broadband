@@ -13,10 +13,7 @@ an explicit owner acknowledgement and appends one immutable AuditEvent. It does
 not claim individual Product Terms or commercial order approval, does not
 create a supplier record, and never publishes unapproved prices.
 
-Real customer payments remain disabled; the test payment, refund and cancellation
-have actual Stripe webhook receipts. The external tests for renewal, declined card
-and authentication challenges are still outstanding. Likewise a signed Android
-release build and real-device tests require their own workflow/evidence.
+Real customer recurring payments are not commercially released. Stripe TEST subscription, paid invoice, refund, cancellation, renewal, declined card and 3D Secure evidence have signed provider records. The separate owner-only LIVE NZ$1 one-time charge verified live keys/webhooks but does not certify recurring customer payments. The signed Android V15 APK/AAB and emulator tests passed in GitHub run 39829195047 (22–23 October 2026); the bundle has not been independently confirmed as uploaded to Google Play. Physical signed-Play install and customer acceptance are separate gates.
 
 The evidence count is not a production-readiness percentage. Neither this page
 nor the signed framework alone authorises live internet service.

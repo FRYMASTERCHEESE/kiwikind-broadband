@@ -9,8 +9,13 @@ It seeds no offers or prices. It never places a Vetta order or provisions servic
 The owner creates a private `payment-agreements` record in the existing Pages
 owner interface after Google sign-in and MFA. Enter the combined confirmed
 supplier monthly and setup amounts in integer cents, excluding GST. The server
-calculates GST then adds exactly 300 monthly cents and 1000 setup cents, already
-including GST. Additions apply once per agreement, never per option. An unknown
+calculates GST and the existing GST-inclusive baseline allowances once per
+agreement, then applies the selected immutable `pricing_policy`: `legacy_v1`
+for historic rates, `all_in_v2` for collection-inclusive prices, and `all_in_v3`
+for the same full GST-inclusive pricing with an additional NZ$4/month (never
+an extra setup fee). Current catalogue quotes use `all_in_v3` while the server
+all-in release setting is enabled. See `docs/ALL_IN_RETAIL_PRICING.md`;
+no processing surcharge is added later at checkout. An unknown
 setup cost cannot be approved. The first invoice equals the displayed monthly
 plus one-time setup amounts; renewals contain only the monthly amount.
 
@@ -72,10 +77,13 @@ request period-end cancellation; they must contact KiwiKind separately about
 service cancellation and contractual obligations. Refunds are reviewed and
 processed by the owner in Stripe; signed updates reconcile them here.
 
-The published V12 application is not changed by backend/website deployment.
-Native source must pass its build, URL and signed-device tests before a
-separately authorised update on the same Closed Alpha track. Never replace the
-existing track or create production/internal releases as part of this change.
+A signed V15 Android artifact (version code 15, 0.2.13 closed test) passed
+unit, lint, signing and Android 36 emulator/ad checks in GitHub run
+39829195047. This does **not** establish an upload or rollout in Play Console.
+Before updating the existing Closed Alpha release, independently check the
+actual Play track status and compare signing certificate/versionCode, then
+follow the normal review process. Do not silently overwrite other tracks or
+create a production release.
 No ads are introduced on payment or private screens.
 
 ## Validation limits
@@ -95,9 +103,11 @@ It submits no payment and creates no customer, subscription, application record
 or supplier order. Repeated runs use fixed idempotency keys. Turn the switch off
 after verification. This validates provider request shape, not live write scope.
 
-Unit/API and browser tests use synthetic accounts and provider objects. They do
-not prove live key write permissions, external webhook delivery, a real paid
-invoice, or a published Android update. Do not claim activation until the
+Unit/API and browser tests use synthetic accounts and provider objects. The
+separate real owner NZ$1 verification confirmed live key/checkout and signed
+webhook reception for a **one-time** payment. They do not prove real customer
+recurring subscription permissions, subsequent live invoices and renewals,
+customer cancellation/refunds or a published Android update. Do not claim activation until the
 deployed configuration and provider setup are verified. Do not run automated
 real-money charges as a readiness check.
 
