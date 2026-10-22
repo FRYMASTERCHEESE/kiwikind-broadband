@@ -150,7 +150,8 @@ def quote(product_id, selections):
     else:
         usage.append('These supplier rates require current confirmation, along with any address-specific fees, before payment.')
     result = {**order_quote(monthly, None if unknown else setup,
-                           include_processing=settings.KIWIKIND_ALL_IN_RETAIL_ENABLED),
+                           include_processing=settings.KIWIKIND_ALL_IN_RETAIL_ENABLED,
+                           monthly_price_increase_cents=(400 if settings.KIWIKIND_ALL_IN_RETAIL_ENABLED else 0)),
               'product_id': product_id, 'name': product['name'], 'selections': selections,
               'options': options, 'usage': usage, 'catalogue_version': revision,
               'price_status': product['price_status'],
@@ -187,7 +188,8 @@ def catalogue(request):
                     for o in group['options']]})
             products.append({'id': p['id'], 'name': p['name'], 'description': p['description'],
                              'headline_monthly_cents': order_quote(cents(p['headline']), 0,
-                               include_processing=settings.KIWIKIND_ALL_IN_RETAIL_ENABLED)['monthly_cents'],
+                               include_processing=settings.KIWIKIND_ALL_IN_RETAIL_ENABLED,
+                                monthly_price_increase_cents=(400 if settings.KIWIKIND_ALL_IN_RETAIL_ENABLED else 0))['monthly_cents'],
                              'headline_note': 'Lowest tier is 128Kbps; choose a normal home speed for streaming.' if p['id'] == 'ufb' else
                                  '5Mbps / 2Mbps uncapped' if p['id'] == 'fixed-wireless' else '',
                              'price_status': p['price_status'],
