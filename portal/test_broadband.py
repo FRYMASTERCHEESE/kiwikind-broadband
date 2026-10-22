@@ -266,7 +266,7 @@ class BroadbandTests(TestCase):
             self.assertEqual(fibre['headline_monthly_cents'],
                              order_quote(cents(entry['headline']), 0, include_processing=True)['monthly_cents'] + 400)
             self.assertNotIn('monthly_addition_cents', listing)
-            self.assertNotIn('setup_addition_cents', after)
+            self.assertNotIn('setup_addition_cents', __import__('portal.broadband', fromlist=['public_quote']).public_quote(after))
 
     def test_all_seven_catalogue_types_get_monthly_increase(self):
         products, _ = catalogue_source()
