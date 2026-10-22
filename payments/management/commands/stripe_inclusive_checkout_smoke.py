@@ -53,6 +53,7 @@ class Command(BaseCommand):
             items = lines.get('data', [])
             if (lines.get('has_more') or len(items) != 2
                     or sorted(item.get('amount_total') for item in items) != [1230, 1450]
+                    or any(not isinstance(item.get('amount_tax'), int) or item['amount_tax'] <= 0 for item in items)
                     or sum(bool((item.get('price') or {}).get('recurring')) for item in items) != 1
                     or any((item.get('price') or {}).get('tax_behavior') != 'inclusive' for item in items)):
                 raise ValueError('Incorrect test recurring/setup lines')

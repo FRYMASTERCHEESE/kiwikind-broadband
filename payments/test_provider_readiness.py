@@ -44,8 +44,8 @@ class ProviderReadinessTests(SimpleTestCase):
         api.v1.checkout.sessions.retrieve.return_value=session
         api.v1.checkout.sessions.expire.return_value={**session,'status':'expired'}
         api.v1.checkout.sessions.list_line_items.return_value={'data':[
-            {'amount_total':1450,'price':{'tax_behavior':'inclusive','recurring':{'interval':'month'}}},
-            {'amount_total':1230,'price':{'tax_behavior':'inclusive','recurring':None}}]}
+            {'amount_total':1450,'amount_tax':189,'price':{'tax_behavior':'inclusive','recurring':{'interval':'month'}}},
+            {'amount_total':1230,'amount_tax':160,'price':{'tax_behavior':'inclusive','recurring':None}}]}
         output=StringIO()
         with patch.dict(os.environ,{smoke.FLAG:smoke.RUN}), patch.object(smoke,'datetime') as dt, patch.object(smoke.gateway,'client',return_value=api):
             dt.now.return_value=smoke.DEADLINE-smoke.timedelta(hours=2)
