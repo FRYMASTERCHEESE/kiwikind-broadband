@@ -81,13 +81,3 @@ def safe_checkout(url):
         return False
 
 
-def safe_portal(url):
-    if not isinstance(url, str) or len(url) > 4096 or re.search(r'[\s\\]', url):
-        return False
-    try:
-        p = urlsplit(url)
-        return (p.scheme == 'https' and p.hostname == 'billing.stripe.com' and p.port in (None, 443)
-                and not p.username and not p.password and p.path.startswith('/p/session/')
-                and not p.path.startswith('/p/session/test_'))
-    except ValueError:
-        return False

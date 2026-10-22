@@ -1,7 +1,7 @@
 """Read-only Stripe live-account capability checks.
 
-No live Checkout, webhook handler, billing model or release switch is added
-by this module. Existing Stripe TEST and account systems remain unchanged.
+This module only reads provider readiness; production checkout is implemented
+separately in live_gateway/live_service/live_views. Sandbox records stay separate.
 Never return provider IDs, secret values, Stripe error bodies or customer data.
 """
 import os

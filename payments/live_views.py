@@ -3,17 +3,14 @@ import os
 import uuid
 from functools import wraps
 import stripe
-from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.http import JsonResponse
-from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from portal.models import AuditEvent
-from portal.owner_admin import owner_session
 from portal.views import endpoint
 from . import live_gateway as gateway, live_service as service
 from .live_models import LiveAgreement, LiveInvoice, LiveEvent, approved_agreements
@@ -33,13 +30,6 @@ def errors(fn):
         except (gateway.BillingUnavailable, stripe.StripeError):
             return JsonResponse({'error': 'Payment service unavailable. A previous request may still have completed; refresh before trying again.'}, status=503)
     return call
-
-
-@never_cache
-def page(request):
-    if request.method != 'GET':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-    return render(request, 'payments/customer_payments.html')
 
 
 @never_cache
