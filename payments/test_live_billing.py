@@ -101,6 +101,21 @@ class LiveBillingTests(TestCase):
         self.assertEqual(self.post(terms_version=str(uuid.uuid4())).status_code,409)
         self.api.v1.checkout.sessions.create.assert_not_called()
 
+    def test_new_all_in_agreement_amount_reaches_stripe_checkout(self):
+        self.a.pricing_policy = 'all_in_v2'
+        self.a.save()
+        self.assertEqual((self.a.monthly_cents, self.a.setup_cents), (1532, 1273))
+        self.session['amount_total'] = 2805
+        response = self.post()
+        self.assertEqual(response.status_code, 200, response.content)
+        params = self.api.v1.checkout.sessions.create.call_args.args[0]
+        self.assertEqual(params['mode'], 'subscription')
+        self.assertEqual(params['line_items'][0]['price_data']['unit_amount'], 1532)
+        self.assertEqual(params['line_items'][1]['price_data']['unit_amount'], 1273)
+        self.assertNotIn('recurring', params['line_items'][1]['price_data'])
+        self.assertEqual(params['line_items'][0]['price_data']['tax_behavior'], 'inclusive')
+        self.assertEqual(self.a.monthly_cents + self.a.setup_cents, 2805)
+
     def test_browser_cannot_change_approved_price(self):
         self.assertEqual(self.post(monthly_cents=1,setup_cents=0).status_code,200)
         self.assertEqual(self.api.v1.checkout.sessions.create.call_args.args[0]['line_items'][0]['price_data']['unit_amount'],1450)
