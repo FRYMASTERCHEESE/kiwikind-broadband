@@ -7,8 +7,8 @@ assert class_names, 'R8 class mapping is missing'
 ns='{http://schemas.android.com/apk/res/android}'
 root=ET.parse(manifest).getroot();app=root.find('application')
 assert root.attrib['package']=='nz.kiwikind.broadband'
-assert root.attrib[ns+'versionCode']=='12'
-assert root.attrib[ns+'versionName']=='0.2.10-prelaunch'
+assert root.attrib[ns+'versionCode']=='13'
+assert root.attrib[ns+'versionName']=='0.2.11-prelaunch'
 assert app.attrib.get(ns+'debuggable','false')=='false'
 assert app.attrib.get(ns+'allowBackup')=='false'
 assert app.attrib.get(ns+'usesCleartextTraffic')=='false'
@@ -25,4 +25,4 @@ for original in ['com.google.android.gms.ads.AdView','com.google.android.ump.Con
     marker=('L'+optimized.replace('.','/')+';').encode()
     assert marker in dex,(original,optimized)
 assert b'ca-app-pub-4051392846058327/4480562173' in dex
-print('PASS signed V12: real KiwiKind App ID/unit, Ads and UMP SDKs, non-debuggable, backup/cleartext off, AD_ID/AdServices permissions absent.')
+print('PASS signed V13: real KiwiKind App ID/unit, Ads and UMP SDKs, non-debuggable, backup/cleartext off, AD_ID/AdServices permissions absent.')

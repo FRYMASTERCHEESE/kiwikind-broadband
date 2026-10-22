@@ -215,7 +215,7 @@ public class MainActivity extends Activity {
     }
     private void auth(boolean register){
         refreshScreen=null;
-        content.removeAllViews();title(register?"Create your account":"A kinder connection.");landscape();paragraph("My KiwiKind · Pre-launch\nCreate a free account or sign in. Your account and support messages are shared with the website. Broadband orders and payments remain closed.");
+        content.removeAllViews();title(register?"Create your account":"A kinder connection.");landscape();paragraph("My KiwiKind · Pre-launch\nCreate a free account or sign in. Your account and support messages are shared with the website. Public broadband orders remain closed. Approved private payment offers appear under My payments after sign-in.");
         EditText email=field("Email",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         EditText password=field("Password (at least 12 characters)",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
         EditText referral=register?field("Referral code (optional; programme not open yet)",1):null;
@@ -394,7 +394,7 @@ public class MainActivity extends Activity {
     private String billingMoney(long cents){return "NZ$"+java.math.BigDecimal.valueOf(cents,2).toPlainString();}
     private void billingScreen(){run(()->api.call("billing/summary",null),r->{
         refreshScreen=this::billingScreen;content.removeAllViews();title("Billing status");
-        paragraph("TEST ONLY. Live payments and broadband orders remain disabled. Use only Stripe test payment details. Your account email, test reference and agreed amounts are sent to Stripe only after confirmation. A successful test does not connect broadband.");
+        paragraph("TEST ONLY. This screen uses separate test billing. Public broadband orders remain disabled. Use only Stripe test payment details. Your account email, test reference and agreed amounts are sent to Stripe only after confirmation. A successful test does not connect broadband.");
         if(!"sandbox_only".equals(r.optString("mode"))||r.optBoolean("live_payments_enabled",true)){
             paragraph("Unexpected billing mode. Nothing was submitted.");nav();return;
         }
@@ -436,7 +436,7 @@ public class MainActivity extends Activity {
     });}
     private void connectionPreparation(){run(()->api.call("connection-progress",null),r->{
         refreshScreen=this::connectionPreparation;content.removeAllViews();title("Connection preparation");
-        paragraph("KiwiKind is preparing for launch. Broadband orders and payments are closed. Availability, prices and installation dates are not confirmed.");
+        paragraph("KiwiKind is preparing for launch. Public broadband orders are closed. Private payments require an approved offer. Availability, prices and installation dates are not confirmed.");
         int count=0;
         for(String group:new String[]{"orders","faults"}){
             JSONArray records=r.optJSONArray(group);if(records==null)continue;
