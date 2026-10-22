@@ -246,6 +246,19 @@ class BroadbandTests(TestCase):
             self.assertEqual(agreement.monthly_cents, revised['monthly_cents'])
             self.assertEqual(agreement.setup_cents, revised['setup_cents'])
 
+    def test_prior_agreement_amounts_are_not_recalculated(self):
+        agreement = LiveAgreement.objects.create(
+            user=self.user, created_by=self.owner, label='Original quote',
+            service_reference='synthetic-legacy', source_monthly_cents=6992,
+            source_setup_cents=2000, service_terms='Historical synthetic terms')
+        self.assertEqual(agreement.pricing_policy, 'legacy_v1')
+        original = (agreement.monthly_cents, agreement.setup_cents)
+        with override_settings(KIWIKIND_ALL_IN_RETAIL_ENABLED=True):
+            agreement.save()
+            agreement.refresh_from_db()
+            self.assertEqual((agreement.monthly_cents, agreement.setup_cents), original)
+            self.assertEqual(agreement.pricing_policy, 'legacy_v1')
+
     def test_order_submission_requires_csrf(self):
         client=Client(enforce_csrf_checks=True);client.force_login(self.user)
         self.assertEqual(client.post('/api/broadband/orders',json.dumps(self.data),content_type='application/json').status_code,403)
