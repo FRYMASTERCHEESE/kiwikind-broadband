@@ -473,7 +473,7 @@ public class MainActivity extends Activity {
     });}
     private void broadbandPlans(){run(()->api.call("broadband/catalogue",null),r->{
         refreshScreen=this::broadbandPlans;content.removeAllViews();title("Broadband plans");
-        paragraph("Step 1 of 4: choose a type of broadband. Next pick your speed and extras, send an address, and pay only after owner confirmation. Prices include GST and the $3 monthly plus $10 setup additions exactly once.");
+        paragraph("Step 1: choose fibre, rural or other broadband. Step 2: choose speed and installation type. Step 3: send your address for confirmation. Only pay after reviewing the final offer. Estimates include $3 monthly and $10 one-time KiwiKind additions.");
         if(signedIn)button("Track my existing requests",this::orders);
         JSONArray products=r.getJSONArray("products");String consent=r.getString("consent_version");
         if(products.length()==0)paragraph("Broadband plans are temporarily unavailable. Contact KiwiKind.");
@@ -485,7 +485,7 @@ public class MainActivity extends Activity {
             JSONObject p=products.getJSONObject(i);
             int before=content.getChildCount();
             title(p.getString("name"));
-            paragraph("Starting from "+billingMoney(p.getLong("headline_monthly_cents"))+" per month, including GST.\n"+p.optString("headline_note")+"\n"+p.getString("description"));
+            paragraph("Estimated starting from "+billingMoney(p.getLong("headline_monthly_cents"))+" per month, including GST.\n"+p.optString("headline_note")+"\n"+p.getString("description")+"\n"+("needs_supplier_confirmation".equals(p.optString("price_status"))?"Supplier price still needs confirmation before a final offer.":"Installation and address charges must be confirmed before payment."));
             button("Choose options",()->configureBroadband(p,consent));
             int after=content.getChildCount();
             android.view.View[] group=new android.view.View[after-before];
@@ -508,7 +508,7 @@ public class MainActivity extends Activity {
     });}
     private void configureBroadband(JSONObject product,String consent){
         refreshScreen=null;content.removeAllViews();title(product.optString("name"));
-        paragraph("Step 2 of 4: choose your options, then review your exact GST-inclusive price. You will not be charged here.");
+        paragraph("Step 2 of 4: choose your speed, installation type and extras. Review the estimated GST-inclusive price; address-specific fees are confirmed before payment.");
         paragraph(product.optString("description"));
         JSONArray groups=product.optJSONArray("groups");if(groups==null)return;
         Spinner[] choices=new Spinner[groups.length()];
@@ -518,7 +518,11 @@ public class MainActivity extends Activity {
                 JSONArray options=group.getJSONArray("options");String[] labels=new String[options.length()];
                 for(int j=0;j<options.length();j++)labels[j]=options.getJSONObject(j).getString("name");
                 Spinner select=new Spinner(this);select.setContentDescription(group.getString("label"));select.setMinimumHeight(dp(56));
-                select.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,labels));content.addView(select,spaced());choices[i]=select;
+                select.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,labels));
+                if("ufb".equals(product.optString("id")) && i==0){
+                    for(int j=0;j<labels.length;j++)if(labels[j].equals("500Mbps Down / 100Mbps Up")){select.setSelection(j);break;}
+                }
+                content.addView(select,spaced());choices[i]=select;
             }
             button("Review price and order",()->{
                 java.util.ArrayList<String> values=new java.util.ArrayList<>();
@@ -533,10 +537,10 @@ public class MainActivity extends Activity {
     private void showBroadbandQuote(JSONObject q) throws JSONException {
         StringBuilder text=new StringBuilder(q.getString("name"));JSONArray options=q.getJSONArray("options");
         for(int i=0;i<options.length();i++){JSONObject o=options.getJSONObject(i);text.append("\n").append(o.getString("group")).append(": ").append(o.getString("name"));}
-        text.append("\n\n").append(billingMoney(q.getLong("monthly_cents"))).append(" per month, including GST.\nSetup once: ")
+        text.append("\n\nEstimated ").append(billingMoney(q.getLong("monthly_cents"))).append(" per month, including GST.\nEstimated setup once: ")
             .append(q.isNull("setup_cents")?"to confirm":billingMoney(q.getLong("setup_cents")))
-            .append("\nFirst month + setup: ").append(q.isNull("first_invoice_cents")?"to confirm":billingMoney(q.getLong("first_invoice_cents")))
-            .append("\nThe totals include exactly $3 monthly and $10 setup once, both including GST.");
+            .append("\nEstimated first month + setup: ").append(q.isNull("first_invoice_cents")?"to confirm":billingMoney(q.getLong("first_invoice_cents")))
+            .append("\nThe totals include exactly $3 monthly and $10 setup once, both including GST. Supplier rates, installation, equipment and address eligibility are checked before a final payment offer.");
         JSONArray usage=q.getJSONArray("usage");for(int i=0;i<usage.length();i++)text.append("\n").append(usage.getString(i));
         paragraph(text.toString());
     }
@@ -550,7 +554,7 @@ public class MainActivity extends Activity {
         EditText name=field("Contact name",InputType.TYPE_CLASS_TEXT),address=field("Full NZ service address",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS),postcode=field("Four-digit postcode",InputType.TYPE_CLASS_NUMBER),phone=field("Phone (optional)",InputType.TYPE_CLASS_PHONE);
         CheckBox accept=new CheckBox(this);accept.setText("I understand availability and connection details must be confirmed before payment. I have read the order terms and privacy notice. This submission does not activate service.");content.addView(accept,spaced());
         String key=UUID.randomUUID().toString();JSONObject[] pending={null};
-        button("Submit order for confirmation",()->{
+        button("Send address for confirmation",()->{
             if(!accept.isChecked()){message("Read and accept the order review information first.");return;}
             if(pending[0]==null){
                 String contact=name.getText().toString().trim(),street=address.getText().toString().trim(),number=phone.getText().toString().trim();

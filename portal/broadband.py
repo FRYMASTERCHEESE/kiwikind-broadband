@@ -25,15 +25,107 @@ def catalogue_source():
     return json.loads(raw), hashlib.sha256(raw).hexdigest()[:24]
 
 
+
+# Only plan descriptions/option identifiers live in this public repository.
+# Actual supplier rates from the user's authenticated Vetta portal are stored
+# in VerifiedSupplierOption in the private Neon database, never here.
+UFB_INSTALL_LABELS = (
+    ('unknown', 'Not sure — KiwiKind will confirm the install type'),
+    ('churn', 'Switching from another provider (churn)'),
+    ('existing_ont', 'New service — fibre box (ONT) already exists'),
+    ('new_ont', 'New fibre installation — no ONT yet'),
+    ('additional_ont', 'Additional fibre box (ONT) needed'),
+)
+
+
+def effective_catalogue():
+    """Per-request private rate projection for BOTH website and Android.
+
+    Missing or unverified UFB speed prices are hidden, never silently replaced
+    with stale snapshot values or zero. Installation defaults to unknown;
+    addresses and final charges always require owner confirmation.
+    """
+    from .models import VerifiedSupplierOption
+    source, legacy_revision = catalogue_source()
+    records = {
+        (r.group_id, r.option_id): r
+        for r in VerifiedSupplierOption.objects.filter(
+            product_id='ufb', verified=True, verified_on__isnull=False)
+    }
+    products = []
+    for base in source:
+        if base['id'] != 'ufb':
+            item = dict(base)
+            item['price_status'] = ('screen_checked' if item['id'] == 'adsl' else 'needs_supplier_confirmation')
+            products.append(item)
+            continue
+
+        # Deliberately ignore every outdated wholesale value in the original
+        # snapshot for UFB. No fallback to the old public JSON rates.
+        base_speeds = {option['id']: option for option in base['groups'][0]['options']}
+        speeds = []
+        for (group_id, option_id), rate in sorted(records.items(),
+                key=lambda item: (item[1].sort_order, item[0][1])):
+            if group_id != 'speed':
+                continue
+            if (not rate.label.strip() or not 0 <= rate.monthly_ex_gst_cents <= 1000000
+                    or rate.setup_ex_gst_cents is None or rate.setup_ex_gst_cents > 1000000):
+                continue
+            old = base_speeds.get(option_id, {})
+            speeds.append({
+                'id': option_id,
+                'name': rate.label.strip(),
+                'monthly': f'{rate.monthly_ex_gst_cents / 100:.2f}',
+                'setup': f'{rate.setup_ex_gst_cents / 100:.2f}',
+                'unknown': False,
+                'usage': old.get('usage'),
+            })
+        if not speeds:
+            # No private verified prices yet: fail CLOSED instead of selling
+            # stale or falsely-free UFB; other catalogue categories remain.
+            continue
+        installs = [{
+            'id': 'unknown',
+            'name': UFB_INSTALL_LABELS[0][1],
+            'monthly': '0.00', 'setup': '0.00', 'unknown': True, 'usage': None,
+        }]
+        for key, label in UFB_INSTALL_LABELS[1:]:
+            rate = records.get(('install', key))
+            known = bool(rate is not None and rate.monthly_ex_gst_cents == 0
+                         and rate.setup_ex_gst_cents is not None
+                         and 0 <= rate.setup_ex_gst_cents <= 1000000)
+            installs.append({
+                'id': key,
+                'name': label,
+                'monthly': '0.00',
+                'setup': f'{rate.setup_ex_gst_cents / 100:.2f}' if known else '0.00',
+                'unknown': not known,
+                'usage': None,
+            })
+        item = dict(base)
+        item['headline'] = f'{min(cents(o["monthly"]) for o in speeds) / 100:.2f}'
+        item['description'] = ('Home fibre where your address is eligible. Choose the speed and '
+            'installation type; the final setup charge is confirmed before payment.')
+        item['groups'] = [
+            {'id': '0', 'label': 'Choose your fibre speed', 'options': speeds},
+            {'id': 'install', 'label': 'Installation / switching type (confirmed by KiwiKind)', 'options': installs},
+        ]
+        item['price_status'] = 'verified_speed_address_review_required'
+        products.append(item)
+    private_version = hashlib.sha256(json.dumps(
+        products, sort_keys=True, separators=(',', ':')).encode()).hexdigest()[:24]
+    return products, hashlib.sha256(
+        f'{legacy_revision}:{private_version}'.encode()).hexdigest()[:24]
+
 def cents(value):
     return int(Decimal(value) * 100)
 
 
 def quote(product_id, selections):
-    products, revision = catalogue_source()
+    products, revision = effective_catalogue()
     product = next((p for p in products if p['id'] == product_id), None)
     if not product:
-        raise ValueError('Choose an available broadband service.')
+        raise ValueError('This plan has no fully verified rate yet; contact KiwiKind for an address-specific quote.')
     if not isinstance(selections, list) or len(selections) != len(product['groups']):
         raise ValueError('Choose one option from each group.')
     monthly, setup = cents(product['base']), cents(product['baseSetup'])
@@ -53,9 +145,15 @@ def quote(product_id, selections):
                          + (' at the 95th percentile.' if option['usage']['unit'] == 'Mbps' else '.'))
     if product_id == 'mobile-4g':
         usage.append('Additional data: NZ$11.50/GB including GST.')
+    if product_id == 'ufb':
+        usage.append('Your exact installation/switching fee requires confirmation before payment; a speed-only setup of $0 does not guarantee free installation.')
+    else:
+        usage.append('These supplier rates require current confirmation, along with any address-specific fees, before payment.')
     result = {**order_quote(monthly, None if unknown else setup),
               'product_id': product_id, 'name': product['name'], 'selections': selections,
               'options': options, 'usage': usage, 'catalogue_version': revision,
+              'price_status': product['price_status'],
+              'price_confirmation_required': True,
               'source_monthly_cents': monthly, 'source_setup_cents': None if unknown else setup}
     fingerprint = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
     result['quote_version'] = hashlib.sha256(fingerprint).hexdigest()
@@ -73,9 +171,9 @@ def catalogue_enabled():
 @never_cache
 @require_GET
 def catalogue(request):
-    source, version = catalogue_source()
     products = []
     if catalogue_enabled():
+        source, version = effective_catalogue()
         for p in source:
             groups = []
             for group in p['groups']:
@@ -87,10 +185,14 @@ def catalogue(request):
                     for o in group['options']]})
             products.append({'id': p['id'], 'name': p['name'], 'description': p['description'],
                              'headline_monthly_cents': _including_gst(cents(p['headline'])) + 300,
-                             'headline_note': '128Kbps / 128Kbps' if p['id'] == 'ufb' else
+                             'headline_note': 'Lowest tier is 128Kbps; choose a normal home speed for streaming.' if p['id'] == 'ufb' else
                                  '5Mbps / 2Mbps uncapped' if p['id'] == 'fixed-wireless' else '',
+                             'price_status': p['price_status'],
+                             'price_confirmation_required': True,
                              'groups': groups,
-                             'default_quote': public_quote(quote(p['id'], ['0'] * len(groups)))})
+                             'default_quote': public_quote(quote(p['id'], [g['options'][0]['id'] for g in groups]))})
+    if not catalogue_enabled():
+        _, version = catalogue_source()
     return JsonResponse({'products': products, 'catalogue_version': version,
                          'currency': 'NZD', 'gst_included': True,
                          'monthly_addition_cents': 300, 'setup_addition_cents': 1000,
@@ -167,6 +269,15 @@ def prepare_offer(request, pk):
         if detail.payment_agreement_id:
             return JsonResponse({'agreement_id': str(detail.payment_agreement_id)})
         value = detail.quote
+        # Never turn a historical UFB quote into a payable offer after the
+        # verified supplier rate or installation selection has changed.
+        if value.get('product_id') == 'ufb':
+            try:
+                current = quote(value.get('product_id'), value.get('selections'))
+            except (ValueError, TypeError):
+                return JsonResponse({'error': 'The supplier fibre prices/options changed. Ask the customer to submit a fresh address request before preparing an offer.'}, status=409)
+            if current['quote_version'] != value.get('quote_version'):
+                return JsonResponse({'error': 'This fibre quote is outdated. A new reviewed quote is required before any payment offer.'}, status=409)
         # Unknown source setup stays unknown. It must be confirmed before review.
         terms = value['name'] + '\n' + '\n'.join(o['group']+': '+o['name'] for o in value['options'])
         if value['usage']:
