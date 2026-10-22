@@ -132,3 +132,32 @@ class Provider(models.Model):
 
 # Additive onboarding tables; existing account/customer tables are unchanged.
 from .wholesale_models import DraftPlan, AvailabilityEvidence, WholesaleOrder, WholesaleFault, WholesaleEvent  # noqa: E402,F401
+
+
+class VerifiedSupplierOption(models.Model):
+    """Private, account-specific Vetta rate overrides. Never seed prices in public Git.
+
+    Only screenshot-confirmed entries may affect quotes. A new option without
+    an actual verified monthly rate is hidden instead of using an old or $0 rate.
+    Existing customer order snapshots and signed Stripe agreements are immutable.
+    """
+    product_id = models.CharField(max_length=40)
+    group_id = models.CharField(max_length=40)
+    option_id = models.CharField(max_length=40)
+    label = models.CharField(max_length=160)
+    monthly_ex_gst_cents = models.PositiveIntegerField()
+    setup_ex_gst_cents = models.PositiveIntegerField(null=True, blank=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    verified = models.BooleanField(default=False)
+    verified_on = models.DateField(null=True, blank=True)
+    source_ref = models.CharField(max_length=120, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=['product_id', 'group_id', 'option_id'], name='verified_supplier_option_unique')]
+        indexes = [models.Index(fields=['product_id', 'group_id', 'verified'],
+                                name='supplier_option_lookup')]
+
+    def __str__(self):
+        return f'{self.product_id}/{self.group_id}/{self.option_id}'
