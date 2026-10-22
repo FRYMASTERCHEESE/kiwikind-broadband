@@ -144,6 +144,48 @@ def detail(kind,obj):
     return result
 
 
+@endpoint(['POST'], throttle='owner-price-preview')
+@private
+def retail_price_preview(request):
+    """Read-only owner+MFA preview; uses the SAME backend policy as Checkout.
+
+    Never saves an agreement, approves a service, creates a payment, or places
+    a supplier order. Client-supplied prices are inputs for owner examination
+    and are never authoritative customer payment amounts.
+    """
+    from payments.retail_pricing import order_quote
+    from payments.live_models import LiveAgreement, default_price_policy
+    source = request.data
+    monthly = source.get('source_monthly_cents')
+    setup = source.get('source_setup_cents')
+    if type(monthly) is not int or type(setup) is not int:
+        return JsonResponse({'error': 'Enter supplier monthly and setup amounts as whole cents.'}, status=400)
+    if monthly < 0 or monthly > 1000000 or setup < 0 or setup > 1000000:
+        return JsonResponse({'error': 'Supplier amounts are outside the valid range.'}, status=400)
+    record_id = source.get('agreement_id', 'new')
+    if record_id == 'new':
+        policy = default_price_policy()
+    else:
+        try:
+            identifier = uuid.UUID(str(record_id))
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Agreement reference invalid.'}, status=400)
+        agreement = LiveAgreement.objects.filter(pk=identifier).first()
+        if agreement is None or agreement.checkout_started_at is not None:
+            return JsonResponse({'error': 'Agreement unavailable or prices locked after checkout.'}, status=409)
+        policy = agreement.pricing_policy
+    if policy not in ('legacy_v1', 'all_in_v2', 'all_in_v3'):
+        return JsonResponse({'error': 'Pricing policy unavailable.'}, status=409)
+    q = order_quote(monthly, setup, include_processing=policy in ('all_in_v2','all_in_v3'),
+        monthly_price_increase_cents=400 if policy == 'all_in_v3' else 0)
+    return JsonResponse({
+        'monthly_cents': q['monthly_cents'], 'setup_cents': q['setup_cents'],
+        'first_invoice_cents': q['first_invoice_cents'], 'currency': 'NZD',
+        'gst_included': True, 'pricing_policy': policy, 'saved': False,
+        'approved': False, 'checkout_created': False, 'supplier_order_created': False,
+    })
+
+
 @endpoint(['GET'])
 @private
 def index(request):

@@ -20,6 +20,7 @@ urlpatterns = [path('', include('payments.urls')), path('api/connection-progress
  path('api/owner/sandbox-runs', owner_scenarios.runs),
  path('api/owner/sandbox-runs/<uuid:pk>/advance', owner_scenarios.advance),
  path('api/owner/sandbox-runs/<uuid:pk>/evidence', owner_scenarios.evidence),
+ path('api/owner/retail-price-preview', owner_ops.retail_price_preview),
  path('api/owner/operations', owner_ops.index),
  path('api/owner/operations/<str:kind>', owner_ops.collection),
  path('api/owner/operations/<str:kind>/<str:pk>', owner_ops.record),

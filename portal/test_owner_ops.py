@@ -85,6 +85,50 @@ class OwnerOperationsTests(TestCase):
             'revision':result['revision'],'submission_key':str(uuid.uuid4()),'note':'Synthetic review','reference':''}).status_code,200)
         self.assertEqual(self.save('preparation',case.pk,{}).status_code,409)
 
+    def test_private_server_previews_current_retail_totals_without_creating_offers(self):
+        from django.test import override_settings
+        from payments.live_models import LiveAgreement
+        values = {'source_monthly_cents': 6992, 'source_setup_cents': 3500, 'agreement_id': 'new'}
+        with override_settings(KIWIKIND_ALL_IN_RETAIL_ENABLED=True):
+            response = self.post('retail-price-preview', values)
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        self.assertEqual((data['monthly_cents'], data['setup_cents'],
+            data['first_invoice_cents']), (9062, 5200, 14262))
+        self.assertEqual(data['pricing_policy'], 'all_in_v3')
+        self.assertTrue(data['gst_included'])
+        self.assertFalse(data['saved'])
+        self.assertFalse(data['approved'])
+        self.assertFalse(data['checkout_created'])
+        self.assertFalse(data['supplier_order_created'])
+        self.assertFalse(LiveAgreement.objects.exists())
+        for invalid in (None, -1, '6992', 1000001, True):
+            bad = {**values, 'source_monthly_cents': invalid}
+            self.assertEqual(self.post('retail-price-preview', bad).status_code, 400)
+
+    def test_preview_respects_legacy_agreements_and_is_owner_only(self):
+        from django.test import override_settings
+        from payments.live_models import LiveAgreement
+        old = LiveAgreement.objects.create(
+            user=self.customer, created_by=self.owner, label='Past synthetic',
+            service_reference='synthetic-legacy-preview',
+            pricing_policy='all_in_v2', source_monthly_cents=6992,
+            source_setup_cents=3500, service_terms='Synthetic only')
+        payload = {'agreement_id': str(old.pk), 'source_monthly_cents': 6992,
+                   'source_setup_cents': 3500}
+        with override_settings(KIWIKIND_ALL_IN_RETAIL_ENABLED=True):
+            res = self.post('retail-price-preview', payload)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()['pricing_policy'], 'all_in_v2')
+        self.assertEqual(res.json()['monthly_cents'], 8662)
+        self.assertEqual(self.post('retail-price-preview',
+            {**payload, 'agreement_id': 'invalid'}).status_code, 400)
+        visitor = Client()
+        self.assertEqual(self.post('retail-price-preview', payload, visitor).status_code, 403)
+        visitor.force_login(self.customer)
+        self.assertEqual(self.post('retail-price-preview', payload, visitor).status_code, 403)
+        self.assertEqual(LiveAgreement.objects.count(), 1)
+
     def test_readonly_ledgers_unknown_models_and_csrf(self):
         self.assertEqual(self.client.get('/api/owner/operations/auth.User').status_code,404)
         self.assertEqual(self.post('operations/audit/new',{'values':{}}).status_code,405)
