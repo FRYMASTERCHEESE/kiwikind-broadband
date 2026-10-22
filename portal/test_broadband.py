@@ -299,6 +299,20 @@ class BroadbandTests(TestCase):
             self.assertEqual((agreement.monthly_cents, agreement.setup_cents), original)
             self.assertEqual(agreement.pricing_policy, 'legacy_v1')
 
+    def test_existing_all_in_v2_agreements_keep_old_prices(self):
+        old = LiveAgreement.objects.create(
+            user=self.user, created_by=self.owner, label='Previous all-in rate',
+            service_reference='synthetic-old-all-in', pricing_policy='all_in_v2',
+            source_monthly_cents=6992, source_setup_cents=3500,
+            service_terms='Historical synthetic customer terms')
+        original = (old.monthly_cents, old.setup_cents)
+        self.assertEqual(original, (8662, 5200))
+        with override_settings(KIWIKIND_ALL_IN_RETAIL_ENABLED=True):
+            old.save()
+            old.refresh_from_db()
+        self.assertEqual((old.monthly_cents, old.setup_cents), original)
+        self.assertEqual(old.pricing_policy, 'all_in_v2')
+
     def test_order_submission_requires_csrf(self):
         client=Client(enforce_csrf_checks=True);client.force_login(self.user)
         self.assertEqual(client.post('/api/broadband/orders',json.dumps(self.data),content_type='application/json').status_code,403)
