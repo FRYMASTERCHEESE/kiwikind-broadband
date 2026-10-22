@@ -89,6 +89,13 @@ class LiveBillingTests(TestCase):
         self.client.force_login(self.other);self.assertEqual(self.post().status_code,404)
         self.api.v1.checkout.sessions.create.assert_not_called()
 
+    def test_live_payment_writes_require_csrf(self):
+        client=Client(enforce_csrf_checks=True);client.force_login(self.user)
+        for action in ('checkout','cancel'):
+            response=client.post('/api/payments/'+action,json.dumps({'agreement_id':str(self.a.pk),'accept_live_recurring':True,'accept_live_cancel':True}),content_type='application/json')
+            self.assertEqual(response.status_code,403)
+        self.api.v1.checkout.sessions.create.assert_not_called()
+
     def test_explicit_consent_and_current_terms_required(self):
         self.assertEqual(self.post(accept_live_recurring=False).status_code,400)
         self.assertEqual(self.post(terms_version=str(uuid.uuid4())).status_code,409)
