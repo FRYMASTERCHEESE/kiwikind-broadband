@@ -39,6 +39,15 @@ class Order(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=['user','idempotency_key'], name='order_user_key')]
 
+class BroadbandOrder(models.Model):
+    """Immutable customer selections and quoted totals; no supplier transaction."""
+    order = models.OneToOneField(Order, on_delete=models.PROTECT, primary_key=True,
+                                related_name='broadband')
+    quote = models.JSONField()
+    payment_agreement = models.OneToOneField('payments.LiveAgreement', null=True, blank=True,
+                                            on_delete=models.PROTECT, related_name='broadband_order')
+
+
 class Ticket(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)

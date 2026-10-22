@@ -87,6 +87,7 @@ def health(request): return JsonResponse({'status':'ok','service':'kiwikind-broa
 
 def capabilities():
     return {'mode':'prelaunch','intake_enabled':settings.INTAKE_ENABLED,'registration_enabled':settings.REGISTRATION_ENABLED,'live_services':False,
+      'broadband_ordering_enabled':settings.BROADBAND_CATALOGUE_ENABLED,'supplier_orders_enabled':False,'payment_timing':'after_connection_confirmation',
       'availability':'unverified','billing_enabled':__import__('payments.live_gateway',fromlist=['configured']).configured(),'legal_entity':settings.LEGAL_ENTITY,
       'business_contact':settings.BUSINESS_CONTACT,'privacy_contact':settings.PRIVACY_CONTACT,'consent_version':CONSENT}
 
@@ -236,7 +237,15 @@ def preferences(request):
     return JsonResponse({'account_notifications':pref.account_notifications if pref else False,
         'delivery_enabled':False,'marketing_enabled':False})
 
-def order_json(o): return {'id':str(o.id),'address':o.address,'postcode':o.postcode,'contact_name':o.contact_name,'phone':o.phone,'status':o.status,'created_at':o.created_at.isoformat(),'consent_version':o.consent_version}
+def order_json(o):
+    result = {'id':str(o.id),'address':o.address,'postcode':o.postcode,'contact_name':o.contact_name,'phone':o.phone,'status':o.status,'created_at':o.created_at.isoformat(),'consent_version':o.consent_version}
+    if hasattr(o, 'broadband'):
+        from .broadband import public_quote
+        result['broadband'] = public_quote(o.broadband.quote)
+        agreement = o.broadband.payment_agreement
+        result['can_cancel_request'] = not (agreement and agreement.checkout_started_at)
+        result['payment_offer_available'] = bool(agreement and agreement.reviewed)
+    return result
 
 @endpoint(['GET','POST'],True)
 def orders(request):
@@ -260,7 +269,12 @@ def orders(request):
 @endpoint(['POST'],True)
 def cancel_order(request,pk):
     with transaction.atomic():
-        o=get_object_or_404(Order,user=request.user,pk=pk)
+        o=get_object_or_404(Order.objects.select_for_update(),user=request.user,pk=pk)
+        if hasattr(o, 'broadband'):
+            from payments.live_models import LiveAgreement
+            agreement = LiveAgreement.objects.select_for_update().filter(pk=o.broadband.payment_agreement_id).first()
+            if agreement and agreement.checkout_started_at:
+                return JsonResponse({'error':'Payment checkout has started. Contact support to cancel the connection and review billing.'},status=409)
         o.status='cancelled'; o.save(update_fields=['status']); audit(request,'order_cancelled',o.id)
     return JsonResponse({'order':order_json(o)})
 

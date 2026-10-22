@@ -1,7 +1,7 @@
 """Bundle the existing public policy prose for offline native rendering."""
 from html.parser import HTMLParser
 from pathlib import Path
-import json
+import json, sys
 
 ROOT=Path(__file__).resolve().parents[1]
 class Policy(HTMLParser):
@@ -21,6 +21,7 @@ class Policy(HTMLParser):
         if self.inside and tag==('section' if self.section else 'main'):self.inside=False
 
 out={}
-for key,file,section in [('privacy','privacy.html',None),('deletion','account-deletion.html',None),('terms','index.html','terms')]:
-    p=Policy(section);p.feed((ROOT/'site/dist'/file).read_text(encoding='utf-8'));out[key]=p.blocks
+source=Path(sys.argv[1]) if len(sys.argv)>1 else ROOT/'site/dist'
+for key,file,section in [('privacy','privacy.html',None),('deletion','account-deletion.html',None),('terms','terms.html' if len(sys.argv)>1 else 'index.html',None if len(sys.argv)>1 else 'terms')]:
+    p=Policy(section);p.feed((source/file).read_text(encoding='utf-8'));out[key]=p.blocks
 (ROOT/'android/app/src/main/assets/policy-content.json').write_text(json.dumps(out,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

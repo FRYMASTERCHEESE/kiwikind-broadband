@@ -16,7 +16,7 @@ def approved_agreements():
     return LiveAgreement.objects.filter(reviewed=True, approved_at__isnull=False,
         approved_by__username=OWNER_USERNAME, approved_by__email=OWNER_EMAIL,
         approved_by__is_active=True, approved_by__is_staff=True, approved_by__is_superuser=True,
-        approved_by__owneridentity__verified_email=OWNER_EMAIL)
+        approved_by__owneridentity__verified_email=OWNER_EMAIL).exclude(broadband_order__order__status='cancelled')
 
 
 class LiveAgreement(models.Model):
@@ -91,6 +91,8 @@ class LiveAgreement(models.Model):
 
     def clean(self):
         self.calculate_quote()
+        if self.reviewed and 'Complete the confirmed connection, billing-start, contract, cancellation and refund terms before approving this offer.' in self.service_terms:
+            raise ValidationError('Replace the draft instructions with confirmed service terms before approval.')
         if self.reviewed and (not self.supplier_confirmed or not self.bill_from or self.setup_cents is None
                 or self.tax_treatment != 'gst_included'
                 or not self.service_terms.strip() or not self.label.strip() or not self.service_reference.strip()):
@@ -98,6 +100,9 @@ class LiveAgreement(models.Model):
 
     def check_checkout_eligibility(self):
         self.full_clean()
+        linked = getattr(self, 'broadband_order', None)
+        if linked and linked.order.status == 'cancelled':
+            raise ValidationError('This broadband order has been cancelled.')
         if not approved_agreements().filter(pk=self.pk).exists():
             raise ValidationError('A current verified-owner approval is required.')
         if not self.bill_from or self.bill_from > timezone.localdate():

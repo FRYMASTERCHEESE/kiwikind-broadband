@@ -6,7 +6,7 @@
     },
     {
       "kind": "p",
-      "text": "Updated 22 October 2026. This policy covers the KiwiKind Broadband Android app and customer portal. KiwiKind Broadband Limited (NZBN 9429054036550), incorporated on 19 October 2026, operates this prelaunch project. Free accounts and support conversations are available. Public broadband orders and supplier processing remain closed; private payment offers are described below; incorporation does not establish an operating ISP. The Google Play developer display name is FryMasterCheese Studios."
+      "text": "Updated 22 October 2026. This policy covers the KiwiKind Broadband Android app and customer portal. KiwiKind Broadband Limited (NZBN 9429054036550), incorporated on 19 October 2026, operates KiwiKind Broadband. Free accounts, support conversations and broadband order requests are available. We confirm address availability and connection details before payment. Automatic supplier ordering is disabled. The Google Play developer display name is FryMasterCheese Studios."
     },
     {
       "kind": "h2",
@@ -46,7 +46,7 @@
     },
     {
       "kind": "p",
-      "text": "The portal is hosted on Render, with PostgreSQL data hosted by Neon. Current service regions are Singapore for the application and Sydney, Australia for the database. GitHub Pages hosts the separate public information website; account sign-in remains on the Render portal. Google processes Google sign-in. When configured, Brevo processes transactional verification/reset email, including recipient address and the message needed for account recovery. Email delivery can be unavailable during prelaunch. These providers process information to deliver the specified functions; we do not sell personal information or provide account/support records for targeted advertising. Google advertising SDK processing is described below. Provider operational processing may occur overseas."
+      "text": "The secure account API is hosted on Render, with PostgreSQL data hosted by Neon. Current service regions are Singapore for the application and Sydney, Australia for the database. GitHub Pages hosts the public website and account/owner interfaces. Private records come from the secure API after server-side authentication. Essential cross-site session and security cookies keep you signed in; browser cookie blocking may prevent sign-in. No session credentials or private records are saved in browser local storage. Google processes Google sign-in. When configured, Brevo processes transactional verification/reset email, including recipient address and the message needed for account recovery. Email delivery can be unavailable during prelaunch. These providers process information to deliver the specified functions; we do not sell personal information or provide account/support records for targeted advertising. Google advertising SDK processing is described below. Provider operational processing may occur overseas."
     },
     {
       "kind": "h2",
@@ -82,14 +82,6 @@
     },
     {
       "kind": "h2",
-      "text": "Private payment offers and Stripe"
-    },
-    {
-      "kind": "p",
-      "text": "Private customer payment offers are separate from public broadband ordering, which remains closed. An approved offer shows the full monthly amount, one-time setup amount, GST and written service terms. The totals include exactly $3 extra monthly and $10 extra setup once, both including GST. A payment requires your explicit agreement and is available only when live checkout is enabled. After consent, KiwiKind sends your account email, internal agreement reference and agreed amounts to Stripe. Stripe hosts the payment form and processes card details; KiwiKind does not receive full card numbers. KiwiKind stores the agreed terms, consent audit, subscription, invoice, payment, refund and dispute references so you can see your records across the website and app. Status comes from verified Stripe notifications, not a browser return page. Payment does not automatically activate broadband or place a supplier order. You can request cancellation of future subscription billing at the current period end; service cancellation and contractual obligations are handled separately with KiwiKind. Refunds are reviewed by KiwiKind. Exports include your payment records; deletion requests require review for lawful financial record retention and related Stripe records. Stripe may process information overseas under its privacy policy. Sandbox billing remains separate and accepts test details only."
-    },
-    {
-      "kind": "h2",
       "text": "Security"
     },
     {
@@ -119,6 +111,26 @@
     {
       "kind": "p",
       "text": "You can sign out, request an account export in the portal/app, or contact us for access, correction and deletion. Sending support messages is optional. The app is intended for adults managing their own accounts, not children. Policy changes will be published here with a revised date."
+    },
+    {
+      "kind": "h2",
+      "text": "Private payment offers and Stripe"
+    },
+    {
+      "kind": "p",
+      "text": "Customers receive a private payment offer after KiwiKind confirms their address and connection details. An approved offer shows the full monthly amount, one-time setup amount, GST and written service terms. The totals include exactly $3 extra monthly and $10 extra setup once, both including GST. A payment requires your explicit agreement and is available only when live checkout is enabled. After consent, KiwiKind sends your account email, internal agreement reference and agreed amounts to Stripe. Stripe hosts the payment form and processes card details; KiwiKind does not receive full card numbers. KiwiKind stores the agreed terms, consent audit, subscription, invoice, payment, refund and dispute references so you can see your records across the website and app. Status comes from verified Stripe notifications, not a browser return page. Payment does not automatically activate broadband or place a supplier order. You can request cancellation of future subscription billing at the current period end; service cancellation and contractual obligations are handled separately with KiwiKind. Refunds are reviewed by KiwiKind. Exports include your payment records; deletion requests require review for lawful financial record retention and related Stripe records. Stripe may process information overseas under its privacy policy. Sandbox billing remains separate and accepts test details only."
+    },
+    {
+      "kind": "p",
+      "text": "Stripe privacy policy"
+    },
+    {
+      "kind": "h2",
+      "text": "Broadband order details"
+    },
+    {
+      "kind": "p",
+      "text": "When you submit a broadband order, we store your selected plan and options, quoted totals, service address, postcode, contact name and optional phone number in your KiwiKind account. We use them to check availability, prepare your confirmed offer and manage your connection. You can view your order on the website and app. Payment is requested only after confirmation. Automatic supplier ordering remains disabled."
     }
   ],
   "deletion": [
@@ -152,33 +164,93 @@
     },
     {
       "kind": "p",
-      "text": "Broadband orders, payments and provisioning are disabled. This deletion request does not require buying a service or paying a fee. Read our privacy policy or contact the same email for access/correction requests."
+      "text": "Public broadband orders and supplier provisioning remain disabled. This deletion request does not require buying a service or paying a fee. Read our privacy policy or contact the same email for access/correction requests."
     }
   ],
   "terms": [
     {
+      "kind": "h1",
+      "text": "Broadband orders and account terms"
+    },
+    {
       "kind": "p",
-      "text": "DRAFT · PRE-LAUNCH · VERSION prelaunch-2026-10-16"
+      "text": "Updated 22 October 2026. These terms explain the KiwiKind website, free account and order review process. They are not your final broadband service contract. The service-specific consumer agreement, approved prices, installation conditions and retail terms must be separately reviewed and accepted before payment or service activation."
     },
     {
       "kind": "h2",
-      "text": "A request is just a request."
+      "text": "Who operates the site?"
     },
     {
       "kind": "p",
-      "text": "KiwiKind Broadband is a working brand for a planned New Zealand broadband retail business. It is not yet offering a live broadband service. The legal supplier and contact details must be confirmed before customer intake opens."
+      "text": "KiwiKind Broadband Limited, NZBN 9429054036550, New Zealand company number 9466791. Contact kiwikindbroadband@gmail.com for support, privacy questions or corrections. The public website is hosted on GitHub Pages. The account portal uses a separate secure backend shared by the Android app."
+    },
+    {
+      "kind": "h2",
+      "text": "Choose a plan and request a connection"
     },
     {
       "kind": "p",
-      "text": "Creating an account or submitting a request does not form a broadband service contract, guarantee availability, start provisioning, authorise switching or create any charge. Don’t cancel your current broadband on the basis of a request. You may cancel a pending request in the portal."
+      "text": "Browse the broadband catalogue, select your speed, data and installation or router options, and submit your service address and contact details. All displayed prices are NZD including GST. The totals include exactly $3 extra monthly and $10 extra setup once; GST is not added again to these additions."
     },
     {
       "kind": "p",
-      "text": "Only submit accurate details for an address you are authorised to enquire about. Protect your password. Support tickets and complaints are recorded in your account; no pre-launch response time is promised. We do not claim Telecommunications Dispute Resolution membership. A live complaints and escalation process must be approved before service launch."
+      "text": "Submitting an order requests an address and connection check. No payment is taken and no service is activated at that stage. Prices labelled “to confirm”, usage charges and eligibility restrictions must be resolved in your final offer. Secondary fibre options require an eligible existing connection. Speeds and availability depend on your address and network."
+    },
+    {
+      "kind": "h2",
+      "text": "Confirmation before payment"
     },
     {
       "kind": "p",
-      "text": "Any future offer needs separate acceptance of confirmed pricing, GST, speeds and limitations, installation, equipment, minimum term, cancellation and switching terms. Nothing here excludes rights that cannot lawfully be excluded under New Zealand law, including applicable Consumer Guarantees Act and Fair Trading Act protections. These draft portal terms require review before public customer use."
+      "text": "KiwiKind reviews the service address and connection details manually. Once confirmed, your final offer appears under Billing in My KiwiKind on the website and app. It must state the selected service, full monthly and setup amounts, payment start, installation, equipment, contract, cancellation and refund terms. You can then accept that offer and continue to Stripe."
+    },
+    {
+      "kind": "p",
+      "text": "Creating an account or submitting an order does not accept a minimum term or authorise cancellation of your existing connection. Do not cancel your current broadband until switching and installation arrangements are confirmed."
+    },
+    {
+      "kind": "h2",
+      "text": "Website accounts and security"
+    },
+    {
+      "kind": "p",
+      "text": "Use accurate account contact information and keep credentials secure. Google sign-in and email/password sign-in use the separate shared backend. Do not send passwords, reset links, card details or identity documents in support messages. Data and deletion choices are covered by our privacy policy."
+    },
+    {
+      "kind": "h2",
+      "text": "Final offers and consumer rights"
+    },
+    {
+      "kind": "p",
+      "text": "Every final offer needs separate confirmation of service address, supplier availability, approved GST-inclusive monthly and one-off prices, speed limitations, equipment, minimum term, cancellation, switching authority, installation and support arrangements. Nothing here excludes rights that cannot lawfully be excluded under New Zealand law, including applicable rights under the Consumer Guarantees Act 1993 and Fair Trading Act 1986."
+    },
+    {
+      "kind": "h2",
+      "text": "Support, complaints and account deletion"
+    },
+    {
+      "kind": "p",
+      "text": "Contact kiwikindbroadband@gmail.com for account support or complaints. No live service-support SLA or membership in a telecommunications dispute scheme is promised unless stated in your confirmed service terms. Account deletion instructions are available without signing in."
+    },
+    {
+      "kind": "h2",
+      "text": "Changes"
+    },
+    {
+      "kind": "p",
+      "text": "We may update these order and account terms. Changes do not alter an offer you have already accepted. This page alone does not authorise charges or supplier provisioning; payment requires your separate acceptance of the final offer."
+    },
+    {
+      "kind": "p",
+      "text": "← Back to KiwiKind Broadband"
+    },
+    {
+      "kind": "h2",
+      "text": "Approved payment offers"
+    },
+    {
+      "kind": "p",
+      "text": "Creating an account does not authorise charges. Every payment offer must identify the specific service, full GST-inclusive monthly and one-time setup amounts, payment start, installation, equipment, contract, cancellation and refund terms before acceptance. A customer must separately accept that offer before Stripe checkout. Payment does not automatically activate broadband or place a supplier order. The $3 monthly and $10 one-time setup additions are already included in the displayed totals, including GST. Contact KiwiKind about refunds and broadband cancellation; stopping subscription payments alone does not cancel contractual service obligations."
     }
   ]
 }

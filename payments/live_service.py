@@ -48,6 +48,10 @@ def checkout(user, agreement_id, expected_version, api):
     # A lost response can be retried with the same Stripe idempotency key, but never
     # silently recreated after Stripe may have removed that key (24 hours).
     with transaction.atomic():
+        from portal.models import Order, BroadbandOrder
+        linked = BroadbandOrder.objects.filter(payment_agreement_id=agreement_id, order__user=user).first()
+        if linked:
+            Order.objects.select_for_update().get(pk=linked.order_id)
         a = LiveAgreement.objects.select_for_update().filter(pk=agreement_id, user=user, reviewed=True).first()
         if not a:
             raise LiveAgreement.DoesNotExist
