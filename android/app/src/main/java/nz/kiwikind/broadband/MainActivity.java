@@ -378,7 +378,7 @@ public class MainActivity extends Activity {
             if(monthlyCents<0||setupCents<0||monthlyCents>1200000||setupCents>1200000)throw new IllegalStateException("Invalid payment amount");
             String monthly=billingMoney(monthlyCents),setup=billingMoney(setupCents),status=a.getString("status");
             String terms=a.getString("service_terms");
-            paragraph(a.getString("label")+"\n"+monthly+" per month plus "+setup+" setup once. First payment: "+billingMoney(monthlyCents+setupCents)+". GST included.\nThe totals already include exactly $3 monthly and $10 setup once, both including GST.\n"+terms+"\nPayment start: "+a.optString("bill_from")+". Status: "+status+(a.optBoolean("cancel_at_period_end")?" · cancellation requested":""));
+            paragraph(a.getString("label")+"\n"+monthly+" per month plus "+setup+" setup once. First payment: "+billingMoney(monthlyCents+setupCents)+". GST included.\nThe quoted monthly price and once-only setup total both include GST. No additional GST is charged at Checkout.\n"+terms+"\nPayment start: "+a.optString("bill_from")+". Status: "+status+(a.optBoolean("cancel_at_period_end")?" · cancellation requested":""));
             if(r.optBoolean("live_payments_enabled")&&a.optBoolean("ready_to_pay")&&"pending".equals(status))button("Continue to secure Stripe checkout",()->{
                 new AlertDialog.Builder(this).setTitle("Confirm recurring payment")
                     .setMessage("I accept the displayed terms and authorise "+monthly+" each month plus "+setup+" once, including GST. My account email and agreement reference will be sent to Stripe. Payment does not automatically activate broadband.\n\n"+terms)
@@ -473,7 +473,7 @@ public class MainActivity extends Activity {
     });}
     private void broadbandPlans(){run(()->api.call("broadband/catalogue",null),r->{
         refreshScreen=this::broadbandPlans;content.removeAllViews();title("Broadband plans");
-        paragraph("Step 1: choose fibre, rural or other broadband. Step 2: choose speed and installation type. Step 3: send your address for confirmation. Only pay after reviewing the final offer. Estimates include $3 monthly and $10 one-time KiwiKind additions.");
+        paragraph("Step 1: choose fibre, rural or other broadband. Step 2: choose speed and installation type. Step 3: send your address for confirmation. Only pay after reviewing the final offer. The shown monthly and setup estimates already include GST.");
         if(signedIn)button("Track my existing requests",this::orders);
         JSONArray products=r.getJSONArray("products");String consent=r.getString("consent_version");
         if(products.length()==0)paragraph("Broadband plans are temporarily unavailable. Contact KiwiKind.");
@@ -540,7 +540,7 @@ public class MainActivity extends Activity {
         text.append("\n\nEstimated ").append(billingMoney(q.getLong("monthly_cents"))).append(" per month, including GST.\nEstimated setup once: ")
             .append(q.isNull("setup_cents")?"to confirm":billingMoney(q.getLong("setup_cents")))
             .append("\nEstimated first month + setup: ").append(q.isNull("first_invoice_cents")?"to confirm":billingMoney(q.getLong("first_invoice_cents")))
-            .append("\nThe totals include exactly $3 monthly and $10 setup once, both including GST. Supplier rates, installation, equipment and address eligibility are checked before a final payment offer.");
+            .append("\nThe complete customer-facing monthly and setup totals include GST. Installation type, connection, equipment and final supplier costs are confirmed in writing before payment.");
         JSONArray usage=q.getJSONArray("usage");for(int i=0;i<usage.length();i++)text.append("\n").append(usage.getString(i));
         paragraph(text.toString());
     }
