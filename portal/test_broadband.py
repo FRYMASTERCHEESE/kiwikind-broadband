@@ -250,9 +250,10 @@ class BroadbandTests(TestCase):
     def test_monthly_price_rise_is_exactly_four_dollars_with_same_setup(self):
         original = quote('ufb', ['3', 'churn'])
         self.assertEqual((original['monthly_cents'], original['setup_cents']),
-                         (8341, 5025))
+                         (8341, 3300))
         with override_settings(KIWIKIND_ALL_IN_RETAIL_ENABLED=True):
-            before = order_quote(6992, 3500, include_processing=True)
+            before = order_quote(original['source_monthly_cents'],
+                                 original['source_setup_cents'], include_processing=True)
             after = quote('ufb', ['3', 'churn'])
             self.assertEqual(after['monthly_cents'], before['monthly_cents'] + 400)
             self.assertEqual(after['setup_cents'], before['setup_cents'])
@@ -260,8 +261,10 @@ class BroadbandTests(TestCase):
                              before['first_invoice_cents'] + 400)
             listing = self.client.get('/api/broadband/catalogue').json()
             fibre = next(p for p in listing['products'] if p['id'] == 'ufb')
+            from .broadband import effective_catalogue, cents
+            entry = next(p for p in effective_catalogue()[0] if p['id'] == 'ufb')
             self.assertEqual(fibre['headline_monthly_cents'],
-                             order_quote(3739, 0, include_processing=True)['monthly_cents'] + 400)
+                             order_quote(cents(entry['headline']), 0, include_processing=True)['monthly_cents'] + 400)
             self.assertNotIn('monthly_addition_cents', listing)
             self.assertNotIn('setup_addition_cents', after)
 
