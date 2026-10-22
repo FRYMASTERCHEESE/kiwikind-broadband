@@ -1,5 +1,10 @@
 name: Android signed prelaunch release
 on:
+  # Build one signed QA candidate when this workflow itself is reviewed and
+  # merged to the existing approved release branch. No Google Play upload.
+  push:
+    branches: [feature/neon-postgres-config]
+    paths: ['.github/workflows/android-release.yml']
   workflow_dispatch:
     inputs:
       published_v12_only:
@@ -94,7 +99,7 @@ jobs:
           python scripts/verify_ad_release.py android/app/build/outputs/apk/release/app-release.apk release-evidence/MERGED-MANIFEST.xml android/app/build/outputs/mapping/release/mapping.txt | tee release-evidence/AD-RELEASE-VERIFICATION.txt
           grep -i 'd8c8cbf422ece5a38696f8ca199b0b3d31a7a1bbd646816a8af7c17e9bf0ed64' release-evidence/APK-CERTIFICATE.txt
       - name: Prepare same-signature ad instrumentation for the signed release
-        if: inputs.verify_test_ads
+        if: ${{ github.event_name == 'push' || inputs.verify_test_ads }}
         shell: bash
         run: |
           set -euo pipefail
@@ -108,13 +113,13 @@ jobs:
           gradle --no-daemon assembleDebugAndroidTest
           "$APKSIGNER" sign --ks "$KIWIKIND_KEYSTORE" --ks-key-alias "$KIWIKIND_KEY_ALIAS" --ks-pass env:KIWIKIND_STORE_PASSWORD --key-pass env:KIWIKIND_KEY_PASSWORD --out "$RUNNER_TEMP/kiwikind-ad-tests.apk" app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
       - name: Enable emulator acceleration
-        if: ${{ inputs.capture_screenshots || inputs.verify_test_ads }}
+        if: ${{ github.event_name == 'push' || inputs.capture_screenshots || inputs.verify_test_ads }}
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Verify filled test banner in the actual signed release
-        if: inputs.verify_test_ads
+        if: ${{ github.event_name == 'push' || inputs.verify_test_ads }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
@@ -124,7 +129,7 @@ jobs:
           disable-animations: true
           script: bash scripts/android/verify_signed_emulator.sh
       - name: Capture real signed Android app screens
-        if: inputs.capture_screenshots
+        if: ${{ github.event_name == 'push' || inputs.capture_screenshots }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 36
