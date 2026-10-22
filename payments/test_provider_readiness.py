@@ -1,6 +1,7 @@
 import os
 from io import StringIO
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, create_autospec
+import stripe
 from django.core.management import call_command
 from django.test import SimpleTestCase, override_settings
 from payments import live_preflight
@@ -34,6 +35,9 @@ class ProviderReadinessTests(SimpleTestCase):
     @override_settings(PUBLIC_ORIGIN='https://example.invalid',PAGES_ENABLED=True,PAGES_URL='https://example.invalid/')
     def test_sandbox_uses_shared_gst_request_and_expires_without_payment(self):
         api=MagicMock()
+        sdk_sessions=stripe.StripeClient('sk_test_synthetic_placeholder').v1.checkout.sessions
+        sdk_sessions.line_items  # Load the SDK child resource before constructing its strict mock.
+        api.v1.checkout.sessions=create_autospec(sdk_sessions,spec_set=True)
         api.v1.tax_rates.create.return_value={'object':'tax_rate','id':'txr_testSynthetic','livemode':False,
             'inclusive':True,'country':'NZ','percentage':15}
         api.v1.tax_rates.update.return_value={'object':'tax_rate','id':'txr_testSynthetic','livemode':False,'active':False}
@@ -43,7 +47,7 @@ class ProviderReadinessTests(SimpleTestCase):
         api.v1.checkout.sessions.create.return_value=session
         api.v1.checkout.sessions.retrieve.return_value=session
         api.v1.checkout.sessions.expire.return_value={**session,'status':'expired'}
-        api.v1.checkout.sessions.list_line_items.return_value={'data':[
+        api.v1.checkout.sessions.line_items.list.return_value={'data':[
             {'amount_total':1450,'amount_tax':189,'price':{'tax_behavior':'inclusive','recurring':{'interval':'month'}}},
             {'amount_total':1230,'amount_tax':160,'price':{'tax_behavior':'inclusive','recurring':None}}]}
         output=StringIO()
