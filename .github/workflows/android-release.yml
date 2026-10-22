@@ -1,5 +1,5 @@
 name: Android signed prelaunch release
-# Verify signed V15 customer-facing billing cleanup on approved branch.
+# Rebuild the current signed V15 closed-test QA candidate after shared pricing and owner-approval safety updates.
 # Sandbox/payment QA remains in backend; Play publication remains a separate step.
 # Artifact and emulator QA ONLY; never uploads or publishes to Google Play.
 on:
