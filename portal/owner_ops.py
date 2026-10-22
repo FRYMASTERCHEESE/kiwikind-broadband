@@ -28,6 +28,7 @@ from payments.models import TestAgreement, TestInvoice, TestEvent
 from payments.admin import TestAgreementForm
 from payments.live_models import LiveAgreement, LiveInvoice, LiveEvent
 from payments.live_forms import LiveAgreementForm
+from payments import live_gateway
 
 User = get_user_model()
 
@@ -143,7 +144,8 @@ def detail(kind,obj):
 def index(request):
     return JsonResponse({'collections':[{'name':key,'label':key.replace('-',' ').capitalize(),
         'create':value['create'],'readonly':value['readonly']} for key,value in SPECS.items()],
-        'live_payments':False,'public_prices':False,'supplier_orders':False})
+        'live_payments':live_gateway.configured(),
+        'public_prices':False,'supplier_orders':False})
 
 
 @endpoint(['GET','POST'])
