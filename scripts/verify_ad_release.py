@@ -1,5 +1,6 @@
 """Check the final signed artifact, not just Gradle source declarations."""
 import sys, re, zipfile, xml.etree.ElementTree as ET
+from android_release_metadata import expected_version
 from pathlib import Path
 apk, manifest, mapping = map(Path, sys.argv[1:4])
 class_names=dict(re.findall(r'^([^ #\s][^ ]*) -> ([^ :]+):$',mapping.read_text(),re.MULTILINE))
@@ -7,8 +8,9 @@ assert class_names, 'R8 class mapping is missing'
 ns='{http://schemas.android.com/apk/res/android}'
 root=ET.parse(manifest).getroot();app=root.find('application')
 assert root.attrib['package']=='nz.kiwikind.broadband'
-assert root.attrib[ns+'versionCode']=='13'
-assert root.attrib[ns+'versionName']=='0.2.11-prelaunch'
+expected_code, expected_name = expected_version(Path('android/app/build.gradle').read_text())
+assert root.attrib[ns+'versionCode'] == expected_code, 'Signed manifest versionCode disagrees with Gradle source'
+assert root.attrib[ns+'versionName'] == expected_name, 'Signed manifest versionName disagrees with Gradle source'
 assert app.attrib.get(ns+'debuggable','false')=='false'
 assert app.attrib.get(ns+'allowBackup')=='false'
 assert app.attrib.get(ns+'usesCleartextTraffic')=='false'
@@ -25,4 +27,4 @@ for original in ['com.google.android.gms.ads.AdView','com.google.android.ump.Con
     marker=('L'+optimized.replace('.','/')+';').encode()
     assert marker in dex,(original,optimized)
 assert b'ca-app-pub-4051392846058327/4480562173' in dex
-print('PASS signed V13: real KiwiKind App ID/unit, Ads and UMP SDKs, non-debuggable, backup/cleartext off, AD_ID/AdServices permissions absent.')
+print(f'PASS signed V{expected_code} ({expected_name}): real KiwiKind App ID/unit, Ads and UMP SDKs, non-debuggable, backup/cleartext off, AD_ID/AdServices permissions absent.')
