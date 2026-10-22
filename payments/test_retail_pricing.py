@@ -63,3 +63,30 @@ class RetailPricingTests(TestCase):
             self.assertGreater(changed['setup_cents'], complete['setup_cents'])
         with self.assertRaises(ValueError):
             order_quote(1000, 0, include_processing='yes')
+
+    def test_all_in_v3_adds_exactly_four_dollars_to_monthly_only(self):
+        previous = order_quote(6992, 3500, include_processing=True)
+        new = order_quote(6992, 3500, include_processing=True,
+                          monthly_price_increase_cents=400)
+        self.assertEqual((previous['monthly_cents'], previous['setup_cents'],
+                          previous['first_invoice_cents']), (8662, 5200, 13862))
+        self.assertEqual((new['monthly_cents'], new['setup_cents'],
+                          new['first_invoice_cents']), (9062, 5200, 14262))
+        self.assertEqual(new['monthly_cents'] - previous['monthly_cents'], 400)
+        self.assertEqual(new['setup_cents'], previous['setup_cents'])
+
+    def test_increased_monthly_price_still_blocks_unknown_installation(self):
+        result = order_quote(6992, None, include_processing=True,
+                             monthly_price_increase_cents=400)
+        self.assertEqual(result['monthly_cents'], 9062)
+        self.assertIsNone(result['setup_cents'])
+        self.assertIsNone(result['first_invoice_cents'])
+        self.assertFalse(result['quote_complete'])
+
+    def test_retail_monthly_increase_requires_explicit_supported_policy(self):
+        for bad in (-1, 1, 399, 401, True, '400', 400.0):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                order_quote(6992, 3500, include_processing=True,
+                            monthly_price_increase_cents=bad)
+        with self.assertRaises(ValueError):
+            order_quote(6992, 3500, monthly_price_increase_cents=400)
