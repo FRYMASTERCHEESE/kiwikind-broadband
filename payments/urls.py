@@ -1,6 +1,8 @@
 from django.urls import path
-from . import views, owner_qa, live_preflight, live_views
+from . import views, owner_qa, live_preflight, live_views, owner_dollar
 urlpatterns = [
+    path('api/owner/dollar-verification', owner_dollar.status),
+    path('api/owner/dollar-verification/checkout', owner_dollar.checkout),
     path('api/payments/summary', live_views.summary),
     path('api/payments/checkout', live_views.checkout),
     path('api/payments/cancel', live_views.cancel),

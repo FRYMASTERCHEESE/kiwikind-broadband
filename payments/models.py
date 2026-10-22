@@ -77,4 +77,4 @@ class OwnerSandboxRun(models.Model):
 
 
 # Django discovers these separate production records without mixing ledgers.
-from .live_models import LiveAgreement, LiveInvoice, LiveEvent  # noqa: E402,F401
+from .live_models import LiveAgreement, LiveInvoice, LiveEvent, OneDollarVerification  # noqa: E402,F401

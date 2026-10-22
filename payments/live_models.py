@@ -138,3 +138,24 @@ class LiveEvent(models.Model):
 
     class Meta:
         verbose_name = 'Live webhook receipt'
+
+
+class OneDollarVerification(models.Model):
+    """At most one owner-authorised real $1 payment; unrelated to broadband billing."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='one_dollar_verification')
+    started_at = models.DateTimeField(null=True, blank=True, editable=False)
+    checkout_id = models.CharField(max_length=255, unique=True, null=True, blank=True, editable=False)
+    payment_intent_id = models.CharField(max_length=255, unique=True, null=True, blank=True, editable=False)
+    state = models.CharField(max_length=30, default='not_started', editable=False)
+    refunded_cents = models.PositiveIntegerField(default=0, editable=False)
+    dispute_status = models.CharField(max_length=40, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Owner one-dollar payment verification'
+        constraints = [
+            models.CheckConstraint(condition=models.Q(refunded_cents__lte=100), name='owner_dollar_refund_bound'),
+        ]

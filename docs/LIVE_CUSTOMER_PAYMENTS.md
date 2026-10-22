@@ -100,3 +100,46 @@ not prove live key write permissions, external webhook delivery, a real paid
 invoice, or a published Android update. Do not claim activation until the
 deployed configuration and provider setup are verified. Do not run automated
 real-money charges as a readiness check.
+
+
+## Isolated owner-only NZ$1 real payment verification
+
+The optional **one-time** live NZ$1 website test is separate from approved
+broadband customer agreements, subscriptions and supplier ordering. It requires
+the owner to sign in at the existing Pages owner centre with their bound Google
+account and MFA, explicitly tick consent, and submit their own card details on
+Stripe-hosted Checkout. The server fixes the amount at 100 NZD cents, uses
+Checkout mode \`payment\`, and never creates a recurring-price line item or a
+Vetta order. The same verified owner can see this section in their signed-in
+Pages account Billing view; ordinary customers cannot.
+
+Set \`KIWIKIND_OWNER_DOLLAR_TEST_ENABLED=1\` **only on Render** after the
+migration has been applied, \`STRIPE_LIVE_SECRET_KEY\`,
+\`STRIPE_LIVE_ACCOUNT_ID\` and \`STRIPE_LIVE_WEBHOOK_SECRET\` are confirmed,
+and the existing live \`/api/payments/webhook\` endpoint receives signed
+\`checkout.session.completed\` and \`charge.refunded\` events. The test flag
+is independent from production recurring-release switches and defaults OFF.
+No Stripe credentials belong in GitHub, Pages, Android, messages or screenshots.
+
+The owner test creates at most one persisted verification record. Repeated
+submissions re-use its Checkout session rather than generating extra charges.
+A returned browser redirect never marks the payment as paid: the signed webhook
+retrieves the current live Checkout and succeeded PaymentIntent, checking exact
+amount, currency, metadata and owner record. Stripe refunds are performed by
+the owner from Stripe Dashboard and recorded when the signed refund webhook
+arrives. Stripe processing fees may not be refunded.
+
+Before enabling, run the synthetic test suite and verify the deployed backend
+branch and Render migrations; the website can be published in advance because
+the separate server flag stays OFF. To test:
+1. Sign into \`owner.html\` using owner Google proof and authenticator.
+2. In **Verify a real NZ$1 payment**, tick one-time consent and tap **Pay
+   NZ$1 once securely**; only the owner can authorise the Stripe card payment.
+3. Refresh verification; expect \`paid\` only after signed webhook delivery.
+4. Find the same real payment in Stripe Dashboard, issue an owner-reviewed
+   refund, and refresh to see \`refunded\`. There is no automatic subscription.
+5. Turn \`KIWIKIND_OWNER_DOLLAR_TEST_ENABLED=0\` after verification. This
+   does not deactivate refunds or webhook reconciliation.
+
+Website verification does **not** by itself prove the Android navigation,
+payment return flow or release has been tested.

@@ -12,7 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from portal.models import AuditEvent
 from portal.views import endpoint
-from . import live_gateway as gateway, live_service as service
+from . import live_gateway as gateway, live_service as service, owner_dollar
 from .live_models import LiveAgreement, LiveInvoice, LiveEvent, approved_agreements
 
 
@@ -120,7 +120,8 @@ def webhook(request):
         with transaction.atomic():
             _, created = LiveEvent.objects.get_or_create(id=event['id'], defaults={'kind': event['type']})
             if created:
-                service.reconcile(api, event['type'], obj)
+                if not owner_dollar.reconcile(api, event['type'], obj):
+                    service.reconcile(api, event['type'], obj)
         return JsonResponse({'received': True})
     except (ValueError, TypeError, KeyError, ValidationError, stripe.SignatureVerificationError):
         return JsonResponse({'error': 'Invalid webhook'}, status=400)
