@@ -57,10 +57,16 @@ public class MainActivity extends Activity {
         TextView brand=new TextView(this);brand.setText("KiwiKind Broadband");brand.setTextSize(22);brand.setTypeface(android.graphics.Typeface.DEFAULT,android.graphics.Typeface.BOLD);brand.setTextColor(Color.WHITE);brand.setPadding(dp(10),0,0,0);header.addView(brand,new LinearLayout.LayoutParams(0,-2,1));root.addView(header);
         Button menu=new Button(this);menu.setText("Menu");menu.setAllCaps(false);menu.setMinHeight(dp(48));menu.setContentDescription("KiwiKind navigation");header.addView(menu);menu.setOnClickListener(v->{
             PopupMenu pages=new PopupMenu(this,menu);
-            String[] labels={"Broadband plans","Home","Our vision","My KiwiKind","Our journey","FAQs",signedIn?"My account":"Sign in","Sign up"};
-            String[] ids={"plans","home","why","mykiwikind","progress","questions","account","signup"};
+            String[] labels={"Broadband plans","My broadband requests","Payment offers","Support messages","Home","Our vision","My KiwiKind","Our journey","FAQs",signedIn?"My account":"Sign in","Sign up"};
+            String[] ids={"plans","orders","payments","support","home","why","mykiwikind","progress","questions","account","signup"};
             for(int i=0;i<labels.length;i++)pages.getMenu().add(0,i,i,labels[i]);
-            pages.setOnMenuItemClickListener(item->{if(busy)return true;String page=ids[item.getItemId()];if(page.equals("plans"))broadbandPlans();else if(page.equals("account")){if(signedIn)home();else auth(false);}else if(page.equals("signup")){if(signedIn)home();else auth(true);}else publicPage(page);return true;});pages.show();
+            pages.setOnMenuItemClickListener(item->{if(busy)return true;String page=ids[item.getItemId()];if(page.equals("plans"))broadbandPlans();
+                else if(page.equals("orders")){if(signedIn)orders();else auth(false);}
+                else if(page.equals("payments")){if(signedIn)liveBillingScreen();else auth(false);}
+                else if(page.equals("support")){if(signedIn)tickets();else auth(false);}
+                else if(page.equals("account")){if(signedIn)home();else auth(false);}
+                else if(page.equals("signup")){if(signedIn)home();else auth(true);}
+                else publicPage(page);return true;});pages.show();
         });
         feedback=new TextView(this);feedback.setTextSize(13);feedback.setTextColor(FOREST);feedback.setBackgroundColor(MINT);feedback.setPadding(dp(22),dp(10),dp(22),dp(10));feedback.setAccessibilityLiveRegion(1);root.addView(feedback);
         operationProgress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);operationProgress.setIndeterminate(true);operationProgress.setContentDescription("Connecting securely to KiwiKind");operationProgress.setVisibility(android.view.View.GONE);root.addView(operationProgress,new LinearLayout.LayoutParams(-1,dp(4)));
@@ -236,7 +242,8 @@ public class MainActivity extends Activity {
         button("Retry account connection",this::connectAccount).setEnabled(api.configured());
         button("Browse broadband plans",this::broadbandPlans);
         button("Discover our vision ↗",()->publicPage("home"));
-        button("Open My KiwiKind website",()->startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(BuildConfig.API_ORIGIN+"/#portal")))).setEnabled(api.configured());
+        button("Open My KiwiKind website",()->startActivity(new Intent(Intent.ACTION_VIEW,
+            Uri.parse("https://frymastercheese.github.io/kiwikind-broadband-website/account.html#portal"))));
         button("Reset password",()->{
             String address=email.getText().toString().trim();
             if(!android.util.Patterns.EMAIL_ADDRESS.matcher(address).matches()){email.setError("Enter a valid email address");email.requestFocus();return;}
@@ -340,9 +347,12 @@ public class MainActivity extends Activity {
         content.removeAllViews();title("My KiwiKind");landscape();paragraph("Kia ora, welcome home. 💚");
         if(account.has("email"))paragraph(account.optString("email"));
         paragraph("Your account, broadband orders, support conversations and payment offers are shared securely with the KiwiKind website. Choose a plan, then pay after your address and connection details are confirmed.");
-        accountCard("Broadband plans","Choose your plan and connection options",this::broadbandPlans);
-        accountCard("Connection preparation","Launch preparation updates · No active service",this::connectionPreparation);
-        accountCard("My connection","No active service · View requests",this::orders);accountCard("My support","Support & complaints",this::tickets);accountCard("Billing","Private payment offers and invoices",this::liveBillingScreen);
+        paragraph("Step 1: Choose a plan. Step 2: Pick options. Step 3: Send your address. Step 4: Pay only after KiwiKind confirms your service.");
+        accountCard("1 · Browse broadband plans","Fibre, copper, rural, wireless and mobile options",this::broadbandPlans);
+        accountCard("2 · My broadband requests","Check address review and connection progress",this::orders);
+        accountCard("3 · Payment offers","Review confirmed GST-inclusive prices and pay securely",this::liveBillingScreen);
+        accountCard("4 · Support & complaints","Ask questions or report a problem",this::tickets);
+        accountCard("Connection preparation","Manual availability and installation updates",this::connectionPreparation);
         button("Refresh account from website",()->run(()->api.call("me",null),r->{signedIn=true;accountHome(r);message("Account refreshed from KiwiKind server.");}));
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
         button("Request account deletion",()->deletionScreen(account.optBoolean("has_password",true)));
@@ -396,7 +406,7 @@ public class MainActivity extends Activity {
     private String billingMoney(long cents){return "NZ$"+java.math.BigDecimal.valueOf(cents,2).toPlainString();}
     private void billingScreen(){run(()->api.call("billing/summary",null),r->{
         refreshScreen=this::billingScreen;content.removeAllViews();title("Billing status");
-        paragraph("TEST ONLY. This screen uses separate test billing. Public broadband orders remain disabled. Use only Stripe test payment details. Your account email, test reference and agreed amounts are sent to Stripe only after confirmation. A successful test does not connect broadband.");
+        paragraph("TEST ONLY. This screen uses separate test billing and does not create a broadband order. Use only Stripe test payment details. Your account email, test reference and agreed amounts are sent to Stripe only after confirmation. A successful test does not connect broadband.");
         if(!"sandbox_only".equals(r.optString("mode"))||r.optBoolean("live_payments_enabled",true)){
             paragraph("Unexpected billing mode. Nothing was submitted.");nav();return;
         }
@@ -460,19 +470,43 @@ public class MainActivity extends Activity {
     });}
     private void broadbandPlans(){run(()->api.call("broadband/catalogue",null),r->{
         refreshScreen=this::broadbandPlans;content.removeAllViews();title("Broadband plans");
-        paragraph("Choose your plan and send your address. KiwiKind confirms availability and connection details before you pay. All prices include GST, exactly $3 extra monthly and $10 setup extra once.");
+        paragraph("Step 1 of 4: choose a type of broadband. Next pick your speed and extras, send an address, and pay only after owner confirmation. Prices include GST and the $3 monthly plus $10 setup additions exactly once.");
+        if(signedIn)button("Track my existing requests",this::orders);
         JSONArray products=r.getJSONArray("products");String consent=r.getString("consent_version");
         if(products.length()==0)paragraph("Broadband plans are temporarily unavailable. Contact KiwiKind.");
+        EditText search=field("Find broadband by type (fibre, rural, wireless or mobile)",
+            InputType.TYPE_CLASS_TEXT);
+        java.util.ArrayList<String> searchTexts=new java.util.ArrayList<>();
+        java.util.ArrayList<android.view.View[]> productViews=new java.util.ArrayList<>();
         for(int i=0;i<products.length();i++){
             JSONObject p=products.getJSONObject(i);
+            int before=content.getChildCount();
             title(p.getString("name"));
             paragraph("Starting from "+billingMoney(p.getLong("headline_monthly_cents"))+" per month, including GST.\n"+p.optString("headline_note")+"\n"+p.getString("description"));
             button("Choose options",()->configureBroadband(p,consent));
+            int after=content.getChildCount();
+            android.view.View[] group=new android.view.View[after-before];
+            for(int j=0;j<group.length;j++)group[j]=content.getChildAt(before+j);
+            productViews.add(group);
+            searchTexts.add((p.getString("name")+" "+p.getString("description")).toLowerCase(java.util.Locale.ROOT));
         }
+        search.addTextChangedListener(new android.text.TextWatcher(){
+            @Override public void beforeTextChanged(CharSequence s,int start,int count,int after){}
+            @Override public void onTextChanged(CharSequence s,int start,int before,int count){
+                String query=s.toString().trim().toLowerCase(java.util.Locale.ROOT);
+                for(int i=0;i<productViews.size();i++){
+                    int visibility=searchTexts.get(i).contains(query)?android.view.View.VISIBLE:android.view.View.GONE;
+                    for(android.view.View view:productViews.get(i))view.setVisibility(visibility);
+                }
+            }
+            @Override public void afterTextChanged(android.text.Editable e){}
+        });
         if(signedIn)nav();else button("Sign in",()->auth(false));
     });}
     private void configureBroadband(JSONObject product,String consent){
-        refreshScreen=null;content.removeAllViews();title(product.optString("name"));paragraph(product.optString("description"));
+        refreshScreen=null;content.removeAllViews();title(product.optString("name"));
+        paragraph("Step 2 of 4: choose your options, then review your exact GST-inclusive price. You will not be charged here.");
+        paragraph(product.optString("description"));
         JSONArray groups=product.optJSONArray("groups");if(groups==null)return;
         Spinner[] choices=new Spinner[groups.length()];
         try{
@@ -504,9 +538,12 @@ public class MainActivity extends Activity {
         paragraph(text.toString());
     }
     private void broadbandOrderForm(JSONObject q,String consent,JSONObject product) throws JSONException {
-        refreshScreen=null;content.removeAllViews();title("Review your broadband order");showBroadbandQuote(q);
+        refreshScreen=null;content.removeAllViews();title("Review your broadband order");
+        paragraph("Step 3 of 4: send your NZ service address. Step 4 is payment only after we confirm availability, setup fees, and final terms.");
+        showBroadbandQuote(q);
         paragraph("Nothing is charged now. We confirm your address and connection details, then your final offer appears under Billing for acceptance and secure Stripe payment.");
-        if(!signedIn){paragraph("Sign in to submit your order. Then choose your plan from My KiwiKind.");button("Sign in to order",()->auth(false));button("Back to plans",this::broadbandPlans);return;}
+        if(!signedIn){paragraph("Sign in to submit your order. You can return to the same plan in My KiwiKind after sign-in.");
+            button("Sign in to order",()->auth(false));button("Back to plans",this::broadbandPlans);return;}
         EditText name=field("Contact name",InputType.TYPE_CLASS_TEXT),address=field("Full NZ service address",InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_POSTAL_ADDRESS),postcode=field("Four-digit postcode",InputType.TYPE_CLASS_NUMBER),phone=field("Phone (optional)",InputType.TYPE_CLASS_PHONE);
         CheckBox accept=new CheckBox(this);accept.setText("I understand availability and connection details must be confirmed before payment. I have read the order terms and privacy notice. This submission does not activate service.");content.addView(accept,spaced());
         String key=UUID.randomUUID().toString();JSONObject[] pending={null};
