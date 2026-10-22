@@ -190,7 +190,7 @@ def catalogue(request):
                              'price_status': p['price_status'],
                              'price_confirmation_required': True,
                              'groups': groups,
-                             'default_quote': public_quote(quote(p['id'], ['0'] * len(groups)))})
+                             'default_quote': public_quote(quote(p['id'], [g['options'][0]['id'] for g in groups]))})
     if not catalogue_enabled():
         _, version = catalogue_source()
     return JsonResponse({'products': products, 'catalogue_version': version,
