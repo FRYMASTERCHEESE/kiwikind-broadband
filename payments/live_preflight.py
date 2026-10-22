@@ -72,6 +72,31 @@ def verify_account():
                 "details_submitted": False, "result": "READ_ONLY_VERIFICATION_UNAVAILABLE"}
 
 
+def verify_payment_reads():
+    """Only GET requests; discard provider records and return fixed status labels."""
+    checks = {}
+    try:
+        api = live_gateway.client()
+        live_gateway.verified_gst_rate(api)
+        checks['inclusive_nz_gst'] = True
+    except Exception:
+        return {'inclusive_nz_gst': False}
+    for label, resource in (
+        ('checkout', api.v1.checkout.sessions), ('subscriptions', api.v1.subscriptions),
+        ('customers', api.v1.customers), ('products', api.v1.products),
+        ('prices', api.v1.prices), ('invoices', api.v1.invoices),
+        ('invoice_payments', api.v1.invoice_payments),
+        ('payment_intents', api.v1.payment_intents), ('charges', api.v1.charges),
+        ('disputes', api.v1.disputes),
+    ):
+        try:
+            response = gateway.plain(resource.list({'limit': 1}))
+            checks[label] = isinstance(response, dict) and response.get('object') == 'list'
+        except Exception:
+            checks[label] = False
+    return checks
+
+
 @never_cache
 def owner_live_status(request):
     if not owner_session(request) or not admin.site.has_permission(request):

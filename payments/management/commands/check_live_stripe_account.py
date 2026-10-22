@@ -1,7 +1,7 @@
 """Private startup diagnostic for live Stripe mode: read-only, secret-free."""
 from django.core.management.base import BaseCommand
 
-from payments.live_preflight import settings_status, verify_account
+from payments.live_preflight import settings_status, verify_account, verify_payment_reads
 
 
 class Command(BaseCommand):
@@ -9,6 +9,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--verify-provider", action="store_true")
+        parser.add_argument("--verify-payment-reads", action="store_true")
 
     def handle(self, *args, **options):
         config = settings_status()
@@ -28,3 +29,6 @@ class Command(BaseCommand):
                                   ("yes" if verified["charges_enabled"] else "no"))
                 self.stdout.write("Stripe live payouts_enabled: " +
                                   ("yes" if verified["payouts_enabled"] else "no"))
+        if options['verify_payment_reads']:
+            for name, ready in verify_payment_reads().items():
+                self.stdout.write('Stripe live read check %s: %s' % (name, 'PASS' if ready else 'FAIL'))

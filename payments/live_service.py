@@ -20,6 +20,29 @@ def validate_session(a, value):
     return obj
 
 
+def checkout_parameters(a):
+    """Shared provider request, exercised in Stripe sandbox before release."""
+    items = [{'price_data': {'currency': 'nzd', 'unit_amount': a.monthly_cents,
+        'tax_behavior': 'inclusive', 'recurring': {'interval': 'month'},
+        'product_data': {'name': 'KiwiKind monthly (GST included)'}}, 'quantity': 1}]
+    if a.setup_cents:
+        items.append({'price_data': {'currency': 'nzd', 'unit_amount': a.setup_cents,
+            'tax_behavior': 'inclusive', 'product_data': {'name': 'KiwiKind setup once (GST included)'}}, 'quantity': 1})
+    params = dict(automatic_tax={'enabled': False}, adaptive_pricing={'enabled': False},
+        allow_promotion_codes=False, mode='subscription', allowed_payment_method_types=['card'],
+        client_reference_id=str(a.pk), customer_email=a.checkout_email, line_items=items,
+        metadata={'kiwikind_live_agreement': str(a.pk)},
+        subscription_data={'metadata': {'kiwikind_live_agreement': str(a.pk)}, 'default_tax_rates':[a.gst_rate_id]},
+        success_url=origin()+'/payments/?returned=1', cancel_url=origin()+'/payments/?cancelled=1',
+        expires_at=int((a.checkout_started_at+timedelta(hours=1)).timestamp()),
+        custom_text={'submit': {'message': 'Recurring monthly charge and one-time setup include GST. Payment does not automatically activate broadband.'}})
+    from django.conf import settings
+    if settings.PAGES_ENABLED:
+        params['success_url']=settings.PAGES_URL+'account.html?returned=1'
+        params['cancel_url']=settings.PAGES_URL+'account.html?cancelled=1'
+    return params
+
+
 def checkout(user, agreement_id, expected_version, api):
     # Persist first-attempt time and immutable input BEFORE making a network call.
     # A lost response can be retried with the same Stripe idempotency key, but never
@@ -45,22 +68,7 @@ def checkout(user, agreement_id, expected_version, api):
     if a.checkout_id:
         obj = validate_session(a, api.v1.checkout.sessions.retrieve(a.checkout_id))
     else:
-        items = [{'price_data': {'currency': 'nzd', 'unit_amount': a.monthly_cents,
-            'tax_behavior': 'inclusive', 'recurring': {'interval': 'month'}, 'product_data': {'name': 'KiwiKind monthly (GST included)'}}, 'quantity': 1}]
-        if a.setup_cents:
-            items.append({'price_data': {'currency': 'nzd', 'unit_amount': a.setup_cents, 'tax_behavior': 'inclusive',
-                'product_data': {'name': 'KiwiKind setup once (GST included)'}}, 'quantity': 1})
-        params = dict(automatic_tax={'enabled': False}, adaptive_pricing={'enabled': False}, allow_promotion_codes=False, mode='subscription', allowed_payment_method_types=['card'],
-            client_reference_id=str(a.pk), customer_email=a.checkout_email, line_items=items,
-            metadata={'kiwikind_live_agreement': str(a.pk)},
-            subscription_data={'metadata': {'kiwikind_live_agreement': str(a.pk)}, 'default_tax_rates':[a.gst_rate_id]},
-            success_url=origin()+'/payments/?returned=1', cancel_url=origin()+'/payments/?cancelled=1',
-            expires_at=int((a.checkout_started_at+timedelta(hours=1)).timestamp()),
-            custom_text={'submit': {'message': 'Recurring monthly charge and one-time setup include GST. Payment does not automatically activate broadband.'}})
-        from django.conf import settings
-        if settings.PAGES_ENABLED:
-            params['success_url']=settings.PAGES_URL+'account.html?returned=1'
-            params['cancel_url']=settings.PAGES_URL+'account.html?cancelled=1'
+        params = checkout_parameters(a)
         obj = validate_session(a, api.v1.checkout.sessions.create(params,
             options={'idempotency_key': 'kiwikind-live-checkout-'+str(a.pk)}))
     if obj.get('status') != 'open' or not safe_checkout(obj.get('url')):

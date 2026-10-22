@@ -80,6 +80,21 @@ No ads are introduced on payment or private screens.
 
 ## Validation limits
 
+`check_live_stripe_account --verify-provider --verify-payment-reads` verifies
+the pinned live account, inclusive NZ GST rate and GET access to the resources
+used by reconciliation. It discards provider records and logs only fixed status
+labels. The owner status reflects the same release configuration as customers.
+
+The time-limited `stripe_inclusive_checkout_smoke` command is disabled unless
+`KIWIKIND_STRIPE_INCLUSIVE_QA=2026-10-22-inclusive-v1`, and refuses provider calls
+after 07:00 UTC on 22 October 2026. It uses the existing pinned TEST account and
+the same Checkout request builder as live billing. It creates a synthetic
+inclusive tax rate and checkout for NZD 14.50 monthly plus NZD 12.30 setup once,
+checks the NZD 26.80 total, expires checkout and archives the test tax rate.
+It submits no payment and creates no customer, subscription, application record
+or supplier order. Repeated runs use fixed idempotency keys. Turn the switch off
+after verification. This validates provider request shape, not live write scope.
+
 Unit/API and browser tests use synthetic accounts and provider objects. They do
 not prove live key write permissions, external webhook delivery, a real paid
 invoice, or a published Android update. Do not claim activation until the
