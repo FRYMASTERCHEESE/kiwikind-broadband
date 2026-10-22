@@ -149,7 +149,8 @@ def quote(product_id, selections):
         usage.append('Your exact installation/switching fee requires confirmation before payment; a speed-only setup of $0 does not guarantee free installation.')
     else:
         usage.append('These supplier rates require current confirmation, along with any address-specific fees, before payment.')
-    result = {**order_quote(monthly, None if unknown else setup),
+    result = {**order_quote(monthly, None if unknown else setup,
+                           include_processing=settings.KIWIKIND_ALL_IN_RETAIL_ENABLED),
               'product_id': product_id, 'name': product['name'], 'selections': selections,
               'options': options, 'usage': usage, 'catalogue_version': revision,
               'price_status': product['price_status'],
@@ -161,7 +162,8 @@ def quote(product_id, selections):
 
 
 def public_quote(value):
-    return {key: item for key, item in value.items() if not key.startswith('source_')}
+    return {key: item for key, item in value.items() if not key.startswith('source_')
+            and key not in ('monthly_addition_cents', 'setup_addition_cents')}
 
 
 def catalogue_enabled():
@@ -184,7 +186,8 @@ def catalogue(request):
                      'usage_based': bool(o.get('usage'))}
                     for o in group['options']]})
             products.append({'id': p['id'], 'name': p['name'], 'description': p['description'],
-                             'headline_monthly_cents': _including_gst(cents(p['headline'])) + 300,
+                             'headline_monthly_cents': order_quote(cents(p['headline']), 0,
+                               include_processing=settings.KIWIKIND_ALL_IN_RETAIL_ENABLED)['monthly_cents'],
                              'headline_note': 'Lowest tier is 128Kbps; choose a normal home speed for streaming.' if p['id'] == 'ufb' else
                                  '5Mbps / 2Mbps uncapped' if p['id'] == 'fixed-wireless' else '',
                              'price_status': p['price_status'],
@@ -195,7 +198,6 @@ def catalogue(request):
         _, version = catalogue_source()
     return JsonResponse({'products': products, 'catalogue_version': version,
                          'currency': 'NZD', 'gst_included': True,
-                         'monthly_addition_cents': 300, 'setup_addition_cents': 1000,
                          'supplier_orders_enabled': False,
                          'orders_enabled': catalogue_enabled(),
                          'payment_timing': 'after_connection_confirmation',
@@ -271,13 +273,13 @@ def prepare_offer(request, pk):
         value = detail.quote
         # Never turn a historical UFB quote into a payable offer after the
         # verified supplier rate or installation selection has changed.
-        if value.get('product_id') == 'ufb':
+        if value.get('product_id'):
             try:
                 current = quote(value.get('product_id'), value.get('selections'))
             except (ValueError, TypeError):
-                return JsonResponse({'error': 'The supplier fibre prices/options changed. Ask the customer to submit a fresh address request before preparing an offer.'}, status=409)
+                return JsonResponse({'error': 'The supplier prices/options changed. Ask the customer to submit a fresh address request before preparing an offer.'}, status=409)
             if current['quote_version'] != value.get('quote_version'):
-                return JsonResponse({'error': 'This fibre quote is outdated. A new reviewed quote is required before any payment offer.'}, status=409)
+                return JsonResponse({'error': 'This quote is outdated. A new reviewed quote is required before any payment offer.'}, status=409)
         # Unknown source setup stays unknown. It must be confirmed before review.
         terms = value['name'] + '\n' + '\n'.join(o['group']+': '+o['name'] for o in value['options'])
         if value['usage']:

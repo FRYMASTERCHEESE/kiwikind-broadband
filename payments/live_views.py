@@ -44,7 +44,6 @@ def summary(request):
         data.append({'id': str(a.pk), 'terms_version': str(a.terms_version), 'label': a.label,
             'monthly_cents': a.monthly_cents, 'setup_cents': a.setup_cents, 'currency': 'NZD',
             'tax_treatment': 'GST included', 'service_terms': a.service_terms,
-            'monthly_addition_cents': 300, 'setup_addition_cents': 1000,
             'bill_from': a.bill_from.isoformat() if a.bill_from else None,
             'ready_to_pay': bool(a.supplier_confirmed and a.bill_from and a.bill_from <= timezone.localdate()),
             'status': a.status, 'cancel_at_period_end': a.cancel_at_period_end,

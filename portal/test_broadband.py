@@ -231,6 +231,34 @@ class BroadbandTests(TestCase):
         version=self.operator.get(order_url).json()['version']
         self.assertEqual(self.operator.post(order_url,json.dumps({'version':version,'values':{'status':'cancelled'}}),content_type='application/json').status_code,409)
 
+    def test_all_in_new_quote_and_legacy_agreement_versioning(self):
+        baseline = quote('ufb', ['3', 'churn'])
+        with override_settings(KIWIKIND_ALL_IN_RETAIL_ENABLED=True):
+            revised = quote('ufb', ['3', 'churn'])
+            self.assertGreater(revised['monthly_cents'], baseline['monthly_cents'])
+            response = self.client.get('/api/broadband/quote?product=ufb&options=3,churn')
+            self.assertEqual(response.json()['monthly_cents'], revised['monthly_cents'])
+            agreement = LiveAgreement.objects.create(
+                user=self.user, created_by=self.owner, label='Synthetic full price',
+                service_reference='synthetic-all-in', source_monthly_cents=6992,
+                source_setup_cents=2000, service_terms='Synthetic terms')
+            self.assertEqual(agreement.pricing_policy, 'all_in_v2')
+            self.assertEqual(agreement.monthly_cents, revised['monthly_cents'])
+            self.assertEqual(agreement.setup_cents, revised['setup_cents'])
+
+    def test_prior_agreement_amounts_are_not_recalculated(self):
+        agreement = LiveAgreement.objects.create(
+            user=self.user, created_by=self.owner, label='Original quote',
+            service_reference='synthetic-legacy', source_monthly_cents=6992,
+            source_setup_cents=2000, service_terms='Historical synthetic terms')
+        self.assertEqual(agreement.pricing_policy, 'legacy_v1')
+        original = (agreement.monthly_cents, agreement.setup_cents)
+        with override_settings(KIWIKIND_ALL_IN_RETAIL_ENABLED=True):
+            agreement.save()
+            agreement.refresh_from_db()
+            self.assertEqual((agreement.monthly_cents, agreement.setup_cents), original)
+            self.assertEqual(agreement.pricing_policy, 'legacy_v1')
+
     def test_order_submission_requires_csrf(self):
         client=Client(enforce_csrf_checks=True);client.force_login(self.user)
         self.assertEqual(client.post('/api/broadband/orders',json.dumps(self.data),content_type='application/json').status_code,403)

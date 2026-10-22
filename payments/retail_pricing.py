@@ -18,7 +18,7 @@ def _including_gst(value):
         Decimal('1'), rounding=ROUND_HALF_UP))
 
 
-def order_quote(monthly_ex_gst_cents, setup_ex_gst_cents):
+def order_quote(monthly_ex_gst_cents, setup_ex_gst_cents, *, include_processing=False):
     """GST first, then add the owner's already-GST-inclusive additions once.
 
     First invoice is the sum of the two displayed charge lines so rounding
@@ -28,6 +28,16 @@ def order_quote(monthly_ex_gst_cents, setup_ex_gst_cents):
     monthly = _including_gst(monthly_ex_gst_cents) + 300
     setup = (None if setup_ex_gst_cents is None
              else _including_gst(setup_ex_gst_cents) + 1000)
+    if type(include_processing) is not bool:
+        raise ValueError('Invalid retail pricing option')
+    if include_processing:
+        from .all_in_prices import all_in_amount
+        initial_monthly = monthly
+        monthly = all_in_amount(initial_monthly)
+        if setup is not None:
+            setup = all_in_amount(initial_monthly + setup) - monthly
+    if monthly > 1200000 or (setup is not None and not 0 <= setup <= 1200000):
+        raise ValueError('Retail quote exceeds allowed limits')
     return {
         'currency': 'NZD', 'gst_included': True,
         'monthly_cents': monthly, 'setup_cents': setup,
