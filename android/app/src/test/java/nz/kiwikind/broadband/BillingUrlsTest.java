@@ -2,6 +2,12 @@ package nz.kiwikind.broadband;
 import org.junit.Test;
 import static org.junit.Assert.*;
 public class BillingUrlsTest {
+    @Test public void liveCheckoutCannotOpenTestOrForeignAddresses(){
+        assertTrue(BillingUrls.isLiveCheckout("https://checkout.stripe.com/c/pay/cs_live_synthetic"));
+        assertFalse(BillingUrls.isLiveCheckout("https://checkout.stripe.com/c/pay/cs_test_synthetic"));
+        assertFalse(BillingUrls.isLiveCheckout("https://checkout.stripe.com.evil.invalid/c/pay/cs_live_a"));
+        assertFalse(BillingUrls.isLiveCheckout("https://evil@checkout.stripe.com/c/pay/cs_live_a"));
+    }
     @Test public void acceptsOnlyExactTestCheckout(){
         assertTrue(BillingUrls.isTestCheckout("https://checkout.stripe.com/c/pay/cs_test_synthetic#test"));
         assertTrue(BillingUrls.isTestCheckout("https://checkout.stripe.com:443/c/pay/cs_test_synthetic"));

@@ -8,6 +8,7 @@ import os
 import re
 
 import stripe
+from . import live_gateway
 from django.contrib import admin
 from django.http import HttpResponse, HttpResponseNotAllowed
 from django.template.response import TemplateResponse
@@ -25,8 +26,8 @@ def settings_status():
         "live_api_key_present": bool(re.fullmatch(r"(?:sk|rk)_live_[A-Za-z0-9]+", key)),
         "live_account_id_present": bool(re.fullmatch(r"acct_[A-Za-z0-9]+", account)),
         "live_webhook_secret_present": bool(re.fullmatch(r"whsec_[A-Za-z0-9]+", webhook)),
-        "production_billing_implemented": False,
-        "live_checkout_enabled": False,
+        "production_billing_implemented": True,
+        "live_checkout_enabled": live_gateway.configured(),
     }
 
 

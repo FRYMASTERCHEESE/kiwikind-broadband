@@ -1,0 +1,87 @@
+# Live customer payments
+
+This implementation keeps production payments separate from the tested sandbox
+ledger and from broadband intake, catalogue publication and supplier ordering.
+It seeds no offers or prices. It never places a Vetta order or provisions service.
+
+## Prices and offers
+
+The owner creates a private `payment-agreements` record in the existing Pages
+owner interface after Google sign-in and MFA. Enter the combined confirmed
+supplier monthly and setup amounts in integer cents, excluding GST. The server
+calculates GST then adds exactly 300 monthly cents and 1000 setup cents, already
+including GST. Additions apply once per agreement, never per option. An unknown
+setup cost cannot be approved. The first invoice equals the displayed monthly
+plus one-time setup amounts; renewals contain only the monthly amount.
+
+Approval requires a real customer, confirmed supply, payment-start date, written
+service terms and explicit owner confirmation. Do not create a dummy live offer
+to test payments. Changes create a new terms version; after a checkout attempt,
+the customer, prices, tax rate and terms are immutable. No customer is charged
+without their own recurring-payment consent and Stripe confirmation.
+
+## Configuration
+
+Keep credentials exclusively in Render's private environment. Existing test keys
+and sandbox switches are unchanged. Live configuration:
+
+- STRIPE_LIVE_SECRET_KEY: restricted server key for the verified account.
+- STRIPE_LIVE_ACCOUNT_ID: expected verified account ID.
+- STRIPE_LIVE_WEBHOOK_SECRET: signing secret for `/api/payments/webhook`.
+- STRIPE_LIVE_GST_RATE_ID: active NZ 15 percent inclusive tax rate ID.
+- KIWIKIND_LIVE_BILLING_ENABLED=1 and KIWIKIND_LIVE_RELEASE_APPROVED=1 only after
+  provider setup and validation. Set either to 0 to pause new checkouts.
+
+The key needs Accounts and Balance read; Checkout Sessions write; Subscriptions
+write for period-end cancellation; Customers, Products and Prices permissions
+required by inline subscription Checkout; and Invoices, Invoice Payments,
+PaymentIntents, Charges, Disputes and Tax Rates read for verification. Establish
+the exact allowed resources in Stripe and test the same permission set in a
+sandbox. No bank/payout/transfer/Identity writes, account writes, refund writes,
+or customer portal permissions are used by this implementation. The operator
+configures tax rates and webhook destinations separately through Stripe.
+
+## Webhook
+
+Deploy the handler with both release switches off first. Register **Your
+account**, **Snapshot** events at API version `2026-09-30.endive` to:
+
+`https://kiwikind-backend.onrender.com/api/payments/webhook`
+
+Subscribe only to checkout.session.completed, customer.subscription.created,
+customer.subscription.updated, customer.subscription.deleted, invoice.paid,
+invoice.payment_failed, invoice.voided, invoice.marked_uncollectible,
+invoice.finalized, charge.refunded, charge.dispute.created,
+charge.dispute.updated, charge.dispute.closed. Copy its signing secret directly
+to Render and apply settings. Never send it through chat, GitHub or screenshots.
+
+The handler rejects unsigned/wrong-mode/account/version events. Receipts and
+ledger writes are atomic; duplicate events are ignored. Current provider objects
+are re-read under agreement locks, validating Checkout/customer/subscription,
+monthly amount, tax configuration, invoice and payment intent bindings. Failed
+reconciliation returns a retriable response. Payment records survive pausing
+new checkout. Monitor delivery failures in Stripe; do not mark invoices paid
+from browser returns or manually recreate an ambiguous payment attempt.
+
+## Web and Android
+
+GitHub Pages continues hosting every visible account/owner page. Render remains
+API-only. Checkout returns to Pages; only exact live Stripe Checkout URLs open.
+Web and native account screens show the same private API ledger. Customers can
+request period-end cancellation; they must contact KiwiKind separately about
+service cancellation and contractual obligations. Refunds are reviewed and
+processed by the owner in Stripe; signed updates reconcile them here.
+
+The published V12 application is not changed by backend/website deployment.
+Native source must pass its build, URL and signed-device tests before a
+separately authorised update on the same Closed Alpha track. Never replace the
+existing track or create production/internal releases as part of this change.
+No ads are introduced on payment or private screens.
+
+## Validation limits
+
+Unit/API and browser tests use synthetic accounts and provider objects. They do
+not prove live key write permissions, external webhook delivery, a real paid
+invoice, or a published Android update. Do not claim activation until the
+deployed configuration and provider setup are verified. Do not run automated
+real-money charges as a readiness check.

@@ -26,6 +26,8 @@ from .catalogue_forms import CataloguePlanForm, catalogue_readiness
 from .wholesale import transition, ORDER_TRANSITIONS, FAULT_TRANSITIONS
 from payments.models import TestAgreement, TestInvoice, TestEvent
 from payments.admin import TestAgreementForm
+from payments.live_models import LiveAgreement, LiveInvoice, LiveEvent
+from payments.live_forms import LiveAgreementForm
 
 User = get_user_model()
 
@@ -35,6 +37,9 @@ def spec(model, fields, display, *, create=False, search=(), readonly=False):
 
 
 SPECS = {
+ 'payment-agreements':spec(LiveAgreement,['user','label','service_reference','source_monthly_cents','source_setup_cents','service_terms','bill_from','supplier_confirmed','reviewed'],['id','label','user_id','monthly_cents','setup_cents','reviewed','status','bill_from','terms_version','checkout_started_at'],create=True),
+ 'payment-invoices':spec(LiveInvoice,[],['id','agreement_id','amount_cents','status','refunded_cents','dispute_status','created_at'],readonly=True),
+ 'payment-events':spec(LiveEvent,[],['id','kind','received_at'],readonly=True),
  'customers':spec(User,['first_name','last_name','is_active'],['email','first_name','last_name','is_active','date_joined','last_login'],search=['email','first_name','last_name']),
  'requests':spec(Order,['status'],['id','user_id','address','postcode','contact_name','phone','status','created_at'],search=['address','contact_name']),
  'tickets':spec(Ticket,['status'],['id','user_id','subject','category','status','created_at'],search=['subject']),
@@ -86,12 +91,12 @@ def editable(kind,obj):
     if SPECS[kind]['readonly']:return False
     if kind=='availability' and not obj._state.adding:return False
     if kind in ('preparation','faults') and obj.state not in ('draft','triage'):return False
-    if kind=='test-agreements' and obj.checkout_started_at:return False
+    if kind in ('test-agreements','payment-agreements') and obj.checkout_started_at:return False
     return True
 
 
 def form_for(kind,obj,data=None):
-    base=CataloguePlanForm if kind=='catalogue' else TestAgreementForm if kind=='test-agreements' else forms.ModelForm
+    base=CataloguePlanForm if kind=='catalogue' else TestAgreementForm if kind=='test-agreements' else LiveAgreementForm if kind=='payment-agreements' else forms.ModelForm
     cls=forms.modelform_factory(SPECS[kind]['model'],form=base,fields=SPECS[kind]['fields'])
     form=cls(data=data,instance=obj)
     for name,field in form.fields.items():
@@ -185,7 +190,7 @@ def save(request,kind,pk):
             return JsonResponse({'error':'This record changed or the edit expired. Reload before saving.'},status=409)
         values=request.data.get('values')
         if not isinstance(values,dict):raise ValueError('Fields must be an object')
-        allowed=set(SPECS[kind]['fields'])|({'expected_updated_at','confirm_current_approval'} if kind=='catalogue' else set())
+        allowed=set(SPECS[kind]['fields'])|({'expected_updated_at','confirm_current_approval'} if kind=='catalogue' else {'confirm_live_offer'} if kind=='payment-agreements' else set())
         if set(values)-allowed:raise ValueError('Protected or unknown fields cannot be changed')
         if kind=='privacy' and values.get('status')=='completed' and request.data.get('confirm_completed') is not True:
             raise ValueError('Confirm that manual fulfilment and lawful retention review are complete. This only records review status; it does not delete data.')
@@ -196,6 +201,10 @@ def save(request,kind,pk):
             obj.approved_by=request.user if obj.review_status=='approved' else None
             obj.approved_at=timezone.now() if obj.review_status=='approved' else None
         if kind=='test-agreements' and pk!='new':obj.terms_version=uuid.uuid4()
+        if kind=='payment-agreements':
+            if pk!='new':obj.terms_version=uuid.uuid4()
+            obj.approved_by=request.user if obj.reviewed else None
+            obj.approved_at=timezone.now() if obj.reviewed else None
         if kind in ('preparation','faults') and pk!='new':obj.revision+=1
         obj.full_clean();obj.save()
         AuditEvent.objects.create(actor=request.user,action='owner_'+kind.replace('-','_')+'_saved',reference=str(obj.pk))
