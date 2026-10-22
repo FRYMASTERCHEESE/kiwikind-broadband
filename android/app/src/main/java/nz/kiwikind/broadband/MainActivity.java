@@ -166,6 +166,9 @@ public class MainActivity extends Activity {
     }
     /** Bundled verbatim public copy; no scripts, web cookies or private data in the preview. */
     private void publicPage(String id){
+        // The customer dashboard is live and authenticated. Do not show a
+        // bundled marketing demonstration of fake account balances or orders.
+        if("mykiwikind".equals(id)){if(signedIn)home();else auth(false);return;}
         refreshScreen=null;content.removeAllViews();
         try(java.io.InputStream stream=getAssets().open("website-content.json")){
             java.io.ByteArrayOutputStream bytes=new java.io.ByteArrayOutputStream();byte[] buffer=new byte[4096];int count;
@@ -173,7 +176,7 @@ public class MainActivity extends Activity {
             JSONArray sections=new JSONObject(bytes.toString("UTF-8")).getJSONArray("sections");
             for(int i=0;i<sections.length();i++){
                 JSONObject section=sections.getJSONObject(i);if(!id.equals(section.getString("id")))continue;
-                if(id.equals("mykiwikind"))paragraph("Public website · Dashboard design preview only. This screen does not load account information. Use My account to view your records.");
+
                 JSONArray blocks=section.getJSONArray("blocks");
                 for(int j=0;j<blocks.length();j++){
                     JSONObject block=blocks.getJSONObject(j);String kind=block.getString("kind"),text=block.getString("text");
@@ -227,7 +230,7 @@ public class MainActivity extends Activity {
         EditText referral=register?field("Referral code (optional; programme not open yet)",1):null;
         CheckBox consent=new CheckBox(this);consent.setText(R.string.account_consent);if(register)content.addView(consent);
         button(register?"Create account":"Sign in",()->{
-            if(register&&!consent.isChecked()){message("Please read and accept the pre-launch terms.");return;}
+            if(register&&!consent.isChecked()){message("Please read and accept the account and order terms.");return;}
             String e=email.getText().toString().trim(),p=password.getText().toString();password.setText("");
             run(()->api.call(register?"register":"login",data("email",e,"password",p,"consent_version",CONSENT,"referral_code",referral==null?"":referral.getText().toString().trim())),r->{if(register){message(r.optString("message"));}else{acceptLogin(r);}});
         }).setEnabled(api.configured()&&(!register||registrationEnabled));
@@ -249,7 +252,7 @@ public class MainActivity extends Activity {
             if(!android.util.Patterns.EMAIL_ADDRESS.matcher(address).matches()){email.setError("Enter a valid email address");email.requestFocus();return;}
             run(()->api.call("password-reset",data("email",address)),r->message(r.optString("message")+" Open the email link in your browser, then return here to sign in."));
         }).setEnabled(api.configured());
-        button("Privacy policy",()->privacyPage("/privacy/"));button("Account deletion information",()->privacyPage("/account-deletion/"));button("Pre-launch terms",()->legal("terms"));
+        button("Privacy policy",()->privacyPage("/privacy/"));button("Account deletion information",()->privacyPage("/account-deletion/"));button("Broadband and account terms",()->legal("terms"));
     }
     private void googleSignIn(){
         if(BuildConfig.GOOGLE_WEB_CLIENT_ID.trim().isEmpty()){message("Google sign-in is not configured in this Android build. Use the website while setup is completed.");return;}
@@ -357,7 +360,7 @@ public class MainActivity extends Activity {
         button("Download my account data",()->run(()->api.call("privacy/export",null),r->{exportData=r.toString(2);Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/json");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_TITLE,"kiwikind-data.json");startActivityForResult(intent,10);message("Choose where to save your private account export.");}));
         button("Request account deletion",()->deletionScreen(account.optBoolean("has_password",true)));
         button("Privacy & account correction",()->policyScreen("privacy"));
-        accountCard("Invite friends & whānau","Referral preview · Rewards disabled",this::referralsScreen);
+        
         accountCard("Account settings","Shared notification preferences",this::settingsScreen);
         button("Sign out",()->run(()->api.call("logout",data()),r->{api.clear();signedIn=false;exportData=null;orderKey=null;auth(false);message("Signed out.");}));
         message("Account connected · Pay after connection confirmation");
@@ -400,7 +403,7 @@ public class MainActivity extends Activity {
             }
         }
         if(!r.optBoolean("live_payments_enabled"))paragraph("New payments are paused. Existing payment records remain available.");
-        button("Refresh payments",this::liveBillingScreen);button("Private sandbox testing",this::billingScreen);nav();
+        button("Refresh payments",this::liveBillingScreen);nav();
     });}
 
     private String billingMoney(long cents){return "NZ$"+java.math.BigDecimal.valueOf(cents,2).toPlainString();}
@@ -571,7 +574,7 @@ public class MainActivity extends Activity {
         button("Send request",()->{if(!c.isChecked()){message("Please accept the request terms.");return;}JSONObject d=data("contact_name",name.getText().toString(),"address",address.getText().toString(),"postcode",postcode.getText().toString(),"phone",phone.getText().toString(),"consent_version",CONSENT,"idempotency_key",orderKey);run(()->api.call("orders",d),r->{orderKey=null;orders();});});button("Read request terms",()->legal("terms"));nav();
     }
     private void tickets(){run(()->api.call("tickets",null),r->{
-        refreshScreen=this::tickets;content.removeAllViews();title("Support & complaints");paragraph("No response time is promised during pre-launch. This is not an emergency service.");JSONArray a=r.getJSONArray("tickets");if(a.length()==0)paragraph("No conversations yet.");
+        refreshScreen=this::tickets;content.removeAllViews();title("Support & complaints");paragraph("Contact KiwiKind here for account, broadband order and support questions. This is not an emergency service.");JSONArray a=r.getJSONArray("tickets");if(a.length()==0)paragraph("No conversations yet.");
         for(int i=0;i<a.length();i++){JSONObject t=a.getJSONObject(i);button(t.getString("subject")+" · "+t.getString("status"),()->conversation(t.optString("id")));}
         button("Start a conversation",this::newTicket);nav();message("Your conversations");
     });}

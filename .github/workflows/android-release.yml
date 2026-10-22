@@ -1,5 +1,6 @@
 name: Android signed prelaunch release
-# Rebuild signed V14 after fixing the verifier to read the current Gradle version.
+# Verify signed V15 customer-facing billing cleanup on approved branch.
+# Sandbox/payment QA remains in backend; Play publication remains a separate step.
 # Artifact and emulator QA ONLY; never uploads or publishes to Google Play.
 on:
   # Build one signed QA candidate when this workflow itself is reviewed and
