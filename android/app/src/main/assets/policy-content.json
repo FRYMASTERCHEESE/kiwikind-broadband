@@ -62,7 +62,7 @@
     },
     {
       "kind": "p",
-      "text": "The public information website does not load advertising code. Android V6 and V7 are ad-free; V8 through V11 restrict requests to SDK-recognised test devices. Version 0.2.10 (V12) permits live banner requests in the signed release, using KiwiKind’s own AdMob App ID and banner unit with Google Mobile Ads SDK 25.5.0 and User Messaging Platform 4.0.0. Google controls ad availability and may limit serving before app review is complete. SDK-recognised test devices and emulators continue to receive test ads; development builds remain test-only. A banner is shown only on public Home after Google’s consent checks permit a request. Sign-in, account, support, billing, privacy and deletion screens have no advertising placements. Advertising is separate from payments. Billing screens have no advertising. Public retail plans and supplier orders remain disabled."
+      "text": "The public information website does not load advertising code. Android V6 and V7 are ad-free; V8 through V11 restrict requests to SDK-recognised test devices. Version 0.2.10 (V12) permits live banner requests in the signed release, using KiwiKind’s own AdMob App ID and banner unit with Google Mobile Ads SDK 25.5.0 and User Messaging Platform 4.0.0. Google controls ad availability and may limit serving before app review is complete. SDK-recognised test devices and emulators continue to receive test ads; development builds remain test-only. A banner is shown only on public Home after Google’s consent checks permit a request. Sign-in, account, support, billing, privacy and deletion screens have no advertising placements. Advertising is separate from payments. Billing screens have no advertising. Published broadband plans accept address-check requests. Supplier orders and broadband activation are handled separately after confirmation."
     },
     {
       "kind": "h2",
@@ -164,7 +164,7 @@
     },
     {
       "kind": "p",
-      "text": "Public broadband orders and supplier provisioning remain disabled. This deletion request does not require buying a service or paying a fee. Read our privacy policy or contact the same email for access/correction requests."
+      "text": "Published broadband plans accept address-check requests; supplier provisioning remains subject to separate confirmation. This deletion request does not require buying a service or paying a fee. Read our privacy policy or contact the same email for access/correction requests."
     }
   ],
   "terms": [
