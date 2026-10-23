@@ -83,6 +83,16 @@ class ReadOnly(admin.ModelAdmin):
 @admin.register(Invoice, AuditEvent)
 class Ledger(ReadOnly): pass
 
+
+from .models import PrivateCatalogueRelease
+
+
+@admin.register(PrivateCatalogueRelease)
+class PrivateCatalogueReleases(ReadOnly):
+    list_display = ['id', 'created_at', 'verified_on', 'valid_until', 'active']
+    readonly_fields = ['checksum', 'payload', 'created_at', 'verified_on',
+                       'valid_until', 'active', 'approved_digest', 'approved_at', 'approved_by']
+
 class Audited(admin.ModelAdmin):
     def has_add_permission(self,request): return False
     def has_delete_permission(self,request,obj=None): return False

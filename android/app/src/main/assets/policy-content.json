@@ -62,7 +62,7 @@
     },
     {
       "kind": "p",
-      "text": "The public information website does not load advertising code. Android V6 and V7 are ad-free; V8 through V11 restrict requests to SDK-recognised test devices. Version 0.2.10 (V12) permits live banner requests in the signed release, using KiwiKind’s own AdMob App ID and banner unit with Google Mobile Ads SDK 25.5.0 and User Messaging Platform 4.0.0. Google controls ad availability and may limit serving before app review is complete. SDK-recognised test devices and emulators continue to receive test ads; development builds remain test-only. A banner is shown only on public Home after Google’s consent checks permit a request. Sign-in, account, support, billing, privacy and deletion screens have no advertising placements. Advertising is separate from payments. Billing screens have no advertising. Public retail plans and supplier orders remain disabled."
+      "text": "The public information website does not load advertising code. Android V6 and V7 are ad-free; V8 through V11 restrict requests to SDK-recognised test devices. Version 0.2.10 (V12) permits live banner requests in the signed release, using KiwiKind’s own AdMob App ID and banner unit with Google Mobile Ads SDK 25.5.0 and User Messaging Platform 4.0.0. Google controls ad availability and may limit serving before app review is complete. SDK-recognised test devices and emulators continue to receive test ads; development builds remain test-only. A banner is shown only on public Home after Google’s consent checks permit a request. Sign-in, account, support, billing, privacy and deletion screens have no advertising placements. Advertising is separate from payments. Billing screens have no advertising. Published broadband plans accept address-check requests. Supplier orders and broadband activation are handled separately after confirmation."
     },
     {
       "kind": "h2",
@@ -118,7 +118,7 @@
     },
     {
       "kind": "p",
-      "text": "Customers receive a private payment offer after KiwiKind confirms their address and connection details. An approved offer shows the full monthly amount, one-time setup amount, GST and written service terms. The totals include exactly $3 extra monthly and $10 extra setup once, both including GST. A payment requires your explicit agreement and is available only when live checkout is enabled. After consent, KiwiKind sends your account email, internal agreement reference and agreed amounts to Stripe. Stripe hosts the payment form and processes card details; KiwiKind does not receive full card numbers. KiwiKind stores the agreed terms, consent audit, subscription, invoice, payment, refund and dispute references so you can see your records across the website and app. Status comes from verified Stripe notifications, not a browser return page. Payment does not automatically activate broadband or place a supplier order. You can request cancellation of future subscription billing at the current period end; service cancellation and contractual obligations are handled separately with KiwiKind. Refunds are reviewed by KiwiKind. Exports include your payment records; deletion requests require review for lawful financial record retention and related Stripe records. Stripe may process information overseas under its privacy policy. Sandbox billing remains separate and accepts test details only."
+      "text": "Customers receive a private payment offer after KiwiKind confirms their address and connection details. An approved offer shows the full monthly amount, one-time setup amount, GST and written service terms. All customer-facing monthly and once-only setup totals include GST. A payment requires your explicit agreement and is available only when live checkout is enabled. After consent, KiwiKind sends your account email, internal agreement reference and agreed amounts to Stripe. Stripe hosts the payment form and processes card details; KiwiKind does not receive full card numbers. KiwiKind stores the agreed terms, consent audit, subscription, invoice, payment, refund and dispute references so you can see your records across the website and app. Status comes from verified Stripe notifications, not a browser return page. Payment does not automatically activate broadband or place a supplier order. You can request cancellation of future subscription billing at the current period end; service cancellation and contractual obligations are handled separately with KiwiKind. Refunds are reviewed by KiwiKind. Exports include your payment records; deletion requests require review for lawful financial record retention and related Stripe records. Stripe may process information overseas under its privacy policy. Sandbox billing remains separate and accepts test details only."
     },
     {
       "kind": "p",
@@ -164,7 +164,7 @@
     },
     {
       "kind": "p",
-      "text": "Broadband plan requests may be submitted for address review; supplier provisioning remains manual and subject to confirmation. This deletion request does not require buying a service or paying a fee. Read our privacy policy or contact the same email for access/correction requests."
+      "text": "Published broadband plans accept address-check requests; supplier provisioning remains subject to separate confirmation. This deletion request does not require buying a service or paying a fee. Read our privacy policy or contact the same email for access/correction requests."
     }
   ],
   "terms": [
@@ -190,7 +190,7 @@
     },
     {
       "kind": "p",
-      "text": "Browse the broadband catalogue, select your speed, data and installation or router options, and submit your service address and contact details. All displayed prices are NZD including GST. The totals include exactly $3 extra monthly and $10 extra setup once; GST is not added again to these additions."
+      "text": "Browse the broadband catalogue, select your speed, data and installation or router options, and submit your service address and contact details. All displayed customer prices are NZD including GST. The full monthly price and any once-only setup amount are displayed before you accept an offer; GST is not added again at checkout."
     },
     {
       "kind": "p",
@@ -250,7 +250,7 @@
     },
     {
       "kind": "p",
-      "text": "Creating an account does not authorise charges. Every payment offer must identify the specific service, full GST-inclusive monthly and one-time setup amounts, payment start, installation, equipment, contract, cancellation and refund terms before acceptance. A customer must separately accept that offer before Stripe checkout. Payment does not automatically activate broadband or place a supplier order. The $3 monthly and $10 one-time setup additions are already included in the displayed totals, including GST. Contact KiwiKind about refunds and broadband cancellation; stopping subscription payments alone does not cancel contractual service obligations."
+      "text": "Creating an account does not authorise charges. Every payment offer must identify the specific service, full GST-inclusive monthly and one-time setup amounts, payment start, installation, equipment, contract, cancellation and refund terms before acceptance. A customer must separately accept that offer before Stripe checkout. Payment does not automatically activate broadband or place a supplier order. The complete monthly price and any once-only setup total shown to customers already include GST. Contact KiwiKind about refunds and broadband cancellation; stopping subscription payments alone does not cancel contractual service obligations."
     }
   ]
 }
