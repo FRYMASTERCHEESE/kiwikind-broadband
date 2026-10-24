@@ -1,12 +1,20 @@
 name: Private catalogue public safety check
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - portal/catalogue*.py
+      - scripts/check_public_catalogue.py
+      - scripts/test_public_catalogue_check.py
+      - .github/workflows/private-catalogue-safety.yml
   push:
     branches:
       - fix/private-catalogue-safe-editing
       - feature/neon-postgres-config
     paths:
       - portal/catalogue*.py
+      - scripts/check_public_catalogue.py
+      - scripts/test_public_catalogue_check.py
       - portal/wholesale_admin.py
       - .github/workflows/private-catalogue-safety.yml
 permissions:
@@ -19,80 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@v4
+      - name: Test published, hidden and unsafe response handling
+        run: python3 -m unittest discover -s scripts -p test_public_catalogue_check.py
       - name: Check public responses without credentials or mutations
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          import json
-          import time
-          import urllib.error
-          import urllib.parse
-          import urllib.request
-          from datetime import datetime, timezone
-
-          ORIGIN = 'https://kiwikind-backend.onrender.com'
-          class NoRedirect(urllib.request.HTTPRedirectHandler):
-              def redirect_request(self, req, fp, code, msg, headers, newurl):
-                  return None
-          opener = urllib.request.build_opener(NoRedirect())
-
-          def read(path):
-              # Fixed owner-authorised origin and paths only. No cookies, tokens,
-              # login attempts, POSTs, purchases, source bodies or customer data in logs.
-              for attempt in range(3):
-                  request = urllib.request.Request(ORIGIN + path, method='GET',
-                      headers={'User-Agent': 'KiwiKind-Public-Safety-Check/1.0', 'Accept': 'application/json,text/html'})
-                  try:
-                      response = opener.open(request, timeout=35)
-                  except urllib.error.HTTPError as error:
-                      response = error
-                  except (urllib.error.URLError, TimeoutError):
-                      if attempt == 2:
-                          raise RuntimeError('Public endpoint could not be reached') from None
-                      time.sleep(5)
-                      continue
-                  with response:
-                      status = response.code
-                      headers = response.headers
-                      body = response.read(131073)
-                  if status in (502, 503, 504) and attempt < 2:
-                      time.sleep(5)
-                      continue
-                  assert len(body) <= 131072, 'Unexpected oversized response; body withheld'
-                  return status, headers, body
-              raise RuntimeError('No public response')
-
-          code, headers, body = read('/api/plans')
-          assert code == 200, 'Catalogue public response was not successful'
-          plans = json.loads(body)
-          assert plans == {'plans': [], 'live_orders_enabled': False}, 'Expected an empty unpublished catalogue; body withheld'
-          assert 'no-store' in headers.get('Cache-Control', ''), 'Catalogue response must not be cached'
-          assert not headers.get('Access-Control-Allow-Credentials'), 'Public catalogue must not accept credentialed cross-origin access'
-          print('PASS: public catalogue empty; live orders disabled; no-store; no credentialed CORS')
-
-          code, headers, body = read('/api/status')
-          assert code == 200, 'Status public response was not successful'
-          status = json.loads(body)
-          assert status.get('mode') == 'prelaunch', 'Expected prelaunch status'
-          assert type(status.get('billing_enabled')) is bool, 'Expected an explicit private billing status'
-          assert status.get('intake_enabled') is False, 'Customer order intake must remain disabled'
-          assert status.get('live_services') is False, 'Live services must remain disabled'
-          assert status.get('availability') == 'unverified', 'Do not claim verified address availability'
-          print('PASS: prelaunch; public intake and live services disabled; availability unverified')
-
-          code, headers, body = read('/admin/portal/draftplan/')
-          if code in (301, 302, 303, 307, 308):
-              target = urllib.parse.urlsplit(urllib.parse.urljoin(ORIGIN, headers.get('Location', '')))
-              assert target.scheme == 'https' and target.netloc == urllib.parse.urlsplit(ORIGIN).netloc, 'Unexpected admin redirect origin'
-              assert target.path in ('/admin/login/', '/admin/owner-signin/', '/admin/mfa/'), 'Anonymous admin access did not reach an authentication gate'
-          else:
-              assert code in (401, 403, 404), 'Anonymous request unexpectedly reached the admin catalogue'
-          print('PASS: anonymous catalogue access denied or redirected to authentication')
-
-          for path in ('/api/orders', '/api/invoices', '/api/connection-progress', '/api/payments/summary'):
-              code, headers, body = read(path)
-              assert code in (401, 403), 'Anonymous customer data endpoint was not denied; body withheld'
-          print('PASS: anonymous orders, invoices, connection progress and private payments are denied')
-          print('Read-only public verification completed:', datetime.now(timezone.utc).isoformat())
-          print('No customer or admin sign-in, MFA secret, payment or supplier order was used.')
-          PY
+        run: python3 scripts/check_public_catalogue.py

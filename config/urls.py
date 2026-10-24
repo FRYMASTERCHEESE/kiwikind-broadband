@@ -5,6 +5,7 @@ from portal import owner_admin, owner_mfa, catalogue, catalogue_import, launch_r
 from portal import wholesale_admin, wholesale_views
 from portal import pages, owner_ops
 from portal import broadband
+from portal import catalogue_review
 from payments import owner_scenarios
 
 # Shared native/web account APIs; all account-specific routes enforce sessions.
@@ -32,6 +33,8 @@ urlpatterns = [path('', include('payments.urls')), path('api/connection-progress
  path('api/owner/readiness', pages.owner_readiness),
  path('api/owner/stripe-evidence', pages.owner_stripe_evidence),
  path('api/owner/catalogue', pages.owner_catalogue),
+ path('api/owner/catalogue-releases', catalogue_review.releases),
+ path('api/owner/catalogue-releases/<int:pk>', catalogue_review.detail),
  path('api/plans', catalogue.plans),
  path('admin/mfa/', owner_mfa.challenge),
  path('admin/catalogue/import/', catalogue_import.private_catalogue_import, name='private-catalogue-import'),
