@@ -11,6 +11,15 @@ PRIVATE_KEYS = {'base', 'baseSetup', 'headline', 'source_ref', 'payload',
                 'setup_addition_cents'}
 
 
+def validate_admin_redirect(location):
+    target = urllib.parse.urlsplit(urllib.parse.urljoin(ORIGIN, location))
+    assert target.scheme == 'https' and not target.username and not target.password
+    backend = target.netloc == urllib.parse.urlsplit(ORIGIN).netloc and target.path in (
+        '/admin/login/', '/admin/owner-signin/', '/admin/mfa/')
+    pages = target.netloc == 'frymastercheese.github.io' and target.path == '/kiwikind-broadband-website/owner.html' and not target.query and not target.fragment
+    assert backend or pages, 'Unexpected private-admin redirect destination'
+
+
 def assert_public(value):
     if isinstance(value, dict):
         assert not any(k in PRIVATE_KEYS or k.startswith('source_') for k in value), 'Private pricing field exposed'
@@ -103,12 +112,10 @@ def main():
     for path in ('/admin/portal/draftplan/', '/admin/portal/privatecataloguerelease/'):
         code, headers, _ = read(path)
         if code in (301, 302, 303, 307, 308):
-            target = urllib.parse.urlsplit(urllib.parse.urljoin(ORIGIN, headers.get('Location', '')))
-            assert target.scheme == 'https' and target.netloc == urllib.parse.urlsplit(ORIGIN).netloc
-            assert target.path in ('/admin/login/', '/admin/owner-signin/', '/admin/mfa/')
+            validate_admin_redirect(headers.get('Location', ''))
         else:
             assert code in (401, 403, 404)
-    for path in ('/api/orders', '/api/invoices', '/api/connection-progress', '/api/payments/summary'):
+    for path in ('/api/orders', '/api/invoices', '/api/connection-progress', '/api/payments/summary', '/api/owner/catalogue'):
         assert read(path)[0] in (401, 403)
     print('PASS: private admin and customer data require authentication; supplier ordering remains disabled')
     print('Read-only verification: no sign-in, payment, customer request or supplier order created.')

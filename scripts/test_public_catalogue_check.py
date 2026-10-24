@@ -1,7 +1,7 @@
 """Synthetic response checks: no network, accounts, supplier rates or payments."""
 import copy
 import unittest
-from check_public_catalogue import validate_catalogues
+from check_public_catalogue import validate_catalogues, validate_admin_redirect
 
 
 def sample():
@@ -22,6 +22,16 @@ def sample():
 
 
 class PublicCatalogueChecks(unittest.TestCase):
+    def test_only_exact_backend_or_pages_owner_auth_redirect_is_allowed(self):
+        for location in ['/admin/owner-signin/', '/admin/mfa/',
+                'https://frymastercheese.github.io/kiwikind-broadband-website/owner.html']:
+            validate_admin_redirect(location)
+        for location in ['http://kiwikind-backend.onrender.com/admin/login/',
+                'https://evil.example/admin/login/',
+                'https://frymastercheese.github.io/another-repo/owner.html',
+                'https://frymastercheese.github.io/kiwikind-broadband-website/owner.html?next=https://evil.example']:
+            with self.assertRaises(AssertionError):validate_admin_redirect(location)
+
     def test_published_and_deliberately_hidden_catalogues(self):
         a,b=sample()
         self.assertEqual(validate_catalogues(a,b),1)
