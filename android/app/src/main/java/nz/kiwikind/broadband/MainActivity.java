@@ -473,10 +473,10 @@ public class MainActivity extends Activity {
     });}
     private void broadbandPlans(){run(()->api.call("broadband/catalogue",null),r->{
         refreshScreen=this::broadbandPlans;content.removeAllViews();title("Broadband plans");
-        paragraph("Step 1: choose fibre, rural or other broadband. Step 2: choose speed and installation type. Step 3: send your address for confirmation. Only pay after reviewing the final offer. The shown monthly and setup estimates already include GST.");
+        paragraph("Only the current server catalogue can supply plan prices, download/upload speeds and data allowances. Nothing is guessed or stored as a fallback.");
         if(signedIn)button("Track my existing requests",this::orders);
         JSONArray products=r.getJSONArray("products");String consent=r.getString("consent_version");
-        if(products.length()==0){paragraph("We are updating our broadband plans. Please check back soon. Existing accounts and requests remain available.");if(signedIn)nav();else button("Sign in",()->auth(false));return;}
+        if(products.length()==0){paragraph("All previous broadband plans, prices and download/upload speeds have been cleared while KiwiKind rebuilds the catalogue from Vetta. Existing accounts and requests remain available.");if(signedIn)nav();else button("Sign in",()->auth(false));return;}
         EditText search=field("Find broadband by type (fibre, rural, wireless or mobile)",
             InputType.TYPE_CLASS_TEXT);
         java.util.ArrayList<String> searchTexts=new java.util.ArrayList<>();
@@ -522,9 +522,7 @@ public class MainActivity extends Activity {
                 for(int j=0;j<options.length();j++)labels[j]=options.getJSONObject(j).getString("name");
                 Spinner select=new Spinner(this);select.setContentDescription(group.getString("label"));select.setMinimumHeight(dp(56));
                 select.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,labels));
-                if("ufb".equals(product.optString("id")) && i==0){
-                    for(int j=0;j<labels.length;j++)if(labels[j].equals("500Mbps Down / 100Mbps Up")){select.setSelection(j);break;}
-                }
+                // No supplier speed is preselected by a hardcoded value: all options come from the server.
                 content.addView(select,spaced());choices[i]=select;
             }
             button("Review price and order",()->{
