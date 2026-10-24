@@ -20,6 +20,8 @@ def approved_agreements():
 
 
 def default_price_policy():
+    if getattr(settings, 'KIWIKIND_VETTA_SOURCE_PRICES_ONLY', False):
+        return 'vetta_source_v1'
     return ('all_in_v3' if getattr(settings, 'KIWIKIND_ALL_IN_RETAIL_ENABLED', False)
             else 'legacy_v1')
 
@@ -74,6 +76,7 @@ class LiveAgreement(models.Model):
         from .retail_pricing import order_quote
         try:
             quote = order_quote(self.source_monthly_cents, self.source_setup_cents,
+                source_prices_only=(self.pricing_policy == 'vetta_source_v1'),
                 include_processing=(self.pricing_policy in ('all_in_v2', 'all_in_v3')),
                 monthly_price_increase_cents=(400 if self.pricing_policy == 'all_in_v3' else 0))
         except ValueError as exc:
@@ -98,7 +101,7 @@ class LiveAgreement(models.Model):
         super().save(*args, **kwargs)
 
     def clean(self):
-        if self.pricing_policy not in ('legacy_v1', 'all_in_v2', 'all_in_v3'):
+        if self.pricing_policy not in ('legacy_v1', 'all_in_v2', 'all_in_v3', 'vetta_source_v1'):
             raise ValidationError('Invalid agreement pricing policy')
         self.calculate_quote()
         if self.reviewed and 'Complete the confirmed connection, billing-start, contract, cancellation and refund terms before approving this offer.' in self.service_terms:

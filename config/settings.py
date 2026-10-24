@@ -125,6 +125,7 @@ BROADBAND_CATALOGUE_ENABLED = os.getenv('KIWIKIND_BROADBAND_CATALOGUE_ENABLED') 
 # New quotes only: advertise one complete GST-inclusive price that budgets
 # standard domestic card and subscription billing costs. Default OFF.
 KIWIKIND_ALL_IN_RETAIL_ENABLED = os.getenv('KIWIKIND_ALL_IN_RETAIL_ENABLED') == '1'
+KIWIKIND_VETTA_SOURCE_PRICES_ONLY = os.getenv('KIWIKIND_VETTA_SOURCE_PRICES_ONLY') == '1'
 REGISTRATION_ENABLED = os.getenv('REGISTRATION_ENABLED') == '1'
 REFERRALS_ENABLED = os.getenv('REFERRALS_ENABLED') == '1'
 ADMIN_ENABLED = os.getenv('ADMIN_ENABLED') == '1'

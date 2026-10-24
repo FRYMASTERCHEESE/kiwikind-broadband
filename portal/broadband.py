@@ -55,6 +55,7 @@ def quote(product_id, selections):
                          + (' at the 95th percentile.' if option['usage']['unit'] == 'Mbps' else '.'))
     usage.extend([product['allowance'], product['terms']])
     result = {**order_quote(monthly, None if unknown else setup,
+                           source_prices_only=settings.KIWIKIND_VETTA_SOURCE_PRICES_ONLY,
                            include_processing=settings.KIWIKIND_ALL_IN_RETAIL_ENABLED,
                            monthly_price_increase_cents=(400 if settings.KIWIKIND_ALL_IN_RETAIL_ENABLED else 0)),
               'product_id': product_id, 'name': product['name'], 'selections': selections,
@@ -93,6 +94,7 @@ def catalogue(request):
             products.append({'id': p['id'], 'name': p['name'], 'description': p['description'],
                              'family': p['family'],
                              'headline_monthly_cents': order_quote(cents(p['headline']), 0,
+                               source_prices_only=settings.KIWIKIND_VETTA_SOURCE_PRICES_ONLY,
                                include_processing=settings.KIWIKIND_ALL_IN_RETAIL_ENABLED,
                                 monthly_price_increase_cents=(400 if settings.KIWIKIND_ALL_IN_RETAIL_ENABLED else 0))['monthly_cents'],
                              'headline_note': p['allowance'], 'allowance': p['allowance'], 'terms': p['terms'],

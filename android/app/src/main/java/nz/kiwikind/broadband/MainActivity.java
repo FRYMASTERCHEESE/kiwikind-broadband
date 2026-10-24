@@ -481,20 +481,44 @@ public class MainActivity extends Activity {
             InputType.TYPE_CLASS_TEXT);
         java.util.ArrayList<String> searchTexts=new java.util.ArrayList<>();
         java.util.ArrayList<android.view.View[]> productViews=new java.util.ArrayList<>();
+        java.util.LinkedHashMap<String,java.util.ArrayList<JSONObject>> families=new java.util.LinkedHashMap<>();
         for(int i=0;i<products.length();i++){
-            JSONObject p=products.getJSONObject(i);
+            JSONObject p=products.getJSONObject(i);String family=p.optString("family",p.optString("id"));
+            if(!families.containsKey(family))families.put(family,new java.util.ArrayList<>());
+            families.get(family).add(p);
+        }
+        for(java.util.Map.Entry<String,java.util.ArrayList<JSONObject>> entry:families.entrySet()){
+            java.util.ArrayList<JSONObject> variants=entry.getValue();
+            String familyName;
+            switch(entry.getKey()){
+                case "adsl":familyName="Direct ADSL Copper Broadband";break;
+                case "vdsl":familyName="Direct VDSL Copper Broadband";break;
+                case "ufb":familyName="Direct UFB Fibre Broadband";break;
+                case "vector":familyName="Direct Vector UFB Fibre Broadband";break;
+                case "rbi":familyName="RBI Rural Broadband";break;
+                case "fixed-wireless":familyName="Fixed Wireless Broadband";break;
+                case "mobile-4g":familyName="4G Mobile Broadband";break;
+                default:familyName=variants.get(0).optString("name");
+            }
             int before=content.getChildCount();
-            title(p.getString("name"));
-            paragraph(p.optString("allowance")+"\n"+p.optString("terms"));
-            JSONObject preview=p.optJSONObject("default_quote");
-            if(preview!=null)paragraph("Setup once: "+(preview.isNull("setup_cents")?"To confirm":billingMoney(preview.getLong("setup_cents")))+"\nFirst payment including GST: "+(preview.isNull("first_invoice_cents")?"To confirm":billingMoney(preview.getLong("first_invoice_cents"))));
-            paragraph("Estimated starting from "+billingMoney(p.getLong("headline_monthly_cents"))+" per month, including GST.\n"+p.optString("headline_note")+"\n"+p.getString("description")+"\n"+("needs_supplier_confirmation".equals(p.optString("price_status"))?"Supplier price still needs confirmation before a final offer.":"Installation and address charges must be confirmed before payment."));
-            button("Choose options",()->configureBroadband(p,consent));
+            title(familyName);
+            long starting=Long.MAX_VALUE;String[] labels=new String[variants.size()];
+            StringBuilder searchable=new StringBuilder(familyName);
+            for(int i=0;i<variants.size();i++){
+                JSONObject p=variants.get(i);labels[i]=p.getString("name");
+                starting=Math.min(starting,p.getLong("headline_monthly_cents"));
+                searchable.append(' ').append(p.getString("name")).append(' ').append(p.getString("description"));
+            }
+            paragraph("Starting from "+billingMoney(starting)+" monthly, including GST. Choose the network, speed and data option, then review its setup and usage charges.");
+            Spinner variant=new Spinner(this);variant.setContentDescription(familyName+" option");variant.setMinimumHeight(dp(56));
+            variant.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,labels));
+            content.addView(variant,spaced());
+            button("Choose options",()->configureBroadband(variants.get(variant.getSelectedItemPosition()),consent));
             int after=content.getChildCount();
             android.view.View[] group=new android.view.View[after-before];
             for(int j=0;j<group.length;j++)group[j]=content.getChildAt(before+j);
             productViews.add(group);
-            searchTexts.add((p.getString("name")+" "+p.getString("description")).toLowerCase(java.util.Locale.ROOT));
+            searchTexts.add(searchable.toString().toLowerCase(java.util.Locale.ROOT));
         }
         search.addTextChangedListener(new android.text.TextWatcher(){
             @Override public void beforeTextChanged(CharSequence s,int start,int count,int after){}
