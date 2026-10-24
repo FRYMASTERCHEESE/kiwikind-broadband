@@ -1,7 +1,7 @@
 from django.test import TestCase, override_settings
 from payments.retail_pricing import order_quote
 from payments.live_models import LiveAgreement, default_price_policy
-from .test_private_catalogue import PrivateCatalogueTests
+from . import test_private_catalogue as private_catalogue_tests
 
 
 @override_settings(KIWIKIND_VETTA_SOURCE_PRICES_ONLY=True,
@@ -9,7 +9,7 @@ from .test_private_catalogue import PrivateCatalogueTests
     PLAN_PUBLICATION_ENABLED=True)
 class VettaSourcePriceTests(TestCase):
     def test_web_android_and_owner_preview_use_source_amounts_only(self):
-        release = PrivateCatalogueTests.publish(self)
+        release = private_catalogue_tests.PrivateCatalogueTests.publish(self)
         web = self.client.get('/api/broadband/catalogue').json()['products'][0]
         app = self.client.get('/api/plans').json()['plans'][0]
         owner = self.client.get(f'/api/owner/catalogue-releases/{release.pk}').json()['products'][0]
@@ -21,13 +21,13 @@ class VettaSourcePriceTests(TestCase):
         self.assertNotIn('source_ref', str(web))
 
     def test_no_added_fees_and_unknown_setup_stays_unknown(self):
-        value = order_quote(6621, None, source_prices_only=True,
+        value = order_quote(4201, None, source_prices_only=True,
             include_processing=True, monthly_price_increase_cents=400)
-        self.assertEqual(value['monthly_cents'], 7614)
+        self.assertEqual(value['monthly_cents'], 4831)
         self.assertIsNone(value['setup_cents'])
         self.assertIsNone(value['first_invoice_cents'])
         self.assertEqual(value['monthly_addition_cents'], 0)
-        self.assertEqual(order_quote(6621, 3674, source_prices_only=True)['setup_cents'], 4225)
+        self.assertEqual(order_quote(4201, 1703, source_prices_only=True)['setup_cents'], 1958)
 
     def test_new_agreements_use_source_policy_and_historical_policy_is_unchanged(self):
         self.assertEqual(default_price_policy(), 'vetta_source_v1')
