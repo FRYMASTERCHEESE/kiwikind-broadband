@@ -30,7 +30,14 @@ def order_quote(monthly_ex_gst_cents, setup_ex_gst_cents, *, include_processing=
         raise ValueError('Invalid supplier pricing option')
     if source_prices_only:
         monthly = _including_gst(monthly_ex_gst_cents)
-        setup = None if setup_ex_gst_cents is None else _including_gst(setup_ex_gst_cents)
+        # Vetta calculates first-invoice GST on the combined recurring/setup
+        # source subtotal. Allocate its rounding to setup so displayed lines
+        # still sum to exactly the supplier's first-invoice total.
+        setup = None
+        if setup_ex_gst_cents is not None:
+            subtotal = Decimal(_cents(monthly_ex_gst_cents)) + Decimal(_cents(setup_ex_gst_cents))
+            first = int((subtotal * Decimal('1.15')).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+            setup = first - monthly
         return {'currency': 'NZD', 'gst_included': True,
             'monthly_cents': monthly, 'setup_cents': setup,
             'monthly_addition_cents': 0, 'setup_addition_cents': 0,

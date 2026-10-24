@@ -27,7 +27,10 @@ class VettaSourcePriceTests(TestCase):
         self.assertIsNone(value['setup_cents'])
         self.assertIsNone(value['first_invoice_cents'])
         self.assertEqual(value['monthly_addition_cents'], 0)
-        self.assertEqual(order_quote(4201, 1703, source_prices_only=True)['setup_cents'], 1958)
+        combined = order_quote(4201, 1703, source_prices_only=True)
+        self.assertEqual(combined['setup_cents'], 1959)
+        self.assertEqual(combined['first_invoice_cents'], 6790)
+        self.assertEqual(combined['first_invoice_cents'], combined['monthly_cents']+combined['setup_cents'])
 
     def test_new_agreements_use_source_policy_and_historical_policy_is_unchanged(self):
         self.assertEqual(default_price_policy(), 'vetta_source_v1')
