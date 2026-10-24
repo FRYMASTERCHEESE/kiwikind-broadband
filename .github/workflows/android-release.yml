@@ -168,4 +168,3 @@ jobs:
         if: always()
         shell: bash
         run: rm -f -- "$KIWIKIND_KEYSTORE"
-
