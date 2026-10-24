@@ -1,5 +1,5 @@
 name: Android signed prelaunch release
-# Rebuild the current signed V15 closed-test QA candidate after shared pricing and owner-approval safety updates.
+# Build V16 with the shared live catalogue, usage allowances and full first-payment display.
 # Sandbox/payment QA remains in backend; Play publication remains a separate step.
 # Artifact and emulator QA ONLY; never uploads or publishes to Google Play.
 on:
@@ -168,3 +168,4 @@ jobs:
         if: always()
         shell: bash
         run: rm -f -- "$KIWIKIND_KEYSTORE"
+
