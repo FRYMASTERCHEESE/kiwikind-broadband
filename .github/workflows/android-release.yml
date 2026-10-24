@@ -1,5 +1,5 @@
 name: Android signed prelaunch release
-# Build V16 with the shared live catalogue, usage allowances and full first-payment display.
+# Build V17 with wholesale category selectors and the shared source-only pricing policy.
 # Sandbox/payment QA remains in backend; Play publication remains a separate step.
 # Artifact and emulator QA ONLY; never uploads or publishes to Google Play.
 on:

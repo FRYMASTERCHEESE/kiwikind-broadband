@@ -45,6 +45,7 @@ def detail(request, pk):
             unknown = unknown or option['unknown']
             selections.append({'group': group['label'], 'option': option['name']})
         totals = order_quote(int(monthly * 100), None if unknown else int(setup * 100),
+            source_prices_only=settings.KIWIKIND_VETTA_SOURCE_PRICES_ONLY,
             include_processing=settings.KIWIKIND_ALL_IN_RETAIL_ENABLED,
             monthly_price_increase_cents=400 if settings.KIWIKIND_ALL_IN_RETAIL_ENABLED else 0)
         rows.append({'source': product, 'default_selections': selections,
